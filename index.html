@@ -288,11 +288,17 @@ let currentOrderData = null;
 function getApiKey() { return localStorage.getItem('ccb_monday_token') || ''; }
 
 function saveApiKey(panel) {
-  const token = document.getElementById(`api-key-input-${panel}`).value.trim();
-  if (!token) return;
-  localStorage.setItem('ccb_monday_token', token);
-  document.getElementById(`saved-badge-${panel}`).classList.add('show');
-  checkSetupNotices();
+  try {
+    const input = document.getElementById('api-key-input-' + panel);
+    const token = input ? input.value.trim() : '';
+    if (!token) { alert('Please paste your monday.com API token first.'); return; }
+    localStorage.setItem('ccb_monday_token', token);
+    const badge = document.getElementById('saved-badge-' + panel);
+    if (badge) { badge.style.display = 'flex'; }
+    checkSetupNotices();
+  } catch(err) {
+    alert('Save failed: ' + err.message);
+  }
 }
 
 function checkSetupNotices() {
