@@ -748,10 +748,17 @@ async function mondayQuery(query) {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': token,
-      'API-Version': '2024-01'
+      'API-Version': '2024-01',
+      'Access-Control-Allow-Origin': '*'
     },
+    mode: 'cors',
     body: JSON.stringify({ query })
   });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API error ${res.status}: ${text.slice(0,200)}`);
+  }
 
   const data = await res.json();
   if (data.errors) throw new Error(data.errors[0].message);
