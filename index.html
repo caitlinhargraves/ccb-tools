@@ -143,7 +143,7 @@
 
 <div class="topbar no-print">
   <a href="tel:8554580381">(855) 458-0381</a>
-  <a href="mailto:orders@ccbimprint.com">orders@ccbimprint.com</a>
+  <a href="/cdn-cgi/l/email-protection#bcd3ced8d9cecffcdfdfded5d1ccced5d2c892dfd3d1"><span class="__cf_email__" data-cfemail="1d726f79786f6e5d7e7e7f74706d6f747369337e7270">[email&#160;protected]</span></a>
   <a href="https://www.ccbimprint.com" target="_blank">ccbimprint.com ↗</a>
 </div>
 
@@ -281,7 +281,7 @@
   CCB Imprint Internal Tools &nbsp;·&nbsp; <span>ccbimprint.com</span> &nbsp;·&nbsp; For internal use only
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 const BOARD_ID = '18407165363';
 let currentOrderData = null;
 
@@ -340,13 +340,14 @@ function net30MDY() { const d = new Date(); d.setDate(d.getDate()+30); return fm
 async function mondayQuery(query) {
   const token = getApiKey();
   if (!token) throw new Error('No API token saved. Enter your monday.com API token above.');
-  const res = await fetch('https://api.monday.com/v2', {
+  // Use CORS proxy to allow browser-based API calls to monday.com
+  const endpoint = 'https://corsproxy.io/?' + encodeURIComponent('https://api.monday.com/v2');
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type':'application/json', 'Authorization':token, 'API-Version':'2024-01' },
-    mode: 'cors',
     body: JSON.stringify({ query })
   });
-  if (!res.ok) throw new Error(`API error ${res.status}`);
+  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text().catch(()=>'no body')}`);
   const data = await res.json();
   if (data.errors) throw new Error(data.errors[0].message);
   return data.data;
@@ -472,15 +473,4 @@ function downloadCSV() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=windows-1252;'}));
   a.download = `${ccbNum}-invoice.csv`;
-  a.click();
-}
-
-checkSetupNotices();
-['packing-input','netsuite-input'].forEach(id => {
-  document.getElementById(id).addEventListener('keydown', e => {
-    if (e.key==='Enter') fetchOrder(id.replace('-input',''));
-  });
-});
-</script>
-</body>
-</html>
+  a.
