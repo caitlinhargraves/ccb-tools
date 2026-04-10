@@ -205,7 +205,7 @@ function downloadCSV() {
     var qty = parseFloat((sc['numeric_mm22crjt'] && sc['numeric_mm22crjt'].text) || 0) || 0;
     var rate = parseFloat((sc['numeric_mm2299qw'] && sc['numeric_mm2299qw'].text) || 0) || 0;
     var desc = sub.name.replace(/"/g, '""');
-    rows.push([ccbNum, '"' + item.name.replace(/"/g,'""') + '"', todayMDY(), ccbNum, '', qty, '"' + desc + '"', rate.toFixed(2), (qty*rate).toFixed(2), net30MDY(), 'Net 30']);
+    rows.push([ccbNum, '"' + item.name.replace(/"/g,'""') + '"', todayMDY(), ccbNum, 'Promo', qty, '"' + desc + '"', rate.toFixed(2), (qty*rate).toFixed(2), net30MDY(), 'Net 30']);
   });
   var csv = rows.map(function(r) { return r.join(','); }).join('\r\n');
   var a = document.createElement('a');
