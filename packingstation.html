@@ -279,11 +279,6 @@ main { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
 </head>
 <body>
 
-<div class="topbar no-print">
-  <a href="tel:8554580381">(855) 458-0381</a>
-  <a href="mailto:orders@ccbimprint.com">orders@ccbimprint.com</a>
-  <span>ccbimprint.com</span>
-</div>
 
 <header class="no-print">
   <div class="logo-area">
@@ -480,7 +475,7 @@ async function gql(query) {
 async function loadQueue() {
   document.getElementById('queue-body').innerHTML = '<tr class="loading-row"><td colspan="8"><span class="spinner"></span> Loading orders…</td></tr>';
   try {
-    // On Shelf (Decorated) = status label id 2
+    // Decorated = status label id 3
     const q = `{
       boards(ids: ${BOARD_ID}) {
         items_page(limit: 100, query_params: {
@@ -532,7 +527,7 @@ function renderQueue() {
   document.getElementById('stat-week').textContent = statWeek;
 
   if (orders.length === 0) {
-    document.getElementById('queue-body').innerHTML = '<tr class="empty-row"><td colspan="8">No orders with "On Shelf (Decorated)" status found.</td></tr>';
+    document.getElementById('queue-body').innerHTML = '<tr class="empty-row"><td colspan="8">No orders with "Decorated" status found.</td></tr>';
     return;
   }
 
