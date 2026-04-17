@@ -327,8 +327,8 @@ main { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
   <div class="selection-bar no-print" id="selection-bar" style="display:none">
     <div class="selection-bar-info" id="sel-count-label">0 orders selected</div>
     <div class="selection-bar-actions">
-      <button class="btn btn-outline btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.3)" onclick="clearSelection()">Clear</button>
-      <button class="btn btn-gold btn-sm" onclick="printSelectedSlips()">🖨 Print Selected Slips</button>
+      <button class="btn btn-outline btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.4);background:transparent;" onclick="clearSelection()">Clear</button>
+      <button class="btn btn-sm" style="background:#fff;color:var(--text);border:1px solid #fff;font-family:'DM Sans',sans-serif;border-radius:8px;cursor:pointer;padding:5px 10px;font-size:12px;" onclick="printSelectedSlips()">Print Selected Slips</button>
     </div>
   </div>
 
@@ -431,8 +431,8 @@ main { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
   <div class="screen-print-bar no-print">
     <span style="font-weight:600;">Print Preview</span>
     <div style="display:flex;gap:9px;">
-      <button class="btn btn-outline btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.3)" onclick="closePrintPreview()">← Back</button>
-      <button class="btn btn-gold btn-sm" onclick="window.print()">🖨 Print Now</button>
+      <button class="btn btn-outline btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.4);background:transparent;" onclick="closePrintPreview()">← Back</button>
+      <button class="btn btn-sm" style="background:#fff;color:var(--text);border:1px solid #fff;font-family:'DM Sans',sans-serif;border-radius:8px;cursor:pointer;padding:5px 10px;font-size:12px;" onclick="window.print()">Print Now</button>
     </div>
   </div>
   <div id="slips-container"></div>
@@ -479,7 +479,7 @@ async function loadQueue() {
     const q = `{
       boards(ids: ${BOARD_ID}) {
         items_page(limit: 100, query_params: {
-          rules: [{ column_id: "color_mm27qyta", compare_value: [2] }]
+          rules: [{ column_id: "color_mm27qyta", compare_value: [3] }]
           order_by: [{ column_id: "date_mm22wpk2", direction: asc }]
         }) {
           items {
