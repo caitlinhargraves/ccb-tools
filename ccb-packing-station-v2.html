@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCB Packing Station</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #f5f4f0;
+  --warm-white: #f5f4f0;
+  --navy: #1a1916;
+  --navy-light: #2c2c2a;
+  --gold: #1a1916;
+  --gold-light: #444441;
+  --gold-pale: #f0efe9;
+  --rust: #991b1b;
+  --green: #2d6a4f;
+  --green-light: #e8f5ee;
+  --purple: #1e3a5f;
+  --purple-light: #dbeafe;
+  --text: #1a1916;
+  --muted: #6b6960;
+  --border: #e2e0d8;
+  --card: #ffffff;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; }
+
+/* TOPBAR */
+.topbar { background: var(--card); border-bottom: 0.5px solid var(--border); color: var(--muted); font-size: 0.75rem; padding: 6px 24px; display: flex; gap: 20px; }
+.topbar a { color: var(--muted); text-decoration: none; }
+.topbar a:hover { color: var(--text); }
+
+/* HEADER */
+header { background: var(--card); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+.logo-area { display: flex; align-items: center; gap: 12px; }
+.logo-badge { width: 28px; height: 28px; background: var(--text); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500; color: white; letter-spacing: 0.5px; }
+.logo-text { font-size: 15px; font-weight: 500; color: var(--text); letter-spacing: -0.01em; }
+.logo-text span { color: var(--muted); font-weight: 400; font-style: normal; font-size: 15px; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.header-badge { background: var(--gold-pale); border: 0.5px solid var(--border); color: var(--muted); font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none; padding: 3px 10px; border-radius: 20px; }
+
+/* LAYOUT */
+main { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+
+/* BUTTONS */
+.btn { border: none; border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 400; transition: all 0.15s; font-size: 13px; }
+.btn-primary { background: var(--text); color: #fff; padding: 7px 14px; border: 1px solid var(--text); }
+.btn-primary:hover { opacity: 0.85; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-gold { background: var(--text); color: #fff; padding: 7px 14px; border: 1px solid var(--text); }
+.btn-gold:hover { opacity: 0.85; }
+.btn-gold:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-outline { background: var(--card); color: var(--muted); border: 1px solid var(--border); padding: 7px 12px; }
+.btn-outline:hover { background: var(--gold-pale); color: var(--text); border-color: #d0cec4; }
+.btn-green { background: var(--green); color: #fff; padding: 7px 14px; border: 1px solid var(--green); display: inline-flex; align-items: center; gap: 6px; }
+.btn-green:hover { opacity: 0.85; }
+.btn-green:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+
+/* SCREENS */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ══════════════════════════════
+   SCREEN 1 — DASHBOARD / QUEUE
+══════════════════════════════ */
+.dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.dash-title { font-size: 18px; font-weight: 500; color: var(--text); letter-spacing: -0.01em; }
+.dash-title span { color: var(--muted); font-weight: 400; }
+
+.dash-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.search-wrap { position: relative; }
+.search-wrap input { border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px 7px 34px; font-size: 13px; font-family: 'DM Sans', sans-serif; background: var(--card); color: var(--text); width: 220px; transition: border-color 0.15s; }
+.search-wrap input:focus { outline: none; border-color: #d0cec4; }
+.search-icon-abs { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; opacity: 0.35; pointer-events: none; }
+
+/* Stats strip */
+.stats-strip { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.stat-card { background: var(--gold-pale); border: 0.5px solid var(--border); border-radius: 8px; padding: 12px 18px; flex: 1; min-width: 120px; }
+.stat-label { font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.stat-value { font-family: 'DM Mono', monospace; font-size: 24px; font-weight: 400; color: var(--text); }
+
+/* Selection bar */
+.selection-bar { background: var(--text); color: #fff; border-radius: 8px; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 12px; flex-wrap: wrap; animation: slideDown 0.2s ease; }
+@keyframes slideDown { from { opacity:0; transform: translateY(-6px); } to { opacity:1; transform: translateY(0); } }
+.selection-bar-info { font-size: 13px; font-weight: 400; }
+.selection-bar-actions { display: flex; gap: 8px; }
+
+/* Order queue table */
+.queue-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+.queue-table { width: 100%; border-collapse: collapse; }
+.queue-table th { background: var(--gold-pale); font-size: 10px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+.queue-table th.center { text-align: center; }
+.queue-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+.queue-table tr:last-child td { border-bottom: none; }
+.queue-table tr:hover td { background: var(--gold-pale); cursor: pointer; }
+.queue-table tr.selected td { background: #f0f4ff; }
+.queue-table tr.selected:hover td { background: #e8eeff; }
+
+.order-name-cell { font-weight: 500; color: var(--text); }
+.order-num-cell { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
+.inhand-urgent { color: var(--rust); font-weight: 500; }
+.inhand-warn { color: #92400e; font-weight: 500; }
+
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 400; padding: 2px 8px; border-radius: 4px; letter-spacing: 0; white-space: nowrap; border: 1px solid var(--border); }
+.chip-gold { background: var(--gold-pale); color: var(--muted); border-color: var(--border); }
+.chip-purple { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.chip-green { background: var(--green-light); color: var(--green); border-color: #b7dfc9; }
+.chip-navy { background: var(--text); color: #fff; border-color: var(--text); }
+.chip-printed { background: var(--green-light); color: var(--green); border-color: #b7dfc9; }
+.chip-unprinted { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+
+.cb-wrap { display: flex; align-items: center; justify-content: center; }
+.row-checkbox { width: 15px; height: 15px; accent-color: var(--text); cursor: pointer; }
+
+/* Loading */
+.loading-row td { text-align: center; padding: 48px; color: var(--muted); }
+.spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--muted); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty-row td { text-align: center; padding: 56px; color: var(--muted); font-size: 14px; }
+
+/* API setup */
+.setup-banner { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; }
+.setup-banner strong { color: var(--text); display: block; margin-bottom: 8px; font-weight: 500; }
+.setup-row { display: flex; gap: 8px; }
+.setup-input { flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; font-family: 'DM Mono', monospace; background: #fff; max-width: 480px; }
+.setup-input:focus { outline: none; border-color: #d0cec4; }
+.saved-msg { color: var(--green); font-size: 12px; font-weight: 400; margin-top: 6px; display: none; }
+
+/* ══════════════════════════════
+   SCREEN 2 — ORDER DETAIL
+══════════════════════════════ */
+.detail-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.detail-topbar-left { display: flex; align-items: center; gap: 12px; }
+.order-num-tag { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; color: var(--muted); background: var(--gold-pale); border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; letter-spacing: 0.05em; }
+
+.order-hcard { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 14px; box-shadow: var(--shadow); }
+.order-hcard-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 14px; }
+.company-name { font-size: 20px; font-weight: 500; color: var(--text); letter-spacing: -0.01em; }
+.meta-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+
+.info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.info-cell .lbl { font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+.info-cell .val { font-size: 13px; font-weight: 400; color: var(--text); }
+.info-cell .val.mono { font-family: 'DM Mono', monospace; }
+
+.spec-alert { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 12px 16px; margin-top: 12px; display: flex; gap: 10px; }
+.spec-alert .ico { font-size: 16px; flex-shrink: 0; }
+.spec-alert strong { display: block; font-weight: 500; color: #92400e; margin-bottom: 2px; font-size: 13px; }
+.spec-alert p { font-size: 12px; color: #78350f; }
+
+/* Progress section */
+.progress-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 24px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.progress-section.all-done { background: var(--green-light); border-color: #b7dfc9; }
+.prog-label { font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+.prog-bar { width: 200px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.prog-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.35s; }
+.prog-text { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.prog-text strong { color: var(--text); font-weight: 500; }
+
+/* Pick list */
+.picklist-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.section-title { font-size: 15px; font-weight: 500; color: var(--text); }
+
+.item-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; overflow: hidden; transition: border-color 0.2s, background 0.2s; }
+.item-card.picked { border-color: #b7dfc9; background: #f6fdf8; }
+.item-inner { display: grid; grid-template-columns: 52px 80px 1fr 90px; align-items: stretch; }
+
+.pick-col { display: flex; align-items: center; justify-content: center; cursor: pointer; border-right: 1px solid var(--border); transition: background 0.15s; padding: 0 10px; }
+.pick-col:hover { background: var(--gold-pale); }
+.item-card.picked .pick-col { background: var(--green-light); border-right-color: #b7dfc9; }
+.pick-box { width: 20px; height: 20px; border-radius: 5px; border: 1.5px solid #d0cec4; background: #fff; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.item-card.picked .pick-box { background: var(--green); border-color: var(--green); }
+.pick-box svg { display: none; }
+.item-card.picked .pick-box svg { display: block; }
+
+.mockup-col { width: 80px; height: 80px; border-right: 1px solid var(--border); background: var(--gold-pale); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+.mockup-col img { width: 100%; height: 100%; object-fit: contain; }
+.mockup-ph { font-size: 1.4rem; opacity: 0.2; }
+
+.item-info { padding: 12px 16px; min-width: 0; }
+.item-name { font-weight: 500; font-size: 13px; color: var(--text); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-card.picked .item-name { text-decoration: line-through; opacity: 0.45; }
+.pills { display: flex; flex-wrap: wrap; gap: 5px; }
+.pill { display: inline-flex; align-items: center; gap: 3px; background: var(--gold-pale); border: 1px solid var(--border); border-radius: 4px; padding: 2px 7px; font-size: 11px; }
+.pill .plbl { font-weight: 500; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; margin-right: 1px; }
+.prod-note { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.shelf-col { border-left: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 10px; text-align: center; min-width: 90px; }
+.shelf-lbl { font-size: 9px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+.shelf-val { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; background: var(--gold-pale); border: 1px solid var(--border); border-radius: 5px; padding: 4px 8px; color: var(--text); }
+.shelf-empty { background: var(--gold-pale); border-color: var(--border); color: var(--muted); font-size: 11px; font-family: 'DM Sans', sans-serif; }
+
+.print-cta { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 24px; margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.print-cta-info strong { font-size: 14px; color: var(--text); display: block; margin-bottom: 2px; font-weight: 500; }
+.print-cta-info p { font-size: 12px; color: var(--muted); }
+
+/* ══════════════════════════════
+   PRINT STYLES
+══════════════════════════════ */
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .slip-page { page-break-after: always; break-after: page; }
+  .slip-page:last-child { page-break-after: avoid; break-after: avoid; }
+  .slip-status-bar { display: none !important; }
+  .topbar, header, .detail-topbar, .progress-section, .picklist-header,
+  .item-card, .print-cta, .no-print { display: none !important; }
+  body { background: white; font-family: Arial, Helvetica, sans-serif; }
+  main { padding: 0; max-width: 100%; margin: 0; }
+  #screen-dashboard, #screen-detail { display: none !important; }
+  #screen-print { display: block !important; }
+}
+
+/* ══════════════════════════════
+   SCREEN 3 — PRINT VIEW
+══════════════════════════════ */
+#screen-print { display: none; }
+
+.slip-page { max-width: 760px; margin: 0 auto; background: white; padding: 28px 32px; }
+
+.slip-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 12px; border-bottom: 2.5px solid #1a2035; margin-bottom: 16px; }
+.slip-brand { font-size: 1.3rem; font-weight: 800; letter-spacing: 2px; color: #1a2035; font-family: Arial, sans-serif; }
+.slip-contact { font-size: 10px; color: #666; margin-top: 2px; }
+.slip-doc-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #1a2035; margin-top: 5px; }
+.slip-order-num { font-family: 'Courier New', monospace; font-size: 1.2rem; font-weight: 700; text-align: right; color: #1a2035; }
+
+.slip-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+.slip-meta-left table { width: 100%; font-size: 11px; border-collapse: collapse; }
+.slip-meta-left td { padding: 2.5px 0; }
+.slip-meta-left .ml { color: #666; font-weight: 700; width: 85px; }
+.slip-meta-right { padding-left: 16px; border-left: 1px solid #ddd; font-size: 11px; }
+.slip-meta-right .rlbl { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #888; margin-bottom: 3px; }
+.slip-meta-right .rval { font-weight: 600; font-size: 12px; margin-bottom: 8px; }
+
+.spec-box-print { background: #fff3e0; border: 2px solid #f0a500; border-radius: 5px; padding: 8px 12px; margin-bottom: 12px; font-size: 11px; }
+.spec-box-print strong { color: #7a4d00; display: block; margin-bottom: 2px; }
+
+.slip-table { width: 100%; border-collapse: collapse; font-size: 10.5px; margin-bottom: 14px; table-layout: fixed; }
+.slip-table colgroup col:nth-child(1) { width: 22px; }
+.slip-table colgroup col:nth-child(2) { width: 56px; }
+.slip-table colgroup col:nth-child(3) { width: auto; }
+.slip-table colgroup col:nth-child(4) { width: 58px; }
+.slip-table colgroup col:nth-child(5) { width: 28px; }
+.slip-table colgroup col:nth-child(6) { width: 74px; }
+.slip-table colgroup col:nth-child(7) { width: 36px; }
+.slip-table colgroup col:nth-child(8) { width: 74px; }
+.slip-table thead tr { background: #1a2035; color: #fff; }
+.slip-table th { padding: 6px 7px; text-align: left; font-weight: 700; font-size: 9.5px; letter-spacing: 0.3px; }
+.slip-table th.ctr { text-align: center; }
+.slip-table td { padding: 7px 7px; border-bottom: 0.5px solid #eee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slip-table tr:nth-child(even) td { background: #f8f8f8; }
+.slip-table td.ctr { text-align: center; }
+.slip-table td.mono { font-family: 'Courier New', monospace; font-size: 10px; }
+.slip-table td.bold { font-weight: 700; }
+.check-box-print { width: 12px; height: 12px; border: 1.5px solid #333; display: inline-block; border-radius: 2px; vertical-align: middle; }
+
+.slip-notes { background: #f5f5f5; border-radius: 4px; padding: 8px 10px; font-size: 10.5px; margin-bottom: 14px; }
+.slip-notes strong { color: #555; }
+
+.slip-sep { margin: 24px 0; border: none; border-top: 2px dashed #ccc; }
+
+/* On-screen print preview */
+@media screen {
+  #screen-print { display: none; }
+  #screen-print.show { display: block; }
+  .slip-page { border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-lg); margin-bottom: 24px; }
+  .slip-status-bar { display: flex; align-items: center; justify-content: space-between; background: var(--gold-pale); border-top: 1px solid var(--border); padding: 12px 18px; border-radius: 0 0 10px 10px; }
+  .screen-print-bar { background: var(--text); color: #fff; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px 10px 0 0; margin-bottom: 0; font-size: 14px; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar no-print">
+  <a href="tel:8554580381">(855) 458-0381</a>
+  <a href="mailto:orders@ccbimprint.com">orders@ccbimprint.com</a>
+  <span>ccbimprint.com</span>
+</div>
+
+<header class="no-print">
+  <div class="logo-area">
+    <div class="logo-badge">CCB</div>
+    <span class="logo-text">Packing Station</span>
+  </div>
+  <div class="header-right">
+    <span class="header-badge">Pick &amp; Pack</span>
+  </div>
+</header>
+
+<main>
+
+<!-- ══ SCREEN: DASHBOARD ══ -->
+<div id="screen-dashboard" class="screen active">
+
+  <div id="setup-banner" class="setup-banner" style="display:none">
+    <strong>⚙️ First-time setup — enter your monday.com API token</strong>
+    <div class="setup-row">
+      <input type="password" class="setup-input" id="api-key-input" placeholder="Paste monday.com API token…" />
+      <button class="btn btn-primary" onclick="saveApiKey()">Save Token</button>
+    </div>
+    <div class="saved-msg" id="saved-msg">✓ Token saved — loading orders…</div>
+  </div>
+
+  <div class="dash-header">
+    <div>
+      <div class="dash-title">Packing Queue <span>— On Shelf (Decorated)</span></div>
+    </div>
+    <div class="dash-controls">
+      <div class="search-wrap">
+        <span class="search-icon-abs">🔍</span>
+        <input type="text" id="search-input" placeholder="Search orders…" oninput="filterQueue()" />
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="loadQueue()">↻ Refresh</button>
+    </div>
+  </div>
+
+  <div class="stats-strip" id="stats-strip">
+    <div class="stat-card"><div class="stat-label">Orders Ready</div><div class="stat-value" id="stat-total">—</div></div>
+    <div class="stat-card"><div class="stat-label">Slips Printed</div><div class="stat-value" id="stat-printed">—</div></div>
+    <div class="stat-card"><div class="stat-label">Unprinted</div><div class="stat-value" id="stat-unprinted">—</div></div>
+    <div class="stat-card"><div class="stat-label">Due This Week</div><div class="stat-value" id="stat-week">—</div></div>
+  </div>
+
+  <div class="selection-bar no-print" id="selection-bar" style="display:none">
+    <div class="selection-bar-info" id="sel-count-label">0 orders selected</div>
+    <div class="selection-bar-actions">
+      <button class="btn btn-outline btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.3)" onclick="clearSelection()">Clear</button>
+      <button class="btn btn-gold btn-sm" onclick="printSelectedSlips()">🖨 Print Selected Slips</button>
+    </div>
+  </div>
+
+  <div class="queue-card">
+    <table class="queue-table" id="queue-table">
+      <thead>
+        <tr>
+          <th style="width:42px;"><input type="checkbox" id="select-all-cb" class="row-checkbox" onchange="toggleSelectAll(this)" /></th>
+          <th>Company</th>
+          <th>Order #</th>
+          <th>In Hands</th>
+          <th>Items</th>
+          <th>Imprint / Insight</th>
+          <th class="center">Slip Printed</th>
+          <th class="center no-print">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="queue-body">
+        <tr class="loading-row"><td colspan="8"><span class="spinner"></span> Loading orders…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- /dashboard -->
+
+
+<!-- ══ SCREEN: ORDER DETAIL ══ -->
+<div id="screen-detail" class="screen">
+
+  <div class="detail-topbar no-print">
+    <div class="detail-topbar-left">
+      <button class="btn btn-outline btn-sm" onclick="showDashboard()">← Queue</button>
+      <div class="order-num-tag" id="detail-order-num"></div>
+    </div>
+    <div style="display:flex;gap:9px;">
+      <button class="btn btn-outline btn-sm no-print" onclick="printCurrentSlip()">🖨 Print Packing Slip</button>
+    </div>
+  </div>
+
+  <div id="detail-loading" style="text-align:center;padding:60px;color:var(--muted);">
+    <span class="spinner"></span> Loading order…
+  </div>
+  <div id="detail-content" style="display:none">
+
+    <div class="order-hcard">
+      <div class="order-hcard-top">
+        <div>
+          <div class="company-name" id="d-company"></div>
+          <div class="meta-chips" id="d-chips"></div>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-cell"><div class="lbl">Order #</div><div class="val mono" id="d-num"></div></div>
+        <div class="info-cell"><div class="lbl">In Hands Date</div><div class="val" id="d-hands"></div></div>
+        <div class="info-cell"><div class="lbl">Total Items</div><div class="val" id="d-items"></div></div>
+        <div class="info-cell"><div class="lbl">Imprint / Insight</div><div class="val" id="d-brand"></div></div>
+        <div class="info-cell"><div class="lbl">Ship To</div><div class="val" id="d-shipto"></div></div>
+        <div class="info-cell"><div class="lbl">Address</div><div class="val" id="d-addr" style="font-size:0.8rem;"></div></div>
+        <div class="info-cell"><div class="lbl">Contact</div><div class="val" id="d-contact"></div></div>
+        <div class="info-cell"><div class="lbl">Notes</div><div class="val" id="d-notes" style="font-size:0.8rem;"></div></div>
+      </div>
+      <div class="spec-alert" id="d-spec-alert" style="display:none">
+        <div class="ico">⚠️</div>
+        <div><strong>Specialized Packaging Required</strong><p id="d-spec-notes"></p></div>
+      </div>
+    </div>
+
+    <div class="progress-section no-print" id="d-progress-section">
+      <div>
+        <div class="prog-label">Picking Progress</div>
+        <div class="prog-bar"><div class="prog-fill" id="d-prog-fill" style="width:0%"></div></div>
+        <div class="prog-text"><strong id="d-picked-n">0</strong> of <strong id="d-total-n">0</strong> items picked</div>
+      </div>
+      <div style="display:flex;gap:9px;align-items:center;">
+        <span style="font-size:0.82rem;color:var(--muted);max-width:180px;" id="d-prog-msg"></span>
+        <button class="btn btn-green no-print" id="d-ship-btn" onclick="markReadyToShip()">✅ Mark Ready to Ship</button>
+      </div>
+    </div>
+
+    <div class="picklist-header no-print">
+      <div class="section-title">Pick List</div>
+      <div style="font-size:0.78rem;color:var(--muted);">Tap each item when picked</div>
+    </div>
+    <div id="d-items-list"></div>
+
+    <div class="print-cta no-print">
+      <div class="print-cta-info">
+        <strong>Packing Slip</strong>
+        <p>Print and include in the package</p>
+      </div>
+      <button class="btn btn-gold no-print" onclick="printCurrentSlip()">🖨 Print Packing Slip</button>
+    </div>
+
+  </div>
+</div><!-- /detail -->
+
+
+<!-- ══ SCREEN: PRINT VIEW ══ -->
+<div id="screen-print">
+  <div class="screen-print-bar no-print">
+    <span style="font-weight:600;">Print Preview</span>
+    <div style="display:flex;gap:9px;">
+      <button class="btn btn-outline btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.3)" onclick="closePrintPreview()">← Back</button>
+      <button class="btn btn-gold btn-sm" onclick="window.print()">🖨 Print Now</button>
+    </div>
+  </div>
+  <div id="slips-container"></div>
+</div>
+
+</main>
+
+<script>
+const BOARD_ID = '18407165363';
+let allOrders = [];
+let selectedIds = new Set();
+let currentOrder = null;
+let pickedState = {};
+let slipPrinted = {}; // track per session
+
+// ── API KEY ──
+function getKey() { return localStorage.getItem('ccb_api_key') || ''; }
+function saveApiKey() {
+  const v = document.getElementById('api-key-input').value.trim();
+  if (!v) return;
+  localStorage.setItem('ccb_api_key', v);
+  document.getElementById('saved-msg').style.display = 'block';
+  setTimeout(() => { document.getElementById('setup-banner').style.display = 'none'; loadQueue(); }, 800);
+}
+
+async function gql(query) {
+  const key = getKey();
+  if (!key) throw new Error('No API key');
+  const r = await fetch('https://api.monday.com/v2', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': key, 'API-Version': '2024-10' },
+    body: JSON.stringify({ query })
+  });
+  const d = await r.json();
+  if (d.errors) throw new Error(d.errors[0]?.message || 'API error');
+  return d;
+}
+
+// ── LOAD QUEUE ──
+async function loadQueue() {
+  document.getElementById('queue-body').innerHTML = '<tr class="loading-row"><td colspan="8"><span class="spinner"></span> Loading orders…</td></tr>';
+  try {
+    // On Shelf (Decorated) = status label id 2
+    const q = `{
+      boards(ids: ${BOARD_ID}) {
+        items_page(limit: 100, query_params: {
+          rules: [{ column_id: "color_mm27qyta", compare_value: [2] }]
+          order_by: [{ column_id: "date_mm22wpk2", direction: asc }]
+        }) {
+          items {
+            id name
+            column_values(ids: [
+              "pulse_id_mm27vwa5","text_mm29djkk","color_mm27qyta","date_mm22wpk2",
+              "lookup_mm259bvv","dropdown_mm276wtz","text_mm26gtxp","location_mm2682nc",
+              "boolean_mm22xdfn","text_mm253t97","long_text_mm225vbf","text_mm221kg3",
+              "email_mm22ap28"
+            ]) { id text value }
+          }
+        }
+      }
+    }`;
+    const data = await gql(q);
+    allOrders = data?.data?.boards?.[0]?.items_page?.items || [];
+    renderQueue();
+  } catch(e) {
+    document.getElementById('queue-body').innerHTML = `<tr class="empty-row"><td colspan="8">Error: ${e.message}</td></tr>`;
+  }
+}
+
+function cvText(item, id) { return item.column_values?.find(c => c.id === id)?.text || ''; }
+function cvVal(item, id) { try { return JSON.parse(item.column_values?.find(c => c.id === id)?.value || 'null'); } catch { return null; } }
+
+function renderQueue() {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const orders = allOrders.filter(o => {
+    if (!search) return true;
+    const num = cvText(o, 'text_mm29djkk') || '';
+    return o.name.toLowerCase().includes(search) || num.toLowerCase().includes(search);
+  });
+
+  const today = new Date();
+  let statPrinted = 0, statUnprinted = 0, statWeek = 0;
+  allOrders.forEach(o => {
+    const printed = slipPrinted[o.id] || localStorage.getItem('slip_' + o.id);
+    if (printed) statPrinted++; else statUnprinted++;
+    const hd = cvText(o, 'date_mm22wpk2');
+    if (hd) { const d = new Date(hd); const diff = Math.ceil((d - today) / 86400000); if (diff >= 0 && diff <= 7) statWeek++; }
+  });
+  document.getElementById('stat-total').textContent = allOrders.length;
+  document.getElementById('stat-printed').textContent = statPrinted;
+  document.getElementById('stat-unprinted').textContent = statUnprinted;
+  document.getElementById('stat-week').textContent = statWeek;
+
+  if (orders.length === 0) {
+    document.getElementById('queue-body').innerHTML = '<tr class="empty-row"><td colspan="8">No orders with "On Shelf (Decorated)" status found.</td></tr>';
+    return;
+  }
+
+  const rows = orders.map(o => {
+    const num = cvText(o, 'text_mm29djkk') || cvText(o, 'pulse_id_mm27vwa5') || o.id;
+    const handsDate = cvText(o, 'date_mm22wpk2');
+    const brand = cvText(o, 'dropdown_mm276wtz') || '—';
+    const items = cvText(o, 'lookup_mm259bvv') || '—';
+    const sel = selectedIds.has(o.id);
+    const printed = slipPrinted[o.id] || localStorage.getItem('slip_' + o.id);
+
+    let handsDisplay = '—', handsClass = '';
+    if (handsDate) {
+      const d = new Date(handsDate + 'T12:00:00');
+      const diff = Math.ceil((d - today) / 86400000);
+      handsDisplay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      if (diff <= 0) handsClass = 'inhand-urgent';
+      else if (diff <= 3) handsClass = 'inhand-urgent';
+      else if (diff <= 7) handsClass = 'inhand-warn';
+    }
+
+    const brandChip = brand.includes('Insight')
+      ? `<span class="chip chip-purple">Insight</span>`
+      : `<span class="chip chip-gold">Imprint</span>`;
+
+    const printedChip = printed
+      ? `<span class="chip chip-printed">✓ Printed</span>`
+      : `<span class="chip chip-unprinted">Not Printed</span>`;
+
+    return `<tr class="${sel ? 'selected' : ''}" data-id="${o.id}" onclick="handleRowClick(event, '${o.id}')">
+      <td class="cb-wrap" onclick="event.stopPropagation()">
+        <input type="checkbox" class="row-checkbox" data-id="${o.id}" ${sel ? 'checked' : ''} onchange="toggleSelect('${o.id}', this)" />
+      </td>
+      <td><div class="order-name-cell">${o.name}</div></td>
+      <td><div class="order-num-cell">${num}</div></td>
+      <td class="${handsClass}">${handsDisplay}</td>
+      <td>${items}</td>
+      <td>${brandChip}</td>
+      <td class="center">${printedChip}</td>
+      <td class="no-print" style="white-space:nowrap;">
+        <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end;">
+          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openOrder('${o.id}')">Open</button>
+          <button class="btn btn-green btn-sm" id="dash-ship-${o.id}" onclick="event.stopPropagation();markReadyFromDash('${o.id}', this)">✅ Ready to Ship</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('queue-body').innerHTML = rows;
+  updateSelectionBar();
+}
+
+function filterQueue() { renderQueue(); }
+
+// ── SELECTION ──
+function toggleSelect(id, cb) {
+  if (cb.checked) selectedIds.add(id); else selectedIds.delete(id);
+  const row = document.querySelector(`tr[data-id="${id}"]`);
+  if (row) row.classList.toggle('selected', cb.checked);
+  updateSelectionBar();
+}
+
+function toggleSelectAll(cb) {
+  document.querySelectorAll('#queue-body .row-checkbox').forEach(el => {
+    const id = el.dataset.id;
+    el.checked = cb.checked;
+    if (cb.checked) selectedIds.add(id); else selectedIds.delete(id);
+    const row = document.querySelector(`tr[data-id="${id}"]`);
+    if (row) row.classList.toggle('selected', cb.checked);
+  });
+  updateSelectionBar();
+}
+
+function clearSelection() {
+  selectedIds.clear();
+  document.querySelectorAll('#queue-body .row-checkbox').forEach(el => el.checked = false);
+  document.querySelectorAll('#queue-body tr.selected').forEach(r => r.classList.remove('selected'));
+  document.getElementById('select-all-cb').checked = false;
+  updateSelectionBar();
+}
+
+function updateSelectionBar() {
+  const bar = document.getElementById('selection-bar');
+  const n = selectedIds.size;
+  bar.style.display = n > 0 ? 'flex' : 'none';
+  document.getElementById('sel-count-label').textContent = `${n} order${n !== 1 ? 's' : ''} selected`;
+}
+
+function handleRowClick(e, id) {
+  if (e.target.type === 'checkbox' || e.target.tagName === 'BUTTON') return;
+  openOrder(id);
+}
+
+// ── OPEN ORDER ──
+async function openOrder(id) {
+  currentOrder = null;
+  pickedState = {};
+  showScreen('screen-detail');
+  document.getElementById('detail-loading').style.display = 'block';
+  document.getElementById('detail-content').style.display = 'none';
+
+  try {
+    const q = `{
+      items(ids: [${id}]) {
+        id name
+        column_values(ids: [
+          "pulse_id_mm27vwa5","text_mm29djkk","color_mm27qyta","date_mm22wpk2",
+          "lookup_mm259bvv","dropdown_mm276wtz","text_mm26gtxp","location_mm2682nc",
+          "boolean_mm22xdfn","text_mm253t97","long_text_mm225vbf","text_mm221kg3","email_mm22ap28"
+        ]) { id text value }
+        subitems {
+          id name
+          column_values(ids: [
+            "file_mm26e29h","text_mm22fv7y","numeric_mm22crjt","text_mm2276wz",
+            "text_mm22yw8s","text_mm22qdag","dropdown_mm22dn1f","long_text_mm27e9c4",
+            "lookup_mm2ea35","boolean_mm2cxhrz","color_mm25v786","text_mm2521d5","text_mm226hzf"
+          ]) { id text value }
+        }
+      }
+    }`;
+    const data = await gql(q);
+    const items = data?.data?.items || [];
+    if (items.length === 0) throw new Error('Order not found');
+    currentOrder = items[0];
+    renderDetail();
+  } catch(e) {
+    document.getElementById('detail-loading').innerHTML = `<span style="color:var(--rust)">Error: ${e.message}</span>`;
+  }
+}
+
+function renderDetail() {
+  const o = currentOrder;
+  const t = (id) => cvText(o, id);
+  const v = (id) => cvVal(o, id);
+
+  const num = t('text_mm29djkk') || t('pulse_id_mm27vwa5') || o.id;
+  document.getElementById('detail-order-num').textContent = num;
+  document.getElementById('d-company').textContent = o.name;
+  document.getElementById('d-num').textContent = num;
+
+  const hands = t('date_mm22wpk2');
+  const today = new Date();
+  let handsDisplay = '—', daysLeft = null;
+  if (hands) {
+    const d = new Date(hands + 'T12:00:00');
+    daysLeft = Math.ceil((d - today) / 86400000);
+    handsDisplay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  document.getElementById('d-hands').textContent = handsDisplay;
+  if (daysLeft !== null && daysLeft <= 3) document.getElementById('d-hands').style.color = 'var(--rust)';
+
+  document.getElementById('d-items').textContent = t('lookup_mm259bvv') || (o.subitems?.length || '—');
+  document.getElementById('d-brand').textContent = t('dropdown_mm276wtz') || '—';
+  document.getElementById('d-shipto').textContent = t('text_mm26gtxp') || '—';
+  const addr = v('location_mm2682nc');
+  document.getElementById('d-addr').textContent = addr?.address || '—';
+  document.getElementById('d-contact').textContent = t('text_mm221kg3') || '—';
+  document.getElementById('d-notes').textContent = t('long_text_mm225vbf') || '—';
+
+  const chips = document.getElementById('d-chips');
+  chips.innerHTML = '';
+  if (daysLeft !== null) {
+    const cls = daysLeft <= 0 ? 'chip-red-custom' : daysLeft <= 3 ? '' : daysLeft <= 7 ? '' : '';
+    const color = daysLeft <= 3 ? 'background:#ffe0d6;color:#7a2000;border:1px solid #f09090' : 'background:var(--green-light);color:var(--green)';
+    chips.innerHTML += `<span class="chip" style="${color}">${daysLeft <= 0 ? '🚨 OVERDUE' : daysLeft <= 3 ? '⚡ ' + daysLeft + 'd left' : '📅 ' + daysLeft + 'd'}</span>`;
+  }
+  const brand = t('dropdown_mm276wtz') || '';
+  chips.innerHTML += brand.includes('Insight') ? `<span class="chip chip-purple">Insight</span>` : `<span class="chip chip-gold">Imprint</span>`;
+
+  const spec = v('boolean_mm22xdfn');
+  const specAlert = document.getElementById('d-spec-alert');
+  if (spec?.checked) {
+    specAlert.style.display = 'flex';
+    document.getElementById('d-spec-notes').textContent = t('text_mm253t97') || 'See order notes.';
+    chips.innerHTML += `<span class="chip" style="background:#ffe0d6;color:#7a2000;border:1px solid #f09090">⚠️ Spec Packaging</span>`;
+  } else { specAlert.style.display = 'none'; }
+
+  renderDetailItems();
+  document.getElementById('detail-loading').style.display = 'none';
+  document.getElementById('detail-content').style.display = 'block';
+}
+
+function renderDetailItems() {
+  const container = document.getElementById('d-items-list');
+  container.innerHTML = '';
+  const subs = currentOrder?.subitems || [];
+  document.getElementById('d-total-n').textContent = subs.length;
+
+  subs.forEach(sub => {
+    const t = (id) => sub.column_values?.find(c => c.id === id)?.text || '';
+    const v = (id) => { try { return JSON.parse(sub.column_values?.find(c => c.id === id)?.value || 'null'); } catch { return null; } };
+
+    const picked = pickedState[sub.id] || false;
+    const mockupVal = v('file_mm26e29h');
+    let mockupHTML = `<div class="mockup-ph">👕</div>`;
+    if (mockupVal?.files?.length > 0) {
+      const url = mockupVal.files[0].url || mockupVal.files[0].thumb_url;
+      if (url) mockupHTML = `<img src="${url}" alt="Mockup" loading="lazy" />`;
+    }
+
+    const shelf = t('lookup_mm2ea35');
+    const shelfHTML = shelf
+      ? `<div class="shelf-val">${shelf}</div>`
+      : `<div class="shelf-val shelf-empty">No shelf</div>`;
+
+    let pills = '';
+    const styleNum = t('text_mm22fv7y'), qty = t('numeric_mm22crjt'), color = t('text_mm2276wz');
+    const size = t('text_mm22yw8s'), deco = t('dropdown_mm22dn1f'), supplier = t('text_mm22qdag');
+    const status = t('color_mm25v786');
+    if (styleNum) pills += `<span class="pill"><span class="plbl">Style#</span>${styleNum}</span>`;
+    if (qty) pills += `<span class="pill"><span class="plbl">Qty</span>${qty}</span>`;
+    if (color) pills += `<span class="pill"><span class="plbl">Color</span>${color}</span>`;
+    if (size) pills += `<span class="pill"><span class="plbl">Size</span>${size}</span>`;
+    if (deco) pills += `<span class="pill"><span class="plbl">Deco</span>${deco}</span>`;
+    if (supplier) pills += `<span class="pill"><span class="plbl">Supplier</span>${supplier}</span>`;
+    if (status) pills += `<span class="pill"><span class="plbl">Status</span>${status}</span>`;
+
+    const note = t('text_mm2521d5') || t('long_text_mm27e9c4');
+
+    const card = document.createElement('div');
+    card.className = `item-card${picked ? ' picked' : ''}`;
+    card.id = `icard-${sub.id}`;
+    card.innerHTML = `
+      <div class="item-inner">
+        <div class="pick-col" onclick="togglePick('${sub.id}')">
+          <div class="pick-box">
+            <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 4.5L4.5 8L12 1" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+        <div class="mockup-col">${mockupHTML}</div>
+        <div class="item-info">
+          <div class="item-name">${sub.name}</div>
+          <div class="pills">${pills || '<span style="color:var(--muted);font-size:0.8rem;">No details</span>'}</div>
+          ${note ? `<div class="prod-note">📝 ${note}</div>` : ''}
+        </div>
+        <div class="shelf-col">
+          <div class="shelf-lbl">📍 Shelf</div>
+          ${shelfHTML}
+        </div>
+      </div>`;
+    container.appendChild(card);
+  });
+  updateProgress();
+}
+
+function togglePick(id) {
+  pickedState[id] = !pickedState[id];
+  const card = document.getElementById(`icard-${id}`);
+  if (card) card.classList.toggle('picked', pickedState[id]);
+  updateProgress();
+}
+
+function updateProgress() {
+  const subs = currentOrder?.subitems || [];
+  const total = subs.length, picked = Object.values(pickedState).filter(Boolean).length;
+  const pct = total > 0 ? Math.round(picked / total * 100) : 0;
+  document.getElementById('d-prog-fill').style.width = pct + '%';
+  document.getElementById('d-picked-n').textContent = picked;
+  document.getElementById('d-total-n').textContent = total;
+  const msg = document.getElementById('d-prog-msg');
+  if (picked === total && total > 0) {
+    msg.textContent = 'All items picked!';
+    msg.style.color = 'var(--green)';
+    document.getElementById('d-progress-section').classList.add('all-done');
+  } else {
+    msg.textContent = picked > 0 ? picked + ' of ' + total + ' picked' : '';
+    msg.style.color = 'var(--muted)';
+    document.getElementById('d-progress-section').classList.remove('all-done');
+  }
+  // Always enabled — staff print the slip first, then click when done packing
+  document.getElementById('d-ship-btn').disabled = false;
+}
+
+// ── MARK READY TO SHIP ──
+async function markReadyToShip() {
+  const btn = document.getElementById('d-ship-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Updating…';
+  try {
+    const mutation = `mutation {
+      change_multiple_column_values(
+        board_id: ${BOARD_ID}, item_id: ${currentOrder.id},
+        column_values: "{\\"color_mm27qyta\\": {\\"label\\": \\"Ready for Shipping\\"}}"
+      ) { id }
+    }`;
+    await gql(mutation);
+    btn.textContent = '✅ Marked Ready to Ship!';
+    btn.style.background = '#245a42';
+    document.getElementById('d-chips').innerHTML += `<span class="chip chip-green">Ready for Shipping</span>`;
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '✅ Mark Ready to Ship';
+    alert('Error: ' + e.message);
+  }
+}
+
+// ── PRINT SLIP GENERATION ──
+function buildSlipHTML(order) {
+  const t = (id) => cvText(order, id);
+  const v = (id) => cvVal(order, id);
+
+  const num = t('text_mm29djkk') || t('pulse_id_mm27vwa5') || order.id;
+  const brand = t('dropdown_mm276wtz') || '';
+  const isInsight = brand.includes('Insight');
+  const hands = t('date_mm22wpk2');
+  let handsDisplay = '—';
+  if (hands) {
+    const d = new Date(hands + 'T12:00:00');
+    handsDisplay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  const addr = v('location_mm2682nc');
+  const spec = v('boolean_mm22xdfn');
+  const notes = t('long_text_mm225vbf');
+  const subs = order.subitems || [];
+
+  const headerBrand = isInsight ? 'CCB INSIGHT' : 'CCB IMPRINT';
+  const contactLine = isInsight ? '' : `<div class="slip-contact">ccbimprint.com &nbsp;·&nbsp; (855) 458-0381 &nbsp;·&nbsp; orders@ccbimprint.com</div>`;
+
+  const rows = subs.map((sub, i) => {
+    const st = (id) => sub.column_values?.find(c => c.id === id)?.text || '';
+    const shelf = st('lookup_mm2ea35');
+    const bg = i % 2 === 1 ? 'background:#f8f8f8;' : '';
+    return `<tr style="${bg}">
+      <td class="ctr"><div class="check-box-print"></div></td>
+      <td class="mono" style="color:#555;">${shelf || '—'}</td>
+      <td class="bold" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sub.name}</td>
+      <td class="mono" style="font-size:10px;">${st('text_mm22fv7y') || '—'}</td>
+      <td class="ctr bold">${st('numeric_mm22crjt') || '—'}</td>
+      <td>${st('text_mm2276wz') || '—'}</td>
+      <td>${st('text_mm22yw8s') || '—'}</td>
+      <td>${st('dropdown_mm22dn1f') || '—'}</td>
+    </tr>`;
+  }).join('');
+
+  const specBox = spec?.checked
+    ? `<div class="spec-box-print"><strong>⚠️ SPECIALIZED PACKAGING REQUIRED</strong>${t('text_mm253t97') || ''}</div>`
+    : '';
+  const notesBox = notes
+    ? `<div class="slip-notes"><strong>Notes: </strong>${notes}</div>`
+    : '';
+
+  return `<div class="slip-page" data-order-id="${order.id}">
+    <div style="padding:28px 32px;">
+      <div class="slip-header">
+        <div>
+          <div class="slip-brand">${headerBrand}</div>
+          ${contactLine}
+          <div class="slip-doc-label">Pick &amp; Packing Slip</div>
+        </div>
+        <div class="slip-order-num">${num}</div>
+      </div>
+      <div class="slip-meta">
+        <div class="slip-meta-left">
+          <table>
+            <tr><td class="ml">Company</td><td><strong>${order.name}</strong></td></tr>
+            <tr><td class="ml">Order #</td><td style="font-family:'Courier New',monospace;">${num}</td></tr>
+            <tr><td class="ml">In Hands</td><td style="font-weight:700;color:#c0522a;">${handsDisplay}</td></tr>
+            <tr><td class="ml">Contact</td><td>${t('text_mm221kg3') || '—'}</td></tr>
+          </table>
+        </div>
+        <div class="slip-meta-right">
+          <div class="rlbl">Ship To</div>
+          <div class="rval">${t('text_mm26gtxp') || order.name}</div>
+          <div style="font-size:11px;color:#555;">${addr?.address || '—'}</div>
+          ${!isInsight ? `<div class="rlbl" style="margin-top:8px;">Email</div><div style="font-size:11px;">${t('email_mm22ap28') || '—'}</div>` : ''}
+        </div>
+      </div>
+      ${specBox}
+      <table class="slip-table">
+        <colgroup><col><col><col><col><col><col><col><col></colgroup>
+        <thead>
+          <tr>
+            <th class="ctr"></th>
+            <th>Location</th>
+            <th>Product</th>
+            <th>Style #</th>
+            <th class="ctr">Qty</th>
+            <th>Color</th>
+            <th>Size</th>
+            <th>Decoration</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${notesBox}
+    </div>
+    <div class="slip-status-bar">
+      <div style="font-size:13px;color:var(--muted);"><strong style="color:var(--navy);">${order.name}</strong> &nbsp;·&nbsp; ${num}</div>
+      <button
+        id="ship-btn-${order.id}"
+        onclick="markReadyToShipFromSlip('${order.id}', this)"
+      style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:400;cursor:pointer;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--green)">
+        ✅ Mark as Ready to Ship
+      </button>
+    </div>
+  </div>`;
+}
+
+// ── PRINT CURRENT ORDER ──
+function printCurrentSlip() {
+  if (!currentOrder) return;
+  const container = document.getElementById('slips-container');
+  container.innerHTML = buildSlipHTML(currentOrder);
+  markSlipPrinted(currentOrder.id);
+  showScreen('screen-print');
+  document.getElementById('screen-print').classList.add('show');
+}
+
+// ── PRINT SELECTED SLIPS ──
+async function printSelectedSlips() {
+  if (selectedIds.size === 0) return;
+  const btn = document.querySelector('.selection-bar-actions .btn-gold');
+  btn.textContent = '⏳ Loading…';
+  btn.disabled = true;
+
+  const ids = [...selectedIds];
+  const container = document.getElementById('slips-container');
+  container.innerHTML = '';
+
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i];
+    let order = allOrders.find(o => o.id === id);
+    // need subitems — fetch full order
+    try {
+      const q = `{
+        items(ids: [${id}]) {
+          id name
+          column_values(ids: [
+            "pulse_id_mm27vwa5","text_mm29djkk","date_mm22wpk2","dropdown_mm276wtz",
+            "text_mm26gtxp","location_mm2682nc","boolean_mm22xdfn","text_mm253t97",
+            "long_text_mm225vbf","text_mm221kg3","email_mm22ap28"
+          ]) { id text value }
+          subitems {
+            id name
+            column_values(ids: [
+              "text_mm22fv7y","numeric_mm22crjt","text_mm2276wz","text_mm22yw8s",
+              "dropdown_mm22dn1f","lookup_mm2ea35"
+            ]) { id text value }
+          }
+        }
+      }`;
+      const data = await gql(q);
+      order = data?.data?.items?.[0];
+    } catch(e) { console.error(e); }
+
+    if (order) {
+      container.innerHTML += buildSlipHTML(order);
+      // page-break-after handles slip separation on print
+      markSlipPrinted(id);
+    }
+  }
+
+  btn.textContent = '🖨 Print Selected Slips';
+  btn.disabled = false;
+
+  showScreen('screen-print');
+  document.getElementById('screen-print').classList.add('show');
+  renderQueue();
+}
+
+// ── MARK READY TO SHIP FROM DASHBOARD ──
+async function markReadyFromDash(orderId, btn) {
+  btn.disabled = true;
+  btn.textContent = '⏳…';
+  try {
+    const mutation = `mutation {
+      change_multiple_column_values(
+        board_id: ${BOARD_ID}, item_id: ${orderId},
+        column_values: "{\"color_mm27qyta\": {\"label\": \"Ready for Shipping\"}}"
+      ) { id }
+    }`;
+    await gql(mutation);
+    btn.textContent = '✅ Done!';
+    btn.style.background = '#245a42';
+    btn.style.cursor = 'default';
+    btn.disabled = true;
+    // fade out the row after a moment
+    const row = document.querySelector(`tr[data-id="${orderId}"]`);
+    if (row) {
+      row.style.transition = 'opacity 0.6s';
+      setTimeout(() => { row.style.opacity = '0.35'; }, 600);
+    }
+    // refresh queue after a short delay
+    setTimeout(() => loadQueue(), 2000);
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '✅ Ready to Ship';
+    alert('Error: ' + e.message);
+  }
+}
+
+// ── MARK READY TO SHIP FROM SLIP VIEW ──
+async function markReadyToShipFromSlip(orderId, btn) {
+  btn.disabled = true;
+  btn.textContent = '⏳ Updating…';
+  try {
+    const mutation = `mutation {
+      change_multiple_column_values(
+        board_id: ${BOARD_ID}, item_id: ${orderId},
+        column_values: "{\"color_mm27qyta\": {\"label\": \"Ready for Shipping\"}}"
+      ) { id }
+    }`;
+    await gql(mutation);
+    btn.innerHTML = '✅ Ready to Ship!';
+    btn.style.background = '#245a42';
+    btn.style.cursor = 'default';
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '✅ Mark as Ready to Ship';
+    alert('Error: ' + e.message);
+  }
+}
+
+function markSlipPrinted(id) {
+  slipPrinted[id] = true;
+  localStorage.setItem('slip_' + id, '1');
+}
+
+// ── NAVIGATION ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const s = document.getElementById(id);
+  if (s) s.classList.add('active');
+  document.getElementById('screen-print').classList.remove('show');
+  window.scrollTo(0, 0);
+}
+
+function showDashboard() { showScreen('screen-dashboard'); renderQueue(); }
+function closePrintPreview() {
+  document.getElementById('screen-print').classList.remove('show');
+  // go back to whichever screen was active
+  const wasDetail = currentOrder != null;
+  showScreen(wasDetail ? 'screen-detail' : 'screen-dashboard');
+  if (!wasDetail) renderQueue();
+}
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', () => {
+  if (!getKey()) {
+    document.getElementById('setup-banner').style.display = 'block';
+    document.getElementById('queue-body').innerHTML = '<tr class="empty-row"><td colspan="8">Enter your API token above to load orders.</td></tr>';
+  } else {
+    loadQueue();
+  }
+  document.getElementById('api-key-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') saveApiKey(); });
+});
+</script>
+</body>
+</html>
