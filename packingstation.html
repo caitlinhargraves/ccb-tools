@@ -311,7 +311,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
 
   <div class="dash-header">
     <div>
-      <div class="dash-title">Packing Queue <span>— On Shelf (Decorated)</span></div>
+      <div class="dash-title">Packing Queue <span>— Decorated</span></div>
     </div>
     <div class="dash-controls">
       <div class="search-wrap">
@@ -484,7 +484,7 @@ async function loadQueue() {
     const q = `{
       boards(ids: ${BOARD_ID}) {
         items_page(limit: 100, query_params: {
-          rules: [{ column_id: "color_mm27qyta", compare_value: [2] }]
+          rules: [{ column_id: "color_mm27qyta", compare_value: [3] }]
           order_by: [{ column_id: "date_mm22wpk2", direction: asc }]
         }) {
           items {
