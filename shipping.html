@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCB Shipping</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f4f0; --surface: #ffffff; --surface2: #f0efe9;
+  --border: #e2e0d8; --border2: #d0cec4;
+  --text: #1a1916; --text2: #6b6960; --text3: #9b9890;
+  --green: #2d6a4f; --green-bg: #e8f5ee; --green-border: #b7dfc9;
+  --amber: #92400e; --amber-bg: #fef3c7; --amber-border: #fcd34d;
+  --red: #991b1b; --red-bg: #fee2e2; --red-border: #fca5a5;
+  --blue: #1e3a5f; --blue-bg: #dbeafe; --blue-border: #93c5fd;
+  --radius: 8px; --radius-lg: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.header-left { display: flex; align-items: center; gap: 12px; }
+.logo-mark { width: 28px; height: 28px; background: var(--text); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500; color: white; letter-spacing: 0.5px; flex-shrink: 0; }
+.header-title { font-size: 15px; font-weight: 500; letter-spacing: -0.01em; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.last-updated { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text3); }
+.refresh-btn { display: flex; align-items: center; gap: 6px; font-size: 13px; font-family: 'DM Sans', sans-serif; color: var(--text2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 12px; cursor: pointer; transition: all 0.15s; }
+.refresh-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+.refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.refresh-btn svg { width: 13px; height: 13px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.refresh-btn.spinning svg { animation: spin 0.6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+main { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+.stats-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+.stat-card { background: var(--surface2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px 20px; flex: 1; min-width: 140px; }
+.stat-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); margin-bottom: 6px; }
+.stat-value { font-family: 'DM Mono', monospace; font-size: 28px; font-weight: 400; color: var(--text); line-height: 1; }
+.stat-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+.loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; gap: 12px; color: var(--text2); }
+.spinner { width: 24px; height: 24px; border: 2px solid var(--border); border-top-color: var(--text2); border-radius: 50%; animation: spin 0.7s linear infinite; }
+.error-box { background: var(--red-bg); border: 1px solid var(--red-border); border-radius: var(--radius-lg); padding: 20px 24px; color: var(--red); font-size: 13px; }
+.empty-state { text-align: center; padding: 60px 20px; }
+.empty-state h3 { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+.empty-state p { font-size: 13px; color: var(--text2); }
+.section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.section-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); white-space: nowrap; }
+.section-count { font-size: 11px; font-family: 'DM Mono', monospace; background: var(--surface2); border: 0.5px solid var(--border); border-radius: 10px; padding: 1px 7px; color: var(--text3); }
+.section-line { flex: 1; height: 1px; background: var(--border); }
+.order-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 10px; overflow: hidden; box-shadow: var(--shadow); display: grid; grid-template-columns: 180px 1fr 1fr 120px 140px; align-items: stretch; transition: opacity 0.3s, transform 0.3s; }
+.order-card.fading { opacity: 0; transform: translateY(-6px); }
+.card-col { padding: 14px 16px; border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; }
+.card-col:last-child { border-right: none; align-items: center; justify-content: center; }
+.col-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); margin-bottom: 3px; }
+.col-name { font-size: 14px; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 2px; }
+.col-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3); }
+.col-val { font-size: 13px; color: var(--text); }
+.col-val.small { font-size: 12px; color: var(--text2); line-height: 1.4; }
+.col-val.due-soon { color: var(--amber); font-weight: 500; }
+.col-val.overdue { color: var(--red); font-weight: 500; }
+.col-val.ok { color: var(--green); }
+.ship-btn { font-size: 12px; font-family: 'DM Sans', sans-serif; padding: 7px 14px; background: var(--text); color: white; border: none; border-radius: var(--radius); cursor: pointer; transition: opacity 0.15s; white-space: nowrap; width: 110px; }
+.ship-btn:hover { opacity: 0.85; }
+.ship-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.recently-section { margin-top: 36px; border-top: 1px solid var(--border); padding-top: 20px; }
+.recently-header { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); margin-bottom: 10px; }
+.recent-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.recent-table th { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; text-align: left; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--surface2); white-space: nowrap; }
+.recent-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text); vertical-align: middle; }
+.recent-table tr:last-child td { border-bottom: none; }
+.recent-table tr:hover td { background: var(--surface2); }
+.track-link { font-size: 12px; color: var(--blue); text-decoration: none; }
+.track-link:hover { text-decoration: underline; }
+.shipped-badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 4px; background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+.mono { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text2); }
+.toast { position: fixed; bottom: 20px; right: 20px; background: var(--text); color: white; font-size: 13px; padding: 10px 16px; border-radius: var(--radius); display: flex; align-items: center; gap: 8px; opacity: 0; transform: translateY(8px); transition: all 0.2s; pointer-events: none; z-index: 999; }
+.toast.visible { opacity: 1; transform: translateY(0); }
+.toast-spinner { width: 14px; height: 14px; border: 1.5px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
+@media (max-width: 800px) {
+  .order-card { grid-template-columns: 1fr 1fr; }
+  .card-col { border-right: none; border-bottom: 1px solid var(--border); }
+  .card-col:last-child { border-bottom: none; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <div class="logo-mark">CCB</div>
+    <span class="header-title">Shipping</span>
+  </div>
+  <div class="header-right">
+    <span class="last-updated" id="last-updated"></span>
+    <button class="refresh-btn" id="refresh-btn" onclick="loadOrders()">
+      <svg viewBox="0 0 16 16"><path d="M1 4s1-3 7-3a7 7 0 0 1 7 7"/><path d="M15 12s-1 3-7 3a7 7 0 0 1-7-7"/><polyline points="1 1 1 4 4 4"/><polyline points="15 15 15 12 12 12"/></svg>
+      Refresh
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Ready to Ship</div>
+      <div class="stat-value" id="stat-ready">—</div>
+      <div class="stat-sub">orders in queue</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Shipped This Month</div>
+      <div class="stat-value" id="stat-month">—</div>
+      <div class="stat-sub" id="stat-month-label">orders</div>
+    </div>
+  </div>
+
+  <div id="orders-container">
+    <div class="loading-state"><div class="spinner"></div><span style="font-size:13px;color:var(--text2)">Loading orders...</span></div>
+  </div>
+
+  <div id="recently-section" style="display:none">
+    <div class="recently-section">
+      <div class="recently-header">Shipped this session</div>
+      <table class="recent-table">
+        <thead><tr>
+          <th>Order</th><th>CCB #</th><th>Ship To</th><th>Address</th><th>In Hands</th><th>Tracking</th><th>Status</th>
+        </tr></thead>
+        <tbody id="recently-list"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast">
+  <div class="toast-spinner" id="toast-spinner"></div>
+  <span id="toast-msg">Updating...</span>
+</div>
+
+<script>
+const API_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0MTk0NTk5MCwiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMDZUMTQ6MDg6NTcuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.ihgQ7xsNZfKIQjaHDVWUy_7BY0aWoeWjS1oTEkTCKTg';
+const BOARD_ID = '18407165363';
+const COL_ORDER_NUM = 'pulse_id_mm27vwa5';
+const COL_ORDER_STATUS = 'color_mm27qyta';
+const COL_CONTACT = 'text_mm221kg3';
+const COL_SHIP_TO = 'text_mm26gtxp';
+const COL_SHIP_ADDR = 'location_mm2682nc';
+const COL_IN_HANDS = 'date_mm22wpk2';
+const COL_TRACKING = 'link_mm22d8ca';
+
+let readyOrders = [];
+let shippedThisMonth = 0;
+const sessionShipped = [];
+
+async function mondayQuery(query) {
+  const res = await fetch('https://api.monday.com/v2', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': API_KEY, 'API-Version': '2024-01' },
+    body: JSON.stringify({ query })
+  });
+  const data = await res.json();
+  if (data.errors) throw new Error(data.errors[0].message);
+  return data.data;
+}
+
+function extractTrackingUrl(val, text) {
+  if (!val && !text) return null;
+  try {
+    const parsed = JSON.parse(val || '{}');
+    if (parsed.url) return parsed.url;
+  } catch(e) {}
+  const combined = (val || '') + ' ' + (text || '');
+  const match = combined.match(/https?:\/\/[^\s"']+/);
+  return match ? match[0] : null;
+}
+
+async function loadOrders() {
+  const btn = document.getElementById('refresh-btn');
+  btn.disabled = true;
+  btn.classList.add('spinning');
+
+  try {
+    const q = `{
+      boards(ids: [${BOARD_ID}]) {
+        items_page(limit: 200) {
+          items {
+            id name updated_at
+            column_values(ids: [
+              "${COL_ORDER_NUM}","${COL_ORDER_STATUS}","${COL_CONTACT}",
+              "${COL_SHIP_TO}","${COL_SHIP_ADDR}","${COL_IN_HANDS}","${COL_TRACKING}"
+            ]) { id text value }
+          }
+        }
+      }
+    }`;
+
+    const data = await mondayQuery(q);
+    const items = data.boards[0].items_page.items;
+
+    readyOrders = [];
+    let monthCount = 0;
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+
+    for (const item of items) {
+      const cv = {};
+      for (const c of item.column_values) cv[c.id] = c;
+      const statusText = (cv[COL_ORDER_STATUS]?.text || '').toLowerCase().trim();
+
+      if (statusText === 'ready for shipping') {
+        readyOrders.push({
+          id: item.id,
+          name: item.name,
+          ccb: cv[COL_ORDER_NUM]?.text || '',
+          contact: cv[COL_CONTACT]?.text || '',
+          shipTo: cv[COL_SHIP_TO]?.text || '',
+          shipAddr: cv[COL_SHIP_ADDR]?.text || '',
+          inHands: cv[COL_IN_HANDS]?.text || '',
+          trackingUrl: extractTrackingUrl(cv[COL_TRACKING]?.value, cv[COL_TRACKING]?.text)
+        });
+      }
+
+      if (statusText === 'shipped') {
+        const updated = new Date(item.updated_at || '');
+        if (updated.getMonth() === thisMonth && updated.getFullYear() === thisYear) monthCount++;
+      }
+    }
+
+    readyOrders.sort((a, b) => {
+      if (!a.inHands && !b.inHands) return 0;
+      if (!a.inHands) return 1;
+      if (!b.inHands) return -1;
+      return new Date(a.inHands) - new Date(b.inHands);
+    });
+
+    shippedThisMonth = monthCount;
+    document.getElementById('stat-ready').textContent = readyOrders.length;
+    document.getElementById('stat-month').textContent = shippedThisMonth;
+    document.getElementById('stat-month-label').textContent = now.toLocaleString('en-US', { month: 'long' });
+
+    renderOrders();
+    document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+  } catch(err) {
+    document.getElementById('orders-container').innerHTML = `<div class="error-box"><strong>Error:</strong> ${err.message}</div>`;
+  }
+
+  btn.disabled = false;
+  btn.classList.remove('spinning');
+}
+
+function getDueClass(d) {
+  if (!d) return '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diff = Math.round((new Date(d + 'T00:00:00') - today) / 86400000);
+  if (diff < 0) return 'overdue';
+  if (diff <= 3) return 'due-soon';
+  return 'ok';
+}
+
+function formatDue(d) {
+  if (!d) return '—';
+  const due = new Date(d + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diff = Math.round((due - today) / 86400000);
+  const fmt = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (diff < 0) return `${fmt} (${Math.abs(diff)}d late)`;
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  return fmt;
+}
+
+function renderOrders() {
+  const container = document.getElementById('orders-container');
+  if (readyOrders.length === 0) {
+    container.innerHTML = `<div class="empty-state"><h3>Nothing ready to ship</h3><p>Orders appear here when Order Status is set to Ready for Shipping.</p></div>`;
+    return;
+  }
+  container.innerHTML = `
+    <div class="section-header">
+      <span class="section-label">Ready to Ship</span>
+      <span class="section-count">${readyOrders.length}</span>
+      <div class="section-line"></div>
+    </div>
+    ${readyOrders.map(buildCard).join('')}`;
+}
+
+function buildCard(o) {
+  const dc = getDueClass(o.inHands);
+  const dt = formatDue(o.inHands);
+  return `<div class="order-card" id="card-${o.id}">
+    <div class="card-col">
+      <div class="col-name">${o.name}</div>
+      <div class="col-num">${o.ccb}</div>
+    </div>
+    <div class="card-col">
+      <div class="col-label">Ship To</div>
+      <div class="col-val">${o.shipTo || o.contact || '—'}</div>
+    </div>
+    <div class="card-col">
+      <div class="col-label">Address</div>
+      <div class="col-val small">${o.shipAddr || '—'}</div>
+    </div>
+    <div class="card-col">
+      <div class="col-label">In Hands</div>
+      <div class="col-val ${dc}">${dt}</div>
+    </div>
+    <div class="card-col">
+      <button class="ship-btn" id="ship-btn-${o.id}" onclick="markShipped('${o.id}')">Mark Shipped</button>
+    </div>
+  </div>`;
+}
+
+async function markShipped(orderId) {
+  const btn = document.getElementById('ship-btn-' + orderId);
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = 'Updating...';
+  showToast('Marking as shipped...');
+  try {
+    await mondayQuery(`mutation {
+      change_multiple_column_values(
+        board_id: ${BOARD_ID}, item_id: ${orderId},
+        column_values: "{\\"color_mm27qyta\\": {\\"label\\": \\"Shipped\\"}, \\"color_mm29xat9\\": {\\"label\\": \\"Shipped\\"}}"
+      ) { id }
+    }`);
+    const order = readyOrders.find(o => o.id === orderId);
+    if (order) {
+      sessionShipped.unshift(order);
+      readyOrders = readyOrders.filter(o => o.id !== orderId);
+      shippedThisMonth++;
+      document.getElementById('stat-ready').textContent = readyOrders.length;
+      document.getElementById('stat-month').textContent = shippedThisMonth;
+      renderRecentlyShipped();
+    }
+    showToast('Shipped', false);
+    hideToast();
+    const card = document.getElementById('card-' + orderId);
+    if (card) { card.classList.add('fading'); setTimeout(() => renderOrders(), 400); }
+  } catch(err) {
+    btn.disabled = false;
+    btn.textContent = 'Mark Shipped';
+    showToast('Error: ' + err.message, false);
+    hideToast(3000);
+  }
+}
+
+function renderRecentlyShipped() {
+  const section = document.getElementById('recently-section');
+  const list = document.getElementById('recently-list');
+  if (sessionShipped.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  list.innerHTML = sessionShipped.map(o => `<tr>
+    <td style="font-weight:500">${o.name}</td>
+    <td class="mono">${o.ccb}</td>
+    <td>${o.shipTo || o.contact || '—'}</td>
+    <td style="font-size:12px;color:var(--text2)">${o.shipAddr || '—'}</td>
+    <td>${o.inHands || '—'}</td>
+    <td>${o.trackingUrl ? `<a class="track-link" href="${o.trackingUrl}" target="_blank">Track →</a>` : '—'}</td>
+    <td><span class="shipped-badge">Shipped</span></td>
+  </tr>`).join('');
+}
+
+function showToast(msg, spinning = true) {
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-spinner').style.display = spinning ? 'block' : 'none';
+  document.getElementById('toast').classList.add('visible');
+}
+function hideToast(delay = 1500) {
+  setTimeout(() => document.getElementById('toast').classList.remove('visible'), delay);
+}
+
+loadOrders();
+</script>
+</body>
+</html>
