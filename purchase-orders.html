@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCB Purchase Orders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f4f0;--surface:#fff;--surface2:#f0efe9;--border:#e2e0d8;--border2:#d0cec4;--text:#1a1916;--text2:#6b6960;--text3:#9b9890;--green:#2d6a4f;--green-bg:#e8f5ee;--green-border:#b7dfc9;--amber:#92400e;--amber-bg:#fef3c7;--amber-border:#fcd34d;--red:#991b1b;--red-bg:#fee2e2;--red-border:#fca5a5;--blue:#1e3a5f;--blue-bg:#dbeafe;--blue-border:#93c5fd;--purple:#6b21a8;--purple-bg:#f3e8ff;--purple-border:#d8b4fe;--radius:8px;--radius-lg:12px;--shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo-mark{width:28px;height:28px;background:var(--text);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;color:white;letter-spacing:.5px;flex-shrink:0}
+.header-title{font-size:15px;font-weight:500;letter-spacing:-.01em}
+.header-right{display:flex;align-items:center;gap:10px}
+.last-updated{font-size:11px;font-family:'DM Mono',monospace;color:var(--text3)}
+.refresh-btn{display:flex;align-items:center;gap:6px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text2);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;cursor:pointer;transition:all .15s}
+.refresh-btn:hover{background:var(--surface2);color:var(--text);border-color:var(--border2)}
+.refresh-btn:disabled{opacity:.5;cursor:not-allowed}
+.refresh-btn svg{width:13px;height:13px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.refresh-btn.spinning svg{animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.nav-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;position:sticky;top:56px;z-index:99}
+.nav-bar::-webkit-scrollbar{display:none}
+.nav-btn{font-size:12px;font-family:'DM Sans',sans-serif;font-weight:400;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;padding:10px 14px;cursor:pointer;white-space:nowrap;transition:all .15s}
+.nav-btn:hover{color:var(--text)}
+.nav-btn.active{color:var(--text);border-bottom-color:var(--text);font-weight:500}
+.nav-count{font-size:10px;font-family:'DM Mono',monospace;background:var(--surface2);border:.5px solid var(--border);border-radius:8px;padding:0 5px;margin-left:5px;color:var(--text3)}
+main{max-width:1200px;margin:0 auto;padding:24px 20px}
+.section-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;margin-top:32px}
+.section-header:first-of-type{margin-top:0}
+.section-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);white-space:nowrap}
+.section-count{font-size:11px;font-family:'DM Mono',monospace;background:var(--surface2);border:.5px solid var(--border);border-radius:10px;padding:1px 7px;color:var(--text3)}
+.section-line{flex:1;height:1px;background:var(--border)}
+.loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:12px;color:var(--text2)}
+.spinner{width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--text2);border-radius:50%;animation:spin .7s linear infinite}
+.error-box{background:var(--red-bg);border:1px solid var(--red-border);border-radius:var(--radius-lg);padding:20px 24px;color:var(--red);font-size:13px}
+.empty-msg{font-size:13px;color:var(--text2);padding:16px 0}
+
+/* ORDER CARD */
+.order-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow)}
+.order-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:14px 18px 12px;border-bottom:1px solid var(--border);background:var(--surface2);flex-wrap:wrap}
+.order-name{font-size:15px;font-weight:500;letter-spacing:-.01em;margin-bottom:4px}
+.order-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);color:var(--text2);background:var(--surface);white-space:nowrap}
+.chip.due-soon{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-border)}
+.chip.overdue{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
+.order-num{font-family:'DM Mono',monospace;font-size:12px;color:var(--text3);background:var(--surface);border:.5px solid var(--border);border-radius:4px;padding:1px 6px}
+
+/* PRODUCT CARDS */
+.products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;padding:14px}
+.product-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.product-card-mockup{width:100%;height:160px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;position:relative}
+.product-card-mockup img{width:100%;height:100%;object-fit:contain}
+.product-card-mockup .no-mockup{font-size:11px;color:var(--text3);display:flex;flex-direction:column;align-items:center;gap:6px}
+.product-card-mockup .no-mockup svg{width:24px;height:24px;stroke:var(--text3);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.mockup-overlay{position:absolute;inset:0;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;transition:background .15s}
+.product-card-mockup:hover .mockup-overlay{background:rgba(0,0,0,.08)}
+.mockup-overlay span{font-size:11px;color:white;background:rgba(0,0,0,.5);padding:3px 8px;border-radius:4px;opacity:0;transition:opacity .15s}
+.product-card-mockup:hover .mockup-overlay span{opacity:1}
+.product-card-body{padding:10px 12px}
+.product-card-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px;line-height:1.3}
+.product-card-fields{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-bottom:8px}
+.pcf-item{display:flex;flex-direction:column;gap:1px}
+.pcf-lbl{font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}
+.pcf-val{font-size:12px;color:var(--text)}
+.pcf-val.mono{font-family:'DM Mono',monospace;font-size:11px}
+.product-card-po{padding:10px 12px;border-top:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:8px}
+.po-row{display:flex;flex-direction:column;gap:3px}
+.po-row-inline{display:flex;gap:8px;flex-wrap:wrap}
+
+.mono{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2)}
+.media-btn{font-size:11px;padding:3px 7px;background:transparent;color:var(--text2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block;transition:all .15s}
+.media-btn:hover{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-border)}
+/* PO INPUT FIELDS */
+.po-fields{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:10px 12px;background:var(--surface2);border-top:1px solid var(--border)}
+.po-field-group{display:flex;flex-direction:column;gap:3px}
+.po-lbl{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}
+.po-input{font-size:12px;font-family:'DM Mono',monospace;padding:5px 9px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);width:150px;transition:border-color .15s}
+.po-input:focus{outline:none;border-color:var(--text)}
+.po-input::placeholder{color:var(--text3);font-family:'DM Sans',sans-serif}
+.po-input.date-input{width:130px}
+.po-input.cost-input{width:110px}
+.countdown-wrap{display:flex;align-items:center;gap:6px;padding:4px 0}
+.countdown-badge{font-size:11px;font-family:'DM Mono',monospace;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);border-radius:4px;padding:2px 8px;min-width:50px;text-align:center}
+.countdown-label{font-size:11px;color:var(--text3)}
+.cancel-btn{font-size:11px;padding:3px 8px;background:transparent;color:var(--text2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.cancel-btn:hover{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
+
+/* 3RD PARTY COMPLETE BTN */
+.complete-btn{font-size:12px;font-family:'DM Sans',sans-serif;padding:6px 14px;background:var(--green);color:white;border:none;border-radius:var(--radius);cursor:pointer;transition:opacity .15s;white-space:nowrap}
+.complete-btn:hover{opacity:.85}
+.complete-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* PROMO SUBSECTIONS */
+.promo-subsection{margin-bottom:8px}
+.promo-sub-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);padding:6px 12px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.promo-sub-label span{font-family:'DM Mono',monospace;background:var(--surface);border:.5px solid var(--border);border-radius:8px;padding:0 6px;color:var(--text3)}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--text);color:white;font-size:13px;padding:10px 16px;border-radius:var(--radius);display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;z-index:999}
+.toast.visible{opacity:1;transform:translateY(0)}
+.toast-spinner{width:14px;height:14px;border:1.5px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .6s linear infinite}
+
+/* TYPE BADGE */
+.type-ih{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border);font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap}
+.type-pd{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap}
+.type-3p{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border);font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap}
+.type-pc{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap}
+
+.ordered-badge{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);font-size:10px;padding:2px 6px;border-radius:4px}
+.pending-badge{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);font-size:10px;padding:2px 6px;border-radius:4px}
+.sent-badge{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);font-size:10px;padding:2px 6px;border-radius:4px}
+
+@media(max-width:700px){
+  thead th:nth-child(4),tbody td:nth-child(4){display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <div class="logo-mark">CCB</div>
+    <span class="header-title">Purchase Orders</span>
+  </div>
+  <div class="header-right">
+    <span class="last-updated" id="last-updated"></span>
+    <button class="refresh-btn" id="refresh-btn" onclick="loadData()">
+      <svg viewBox="0 0 16 16"><path d="M1 4s1-3 7-3a7 7 0 0 1 7 7"/><path d="M15 12s-1 3-7 3a7 7 0 0 1-7-7"/><polyline points="1 1 1 4 4 4"/><polyline points="15 15 15 12 12 12"/></svg>
+      Refresh
+    </button>
+  </div>
+</header>
+
+<div class="nav-bar" id="nav-bar">
+  <button class="nav-btn active" onclick="scrollToSection('sec-tbo',this)">To Be Ordered <span class="nav-count" id="nav-count-tbo">—</span></button>
+  <button class="nav-btn" onclick="scrollToSection('sec-ord',this)">Ordered <span class="nav-count" id="nav-count-ord">—</span></button>
+  <button class="nav-btn" onclick="scrollToSection('sec-tp',this)">3rd Party <span class="nav-count" id="nav-count-tp">—</span></button>
+  <button class="nav-btn" onclick="scrollToSection('sec-promo',this)">Promo Codes <span class="nav-count" id="nav-count-promo">—</span></button>
+</div>
+
+<main id="main">
+  <div class="loading-state"><div class="spinner"></div><span style="font-size:13px;color:var(--text2)">Loading purchase orders...</span></div>
+</main>
+
+<div class="toast" id="toast"><div class="toast-spinner" id="toast-spinner"></div><span id="toast-msg"></span></div>
+
+<script>
+const API_KEY='eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0MTk0NTk5MCwiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMDZUMTQ6MDg6NTcuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.ihgQ7xsNZfKIQjaHDVWUy_7BY0aWoeWjS1oTEkTCKTg';
+const ORDERS_BOARD='18407165363';const SUBS_BOARD='18407165552';
+const O_NUM='pulse_id_mm27vwa5';const O_STATUS='color_mm27qyta';const O_INHAND='date_mm22wpk2';const O_CONTACT='text_mm221kg3';const O_SHIPTO='text_mm26gtxp';
+const S_STATUS='color_mm25v786';const S_TYPE='color_mm2dd6d5';const S_QTY='numeric_mm22crjt';const S_COLOR='text_mm2276wz';const S_SIZE='text_mm22yw8s';const S_STYLE='text_mm22fv7y';const S_SUPPLIER='text_mm22qdag';const S_PO_NUM='text_mm27ns9d';const S_PO_DATE='date_mm26mc76';const S_TRACKING='link_mm26rzea';const S_COST='numeric_mm266zz9';const S_MOCKUP='file_mm26e29h';const S_PRICE='numeric_mm2299qw';
+
+// Timers for 30-second countdown before auto-committing
+const pendingTimers={};
+
+async function mq(q){const r=await fetch('https://api.monday.com/v2',{method:'POST',headers:{'Content-Type':'application/json','Authorization':API_KEY,'API-Version':'2024-01'},body:JSON.stringify({query:q})});const d=await r.json();if(d.errors)throw new Error(d.errors[0].message);return d.data;}
+
+function ffile(val,txt){if(!val&&!txt)return null;try{const p=JSON.parse(val||'{}');if(p.files&&p.files.length)return p.files[p.files.length-1].url||p.files[p.files.length-1].public_url||null;if(p.url)return p.url;}catch(e){}const m=((val||'')+' '+(txt||'')).match(/https?:\/\/[^\s"',)]+/);return m?m[0]:null;}
+
+function duechip(d){if(!d)return'';const due=new Date(d+'T00:00:00');const t=new Date();t.setHours(0,0,0,0);const diff=Math.round((due-t)/86400000);const fmt=due.toLocaleDateString('en-US',{month:'short',day:'numeric'});if(diff<0)return`<span class="chip overdue">Due ${fmt}</span>`;if(diff===0)return`<span class="chip due-soon">Due Today</span>`;if(diff<=5)return`<span class="chip due-soon">Due ${fmt}</span>`;return`<span class="chip ok">Due ${fmt}</span>`;}
+
+function typeBadge(t){const tl=(t||'').toLowerCase();if(tl.includes('in house'))return'<span class="type-ih">In House</span>';if(tl.includes('pre'))return'<span class="type-pd">Pre-Dec</span>';if(tl.includes('3rd'))return'<span class="type-3p">3rd Party</span>';if(tl.includes('promo'))return'<span class="type-pc">Promo</span>';return'';}
+
+function showToast(msg,spinning=true){document.getElementById('toast-msg').textContent=msg;document.getElementById('toast-spinner').style.display=spinning?'block':'none';document.getElementById('toast').classList.add('visible');}
+function hideToast(d=1500){setTimeout(()=>document.getElementById('toast').classList.remove('visible'),d);}
+
+// ── DATA ─────────────────────────────────────────────────────────────────────
+let toBeOrdered=[];    // IH + PreDec, product status = blank/default (index 5)
+let ordered=[];        // IH + PreDec, product status = Product Ordered (index 1)
+let thirdParty=[];     // 3rd Party, any status except 3rd party complete
+let promoCodes=[];     // Promo Code type, no PO date yet
+
+async function loadData(){
+  const btn=document.getElementById('refresh-btn');
+  btn.disabled=true;btn.classList.add('spinning');
+  const main=document.getElementById('main');
+  if(!main.querySelector('.order-card'))main.innerHTML='<div class="loading-state"><div class="spinner"></div><span style="font-size:13px;color:var(--text2)">Loading...</span></div>';
+
+  try{
+    const q=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name url column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHIPTO}"]){id text value}subitems{id name url column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_SUPPLIER}","${S_PO_NUM}","${S_PO_DATE}","${S_TRACKING}","${S_COST}","${S_MOCKUP}","${S_PRICE}"]){id text value}}}}}}`;
+    const data=await mq(q);
+    const items=data.boards[0].items_page.items;
+
+    toBeOrdered=[];ordered=[];thirdParty=[];promoCodes=[];
+
+    // Group subitems by parent order, split into sections
+    const orderMap={};
+    for(const item of items){
+      const cv={};for(const c of item.column_values)cv[c.id]=c;
+      const orderStatus=(cv[O_STATUS]?.text||'').toLowerCase();
+      // Skip shipped, completed, paid, promo code order status (we handle promo via subitem type)
+      if(['shipped','3rd party complete'].includes(orderStatus))continue;
+
+      const orderInfo={id:item.id,name:item.name,url:item.url,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',shipTo:cv[O_SHIPTO]?.text||'',inHands:cv[O_INHAND]?.text||''};
+
+      for(const sub of(item.subitems||[])){
+        const sc={};for(const c of sub.column_values)sc[c.id]=c;
+        const subStatus=(sc[S_STATUS]?.text||'').toLowerCase();
+        const subType=(sc[S_TYPE]?.text||'').toLowerCase();
+        const poDate=sc[S_PO_DATE]?.text||'';
+
+        let statusIndex=5;
+        try{statusIndex=JSON.parse(sc[S_STATUS]?.value||'{}').index??5;}catch(e){}
+
+        const product={
+          id:sub.id,name:sub.name,url:sub.url,
+          orderId:item.id,orderName:item.name,orderInfo,
+          type:sc[S_TYPE]?.text||'',
+          qty:sc[S_QTY]?.text||'',color:sc[S_COLOR]?.text||'',size:sc[S_SIZE]?.text||'',
+          style:sc[S_STYLE]?.text||'',supplier:sc[S_SUPPLIER]?.text||'',
+          poNum:sc[S_PO_NUM]?.text||'',poDate,
+          tracking:sc[S_TRACKING]?.text||'',cost:sc[S_COST]?.text||'',price:sc[S_PRICE]?.text||'',
+          mockupUrl:ffile(sc[S_MOCKUP]?.value,sc[S_MOCKUP]?.text),
+          statusIndex
+        };
+
+        if(subType.includes('promo')){
+          // Promo: only show if no PO date yet (not sent)
+          if(!poDate)promoCodes.push(product);
+        } else if(subType.includes('3rd')){
+          // 3rd Party: show unless 3rd party complete
+          if(!subStatus.includes('3rd party complete')&&subStatus!=='')thirdParty.push(product);
+          else if(!subStatus)thirdParty.push(product);
+        } else if(subType.includes('in house')||subType.includes('pre')){
+          // IH + PreDec: split by whether PO date is set
+          if(!poDate)toBeOrdered.push(product);
+          else if(subStatus==='product ordered'||statusIndex===1)ordered.push(product);
+        }
+      }
+    }
+
+    // Sort all by in-hands date
+    const srt=(a,b)=>{const ai=a.orderInfo.inHands,bi=b.orderInfo.inHands;if(!ai&&!bi)return 0;if(!ai)return 1;if(!bi)return-1;return new Date(ai)-new Date(bi);};
+    toBeOrdered.sort(srt);ordered.sort(srt);thirdParty.sort(srt);promoCodes.sort(srt);
+
+    render();
+    document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  }catch(err){document.getElementById('main').innerHTML=`<div class="error-box"><strong>Error:</strong> ${err.message}</div>`;}
+  btn.disabled=false;btn.classList.remove('spinning');
+}
+
+// ── GROUP BY ORDER ────────────────────────────────────────────────────────────
+function groupByOrder(products){
+  const map=new Map();
+  for(const p of products){
+    if(!map.has(p.orderId))map.set(p.orderId,{info:p.orderInfo,products:[]});
+    map.get(p.orderId).products.push(p);
+  }
+  return Array.from(map.values());
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render(){
+  const main=document.getElementById('main');
+  let html='';
+
+  // Update nav counts
+  document.getElementById('nav-count-tbo').textContent=toBeOrdered.length;
+  document.getElementById('nav-count-ord').textContent=ordered.length;
+  document.getElementById('nav-count-tp').textContent=thirdParty.length;
+  document.getElementById('nav-count-promo').textContent=promoCodes.length;
+
+  // TO BE ORDERED
+  const tboGroups=groupByOrder(toBeOrdered);
+  html+=`<div id="sec-tbo" class="section-header"><span class="section-label">To Be Ordered</span><span class="section-count">${toBeOrdered.length} products · ${tboGroups.length} orders</span><div class="section-line"></div></div>`;
+  if(tboGroups.length===0)html+=`<p class="empty-msg">No products waiting to be ordered.</p>`;
+  else html+=tboGroups.map(g=>buildOrderCard(g,'tbo')).join('');
+
+  // ORDERED
+  const ordGroups=groupByOrder(ordered);
+  html+=`<div id="sec-ord" class="section-header"><span class="section-label">Ordered — Awaiting Arrival</span><span class="section-count">${ordered.length} products · ${ordGroups.length} orders</span><div class="section-line"></div></div>`;
+  if(ordGroups.length===0)html+=`<p class="empty-msg">No products currently on order.</p>`;
+  else html+=ordGroups.map(g=>buildOrderCard(g,'ord')).join('');
+
+  // 3RD PARTY
+  const tpGroups=groupByOrder(thirdParty);
+  html+=`<div id="sec-tp" class="section-header"><span class="section-label">3rd Party</span><span class="section-count">${thirdParty.length} products · ${tpGroups.length} orders</span><div class="section-line"></div></div>`;
+  if(tpGroups.length===0)html+=`<p class="empty-msg">No active 3rd party orders.</p>`;
+  else{
+    // Split into sub-sections: To Be Ordered and Ordered
+    const tp_tbo=thirdParty.filter(p=>!p.poDate);
+    const tp_ord=thirdParty.filter(p=>!!p.poDate);
+    if(tp_tbo.length>0){
+      html+=`<div class="promo-subsection"><div class="promo-sub-label">To Be Ordered <span>${tp_tbo.length}</span></div>`;
+      html+=groupByOrder(tp_tbo).map(g=>buildOrderCard(g,'tp_tbo')).join('');
+      html+=`</div>`;
+    }
+    if(tp_ord.length>0){
+      html+=`<div class="promo-subsection"><div class="promo-sub-label">Ordered — Awaiting Fulfillment <span>${tp_ord.length}</span></div>`;
+      html+=groupByOrder(tp_ord).map(g=>buildOrderCard(g,'tp_ord')).join('');
+      html+=`</div>`;
+    }
+  }
+
+  // PROMO CODES
+  const pcGroups=groupByOrder(promoCodes);
+  html+=`<div id="sec-promo" class="section-header"><span class="section-label">Promo Codes — To Be Sent</span><span class="section-count">${promoCodes.length} codes · ${pcGroups.length} orders</span><div class="section-line"></div></div>`;
+  if(pcGroups.length===0)html+=`<p class="empty-msg">No promo codes pending.</p>`;
+  else html+=pcGroups.map(g=>buildOrderCard(g,'promo')).join('');
+
+  main.innerHTML=html;
+}
+
+function buildOrderCard(group,section){
+  const o=group.info;
+  const cards=group.products.map(p=>buildProductCard(p,section)).join('');
+  return `<div class="order-card" id="order-${section}-${o.id}">
+    <div class="order-header">
+      <div>
+        <div class="order-name">${o.name}</div>
+        <div class="order-meta">
+          ${o.ccbNum?`<span class="order-num">${o.ccbNum}</span>`:''}
+          ${o.contact?`<span class="chip">${o.contact}</span>`:''}
+          ${o.shipTo?`<span class="chip">${o.shipTo}</span>`:''}
+          ${duechip(o.inHands)}
+        </div>
+      </div>
+    </div>
+    <div class="products-grid">${cards}</div>
+    ${section==='promo'?buildPoFields(group,section):''}
+  </div>`;
+}
+
+function buildProductCard(p,section){
+  // Mockup section
+  let mockupHtml='';
+  if(p.mockupUrl){
+    mockupHtml=`<div class="product-card-mockup" onclick="window.open('${p.mockupUrl}','_blank')">
+      <img src="${p.mockupUrl}" alt="Mockup" onerror="this.parentElement.innerHTML='<div class=\\"no-mockup\\"><svg viewBox=\\"0 0 24 24\\"><rect x=\\"3\\" y=\\"3\\" width=\\"18\\" height=\\"18\\" rx=\\"2\\"/><circle cx=\\"8.5\\" cy=\\"8.5\\" r=\\"1.5\\"/><polyline points=\\"21 15 16 10 5 21\\"/></svg><span>No preview</span></div>'">
+      <div class="mockup-overlay"><span>View mockup</span></div>
+    </div>`;
+  } else {
+    mockupHtml=`<div class="product-card-mockup" style="cursor:default">
+      <div class="no-mockup">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span>No mockup</span>
+      </div>
+    </div>`;
+  }
+
+  // Fields grid
+  const fields=[
+    ['Qty', p.qty||'—', false],
+    ['Color', p.color||'—', false],
+    ['Size', p.size||'—', false],
+    ['Style #', p.style||'—', true],
+  ];
+  if(section==='ord'||section==='tp_ord'){
+    fields.push(['Supplier', p.supplier||'—', false]);
+    fields.push(['PO #', p.poNum||'—', true]);
+    fields.push(['PO Date', p.poDate||'—', true]);
+  }
+  if(section==='promo'){
+    fields.push(['Price/Item', p.price?'$'+p.price:'—', false]);
+  }
+
+  const fieldsHtml=fields.map(([lbl,val,mono])=>`
+    <div class="pcf-item">
+      <span class="pcf-lbl">${lbl}</span>
+      <span class="pcf-val${mono?' mono':''}">${val}</span>
+    </div>`).join('');
+
+  // PO inputs (for tbo / tp_tbo sections — inside the card)
+  let poHtml='';
+  if(section==='tbo'||section==='tp_tbo'){
+    poHtml=`<div class="product-card-po">
+      <div class="po-row">
+        <span class="po-lbl">Supplier</span>
+        <input class="po-input" style="width:100%" type="text" placeholder="Supplier name" value="${p.supplier}" id="sup-${p.id}" oninput="onPoInput('${p.id}','${p.orderId}')">
+      </div>
+      <div class="po-row-inline">
+        <div class="po-row" style="flex:1">
+          <span class="po-lbl">PO Number</span>
+          <input class="po-input" style="width:100%" type="text" placeholder="PO-001" value="${p.poNum}" id="ponum-${p.id}" oninput="onPoInput('${p.id}','${p.orderId}')">
+        </div>
+        <div class="po-row" style="flex:1">
+          <span class="po-lbl">PO Date</span>
+          <input class="po-input date-input" style="width:100%" type="date" id="date-${p.id}" value="${p.poDate||''}" oninput="onDateInput('${p.id}','${p.orderId}',this.value)">
+        </div>
+      </div>
+      <div class="po-row">
+        <span class="po-lbl">Tracking Link</span>
+        <input class="po-input" style="width:100%" type="url" placeholder="https://..." value="${p.tracking}" id="track-${p.id}" oninput="onPoInput('${p.id}','${p.orderId}')">
+      </div>
+      <div id="countdown-wrap-${p.id}" style="display:none">
+        <div class="countdown-wrap">
+          <span class="countdown-badge" id="cd-val-${p.id}">30s</span>
+          <span class="countdown-label">until ordered</span>
+          <button class="cancel-btn" onclick="cancelCountdown('${p.id}')">Cancel</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Cost input for ordered sections
+  let costHtml='';
+  if(section==='ord'||section==='tp_ord'){
+    costHtml=`<div class="product-card-po">
+      <div class="po-row-inline" style="align-items:flex-end;justify-content:space-between">
+        <div class="po-row" style="flex:1">
+          <span class="po-lbl">Our Cost / Item</span>
+          <input class="po-input cost-input" style="width:100%" type="number" placeholder="0.00" value="${p.cost}" id="cost-${p.id}" onblur="saveCost('${p.id}',this.value)">
+        </div>
+        ${section==='tp_ord'?`<button class="complete-btn" onclick="mark3rdPartyComplete('${p.orderId}','${p.id}',this)">Mark Complete</button>`:''}
+      </div>
+    </div>`;
+  }
+
+  return `<div class="product-card" id="row-${p.id}">
+    ${mockupHtml}
+    <div class="product-card-body">
+      <div class="product-card-name">${p.name}</div>
+      <div style="margin-bottom:6px">${typeBadge(p.type)}</div>
+      <div class="product-card-fields">${fieldsHtml}</div>
+    </div>
+    ${poHtml}${costHtml}
+  </div>`;
+}
+
+function buildPoFields(group,section){
+  // tbo and tp_tbo PO fields are now inside each product card
+  if(section==='tbo'||section==='tp_tbo'||section==='ord'||section==='tp_ord')return'';
+
+  if(section==='promo'){
+    const o=group.info;
+    return `<div class="po-fields" id="po-fields-promo-${o.id}">
+      <div class="po-field-group">
+        <span class="po-lbl">Date Sent</span>
+        <input class="po-input date-input" type="date" id="promo-date-${o.id}"
+          oninput="onPromoDateInput('${o.id}',${JSON.stringify(group.products.map(p=>p.id))})">
+      </div>
+      <div id="promo-countdown-${o.id}" style="display:none">
+        <div class="countdown-wrap">
+          <span class="countdown-badge" id="promo-cd-val-${o.id}">30s</span>
+          <span class="countdown-label">until marked sent</span>
+          <button class="cancel-btn" onclick="cancelPromoCountdown('${o.id}')">Cancel</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  return'';
+}
+
+// ── COUNTDOWN & COMMIT ────────────────────────────────────────────────────────
+function onPoInput(subId,orderId){
+  // When PO# or tracking changes, start/reset the countdown
+  const poNum=document.getElementById('ponum-'+subId)?.value.trim();
+  const tracking=document.getElementById('track-'+subId)?.value.trim();
+  if(poNum||tracking){
+    startCountdown(subId,orderId);
+  }
+}
+
+function onDateInput(subId,orderId,val){
+  if(val){
+    // Date manually set — commit immediately after 30s
+    startCountdown(subId,orderId,val);
+  }
+}
+
+function startCountdown(subId,orderId,explicitDate=null){
+  if(pendingTimers[subId])clearInterval(pendingTimers[subId].interval);
+  const wrapEl=document.getElementById('countdown-wrap-'+subId);
+  const valEl=document.getElementById('cd-val-'+subId);
+  if(!wrapEl||!valEl)return;
+  wrapEl.style.display='block';
+  let remaining=30;
+  valEl.textContent=remaining+'s';
+  pendingTimers[subId]={
+    interval:setInterval(()=>{
+      remaining--;
+      if(valEl)valEl.textContent=remaining+'s';
+      if(remaining<=0){
+        clearInterval(pendingTimers[subId].interval);
+        delete pendingTimers[subId];
+        commitPoEntry(subId,orderId,explicitDate);
+      }
+    },1000),
+    orderId
+  };
+}
+
+function cancelCountdown(subId){
+  if(pendingTimers[subId])clearInterval(pendingTimers[subId].interval);
+  delete pendingTimers[subId];
+  const wrapEl=document.getElementById('countdown-wrap-'+subId);
+  if(wrapEl)wrapEl.style.display='none';
+  const valEl=document.getElementById('cd-val-'+subId);
+  if(valEl)valEl.textContent='30s';
+}
+
+async function commitPoEntry(subId,orderId,explicitDate=null){
+  const supplier=document.getElementById('sup-'+subId)?.value.trim()||'';
+  const poNum=document.getElementById('ponum-'+subId)?.value.trim()||'';
+  const tracking=document.getElementById('track-'+subId)?.value.trim()||'';
+  const today=explicitDate||new Date().toISOString().split('T')[0];
+
+  // Update date input to show today
+  const dateEl=document.getElementById('date-'+subId);
+  if(dateEl&&!dateEl.value)dateEl.value=today;
+
+  showToast('Saving PO...');
+  try{
+    // Determine new product status based on product type
+    // We'll set to Product Ordered (index 1) for IH/PreDec, 3rd Party Ordered (index 2) for 3rd party
+    // We read the type from the row
+    const typeEl=document.querySelector(`#row-${subId} .type-3p`);
+    const statusIndex=typeEl?2:1; // 2=3rd Party Ordered, 1=Product Ordered
+
+    let colVals={};
+    colVals[`${SUBS_BOARD}`]=null; // placeholder
+    const vals={};
+    if(supplier)vals['text_mm22qdag']=supplier;
+    if(poNum)vals['text_mm27ns9d']=poNum;
+    if(tracking)vals['link_mm26rzea']={url:tracking,text:'Track'};
+    vals['date_mm26mc76']={date:today};
+    vals['color_mm25v786']={index:statusIndex};
+
+    const valStr=JSON.stringify(JSON.stringify(vals));
+    await mq(`mutation{change_multiple_column_values(board_id:${SUBS_BOARD},item_id:${subId},column_values:${valStr}){id}}`);
+    showToast('Ordered',false);hideToast();
+
+    // Hide countdown
+    const wrapEl=document.getElementById('countdown-wrap-'+subId);
+    if(wrapEl)wrapEl.style.display='none';
+
+    // Refresh after short delay
+    setTimeout(()=>loadData(),1000);
+  }catch(err){showToast('Error: '+err.message,false);hideToast(3000);}
+}
+
+// ── COST SAVE ─────────────────────────────────────────────────────────────────
+async function saveCost(subId,val){
+  if(!val)return;
+  const num=parseFloat(val);
+  if(isNaN(num))return;
+  showToast('Saving cost...');
+  try{
+    await mq(`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"numeric_mm266zz9",value:"${num}"){id}}`);
+    showToast('Saved',false);hideToast();
+  }catch(err){showToast('Error: '+err.message,false);hideToast(3000);}
+}
+
+// ── 3RD PARTY COMPLETE ────────────────────────────────────────────────────────
+async function mark3rdPartyComplete(orderId,subId,btn){
+  btn.disabled=true;btn.textContent='Updating...';
+  showToast('Marking 3rd party complete...');
+  try{
+    // Update order status to 3rd Party Complete
+    await mq(`mutation{change_column_value(board_id:${ORDERS_BOARD},item_id:${orderId},column_id:"color_mm27qyta",value:"{\\"index\\":9}"){id}}`);
+    showToast('Marked complete',false);hideToast();
+    setTimeout(()=>loadData(),800);
+  }catch(err){btn.disabled=false;btn.textContent='Mark Complete';showToast('Error: '+err.message,false);hideToast(3000);}
+}
+
+// ── PROMO CODE SENT ───────────────────────────────────────────────────────────
+const promoCountdownTimers={};
+
+function onPromoDateInput(orderId,subIds){
+  const dateEl=document.getElementById('promo-date-'+orderId);
+  if(!dateEl||!dateEl.value)return;
+  startPromoCountdown(orderId,subIds,dateEl.value);
+}
+
+function startPromoCountdown(orderId,subIds,date){
+  if(promoCountdownTimers[orderId])clearInterval(promoCountdownTimers[orderId]);
+  const cdEl=document.getElementById('promo-countdown-'+orderId);
+  const valEl=document.getElementById('promo-cd-val-'+orderId);
+  if(!cdEl||!valEl)return;
+  cdEl.style.display='block';
+  let remaining=30;
+  valEl.textContent=remaining+'s';
+  promoCountdownTimers[orderId]=setInterval(()=>{
+    remaining--;
+    if(valEl)valEl.textContent=remaining+'s';
+    if(remaining<=0){
+      clearInterval(promoCountdownTimers[orderId]);
+      delete promoCountdownTimers[orderId];
+      commitPromoSent(orderId,subIds,date);
+    }
+  },1000);
+}
+
+function cancelPromoCountdown(orderId){
+  if(promoCountdownTimers[orderId])clearInterval(promoCountdownTimers[orderId]);
+  delete promoCountdownTimers[orderId];
+  const cdEl=document.getElementById('promo-countdown-'+orderId);
+  if(cdEl)cdEl.style.display='none';
+  const dateEl=document.getElementById('promo-date-'+orderId);
+  if(dateEl)dateEl.value='';
+}
+
+async function commitPromoSent(orderId,subIds,date){
+  showToast('Marking promo codes sent...');
+  try{
+    // Set PO date on all subitems and order status to Delivered (index... we'll use Shipped = 4 as Delivered)
+    for(const subId of subIds){
+      await mq(`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"date_mm26mc76",value:"{\\"date\\":\\"${date}\\"}"){id}}`);
+    }
+    // Set order status to Shipped (acts as Delivered for promo)
+    await mq(`mutation{change_column_value(board_id:${ORDERS_BOARD},item_id:${orderId},column_id:"color_mm27qyta",value:"{\\"index\\":4}"){id}}`);
+    showToast('Promo codes marked sent',false);hideToast();
+    setTimeout(()=>loadData(),800);
+  }catch(err){showToast('Error: '+err.message,false);hideToast(3000);}
+}
+
+function scrollToSection(id,btn){
+  const el=document.getElementById(id);
+  if(el){
+    // offset for sticky header + nav bar
+    const offset=56+41;
+    const top=el.getBoundingClientRect().top+window.scrollY-offset-12;
+    window.scrollTo({top,behavior:'smooth'});
+  }
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+}
+
+loadData();
+</script>
+</body>
+</html>
