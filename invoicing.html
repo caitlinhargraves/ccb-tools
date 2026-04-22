@@ -102,7 +102,7 @@ main { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
 .field-input:focus { outline: none; border-color: var(--text); }
 .field-input::placeholder { color: var(--text3); font-family: 'DM Sans', sans-serif; }
 .field-input.amount { width: 130px; }
-.field-input.netsuite { width: 170px; }
+.field-input.pymt { width: 170px; }
 .save-btn { font-size: 12px; font-family: 'DM Sans', sans-serif; padding: 6px 12px; background: var(--text); color: white; border: none; border-radius: var(--radius); cursor: pointer; transition: opacity 0.15s; white-space: nowrap; align-self: flex-end; }
 .save-btn:hover { opacity: 0.85; }
 .save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -146,6 +146,7 @@ tbody tr:hover td { background: var(--surface2); }
   thead th:nth-child(5), tbody td:nth-child(5),
   thead th:nth-child(6), tbody td:nth-child(6) { display: none; }
 }
+.search-wrap{padding:16px 20px 0;max-width:1200px;margin:0 auto}.search-input{width:100%;padding:9px 14px 9px 36px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none;transition:border-color .15s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239b9890' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center}.search-input:focus{border-color:var(--border2)}.search-input::placeholder{color:var(--text3)}
 </style>
 </head>
 <body>
@@ -179,6 +180,9 @@ tbody tr:hover td { background: var(--surface2); }
   <button class="nav-btn" onclick="scrollToInvSection('sec-recently-paid', this)">Recently Paid <span class="nav-count" id="nav-count-rp">—</span></button>
 </div>
 
+<div class="search-wrap" style="padding-bottom:12px">
+  <input class="search-input" id="search-input" type="text" placeholder="Search by order, contact, email, CCB #, salesperson..." oninput="applySearch()">
+</div>
 <main id="main">
   <div class="loading-state">
     <div class="spinner"></div>
@@ -212,6 +216,8 @@ const COL_SHIP_ADDR = 'location_mm2682nc';
 const COL_BILL_ADDR = 'location_mm26s9s1';
 const COL_COMPANY = 'dropdown_mm276wtz';
 const COL_IN_HANDS = 'date_mm22wpk2';
+const COL_SALESPERSON = 'dropdown_mm22w5rr';
+const ALLOWED_GROUPS = ['topics', 'group_mm26j0hj']; // Active Orders + Completed Orders
 
 // Subitem column IDs
 const SUB_STATUS = 'color_mm25v786';
@@ -262,13 +268,13 @@ async function loadOrders() {
       boards(ids: [${BOARD_ID}]) {
         items_page(limit: 200) {
           items {
-            id name
+            id name group { id }
             column_values(ids: [
               "${COL_ORDER_NUM}","${COL_ORDER_STATUS}","${COL_INVOICE_STATUS}",
               "${COL_INVOICE_NUM}","${COL_INVOICE_DATE}","${COL_INVOICE_SENT_DATE}",
               "${COL_INVOICED_AMOUNT}","${COL_NETSUITE}","${COL_CONTACT}",
               "${COL_EMAIL}","${COL_SHIP_TO}","${COL_SHIP_ADDR}","${COL_BILL_ADDR}",
-              "${COL_COMPANY}","${COL_IN_HANDS}"
+              "${COL_COMPANY}","${COL_IN_HANDS}","${COL_SALESPERSON}"
             ]) { id text value }
             subitems {
               id name
@@ -286,6 +292,9 @@ async function loadOrders() {
 
     allOrders = [];
     for (const item of items) {
+      // Only include Active Orders and Completed Orders groups
+      if (!ALLOWED_GROUPS.includes(item.group?.id)) continue;
+
       const cv = {};
       for (const c of item.column_values) cv[c.id] = c;
 
@@ -331,6 +340,7 @@ async function loadOrders() {
         shipAddr: cv[COL_SHIP_ADDR]?.text || '',
         billAddr: cv[COL_BILL_ADDR]?.text || '',
         inHands: cv[COL_IN_HANDS]?.text || '',
+        salesperson: cv[COL_SALESPERSON]?.text || '',
         company,
         companyKey,
         subitems
@@ -342,6 +352,7 @@ async function loadOrders() {
       return (order[a.invoiceStatus] ?? 2) - (order[b.invoiceStatus] ?? 2);
     });
 
+    allOrdersSnapshot = [...allOrders];
     updateTabCounts();
     renderTab();
 
@@ -453,6 +464,7 @@ function buildOrderCard(order) {
           <span class="chip ${statusChipClass}">${statusLabel}</span>
           ${order.orderStatus ? `<span class="chip">${order.orderStatus}</span>` : ''}
           ${order.inHands ? `<span class="chip">Due ${order.inHands}</span>` : ''}
+          ${order.salesperson ? `<span class="chip" style="background:var(--blue-bg);color:var(--blue);border-color:var(--blue-border)">${order.salesperson}</span>` : ''}
         </div>
       </div>
     </div>
@@ -478,9 +490,9 @@ function buildOrderCard(order) {
           id="inv-amt-${order.id}" onblur="saveField('${order.id}','amount')">
       </div>
       <div class="input-group">
-        <span class="input-lbl">NetSuite SO #</span>
-        <input class="field-input netsuite" type="text" placeholder="SO—" value="${order.netsuite}"
-          id="netsuite-${order.id}" onblur="saveNetsuite('${order.id}')">
+        <span class="input-lbl">Payment Confirmation #</span>
+        <input class="field-input pymt" type="text" placeholder="PYMT—" value="${order.netsuite}"
+          id="pymt-${order.id}" onblur="saveNetsuite('${order.id}')">
       </div>
       <button class="save-btn" onclick="saveAll('${order.id}')">Save</button>
       ${savedSpan}
@@ -556,12 +568,13 @@ async function saveInvoiceNum(orderId) {
     }`;
     await mondayQuery(mutation);
 
-    // Update hint
+    // Update local data
+    const order = allOrders.find(o => o.id === orderId);
+    if (order) { order.invoiceNum = val; order.invoiceDate = today; }
     const hint = document.querySelector(`#card-${orderId} .invoice-date-hint`);
     if (hint) hint.textContent = `Created ${today}`;
 
     // Update invoice status to Invoice Sent if it's not invoiced
-    const order = allOrders.find(o => o.id === orderId);
     if (order && order.invoiceStatus === 'not-invoiced') {
       const statusMutation = `mutation {
         change_column_value(
@@ -597,7 +610,8 @@ async function saveField(orderId, type) {
         value: "${val}"
       ) { id }
     }`;
-    await mondayQuery(mutation);
+    const ord = allOrders.find(o => o.id === orderId);
+    if (ord) ord.invoicedAmount = String(val);
     showToast('Saved', false);
     hideToast();
   } catch(err) {
@@ -607,11 +621,11 @@ async function saveField(orderId, type) {
 }
 
 async function saveNetsuite(orderId) {
-  const input = document.getElementById('netsuite-' + orderId);
+  const input = document.getElementById('pymt-' + orderId);
   if (!input || !input.value.trim()) return;
   const val = input.value.trim();
 
-  showToast('Saving NetSuite SO # and marking paid...');
+  showToast('Saving Payment Confirmation # and marking paid...');
   try {
     const today = new Date().toISOString().split('T')[0];
     const mutation = `mutation {
@@ -647,7 +661,7 @@ async function saveNetsuite(orderId) {
 async function saveAll(orderId) {
   const numInput = document.getElementById('inv-num-' + orderId);
   const amtInput = document.getElementById('inv-amt-' + orderId);
-  const soInput = document.getElementById('netsuite-' + orderId);
+  const soInput = document.getElementById('pymt-' + orderId);
 
   const numVal = numInput?.value.trim() || '';
   const amtVal = amtInput?.value ? parseFloat(amtInput.value) : null;
@@ -679,24 +693,25 @@ async function saveAll(orderId) {
     }`;
     await mondayQuery(mutation);
 
-    if (numVal) {
-      const order = allOrders.find(o => o.id === orderId);
-      if (order && order.invoiceStatus === 'not-invoiced') {
-        const statusMutation = `mutation {
+    const order = allOrders.find(o => o.id === orderId);
+    if (order) {
+      if (numVal) {
+        order.invoiceNum = numVal;
+        order.invoiceDate = today;
+      }
+      if (amtVal !== null) order.invoicedAmount = String(amtVal);
+    }
+
+    if (numVal && order && order.invoiceStatus === 'not-invoiced') {
+      const statusMutation = `mutation {
           change_column_value(
             board_id: ${BOARD_ID}, item_id: ${orderId},
             column_id: "${COL_INVOICE_STATUS}",
             value: "{\\"index\\": 2}"
           ) { id }
         }`;
-        await mondayQuery(statusMutation);
-        if (order) {
-          order.invoiceStatus = 'invoice-sent';
-          order.invoiceNum = numVal;
-          order.invoiceDate = today;
-          if (amtVal !== null) order.invoicedAmount = String(amtVal);
-        }
-      }
+      await mondayQuery(statusMutation);
+      if (order) order.invoiceStatus = 'invoice-sent';
     }
 
     const saved = document.getElementById('saved-' + orderId);
@@ -781,6 +796,22 @@ function scrollToInvSection(id, btn) {
   }
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
+}
+
+
+let allOrdersSnapshot = [];
+
+function applySearch() {
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+  if (!q) {
+    allOrders = [...allOrdersSnapshot];
+  } else {
+    allOrders = allOrdersSnapshot.filter(o =>
+      [o.name, o.ccb, o.contact, o.email, o.salesperson, o.shipTo].join(' ').toLowerCase().includes(q)
+    );
+  }
+  updateTabCounts();
+  renderTab();
 }
 
 loadOrders();
