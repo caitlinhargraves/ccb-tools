@@ -219,7 +219,7 @@ async function moveStation(subId,newStyleId,selectEl){
 
 function decoSelectHTML(p){
   const opts=[[1,'Embroidery'],[2,'Screenprint'],[3,'DTG'],[4,'DTF'],[5,'Engrave'],[6,'Other']];
-  return `<select class="deco-select" onchange="moveStation('${p.id}',this.value,this)">${opts.map(([id,name])=>`<option value="${id}" ${p.decoStyleId==id?'selected':''>${name}</option>`).join('')}</select>`;
+  return `<select class="deco-select" onchange="moveStation('${p.id}',this.value,this)">${opts.map(([id,name])=>`<option value="${id}" ${p.decoStyleId==id?'selected':''}>${name}</option>`).join('')}</select>`;
 }
 
 function buildCard(p,section){
@@ -227,7 +227,7 @@ function buildCard(p,section){
   const bg=DECO_BG[p.decoStyleDisplay]||'#f0efe9';const tc=DECO_TC[p.decoStyleDisplay]||'#6b6960';
   const mediaLinks=[p.mockupUrl?`<a class="media-btn" href="${p.mockupUrl}" target="_blank">Mockup</a>`:'',p.artworkUrl?`<a class="media-btn" href="${p.artworkUrl}" target="_blank">Artwork</a>`:'',p.proofUrl?`<a class="media-btn" href="${p.proofUrl}" target="_blank">Proof</a>`:''].filter(Boolean).join('');
   const opts=[[1,'Embroidery'],[2,'Screenprint'],[3,'DTG'],[4,'DTF'],[5,'Engrave'],[6,'Other']];
-  const decoSel=`<select class="deco-select" onchange="moveStation('${p.id}',this.value,this)">${opts.map(([id,name])=>`<option value="${id}" ${p.decoStyleId===id?'selected':''>${name}</option>`).join('')}</select>`;
+  const decoSel=`<select class="deco-select" onchange="moveStation('${p.id}',this.value,this)">${opts.map(([id,name])=>`<option value="${id}" ${p.decoStyleId===id?'selected':''}>${name}</option>`).join('')}</select>`;
   return `<div class="product-card ${locked?'locked':'qcd'}" id="card-${p.id}">
     <div class="card-header">
       <div>
