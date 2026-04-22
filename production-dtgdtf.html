@@ -266,7 +266,7 @@ function buildCard(p,section){
 let allUpcoming=[],allActive=[],sessionDone=[];
 
 async function fetchItems(){
-  const q=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name url column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}"]){id text value}subitems{id name url column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_DECO}","${S_PLACEMENT}","${S_ARTWORK_DESC}","${S_PROD_NOTES}","${S_MOCKUP}","${S_ARTWORK}","${S_PROOF}","${S_QC}"]){id text value}}}}}}}`;
+  const q=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name url column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}"]){id text value}subitems{id name url column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_DECO}","${S_PLACEMENT}","${S_ARTWORK_DESC}","${S_PROD_NOTES}","${S_MOCKUP}","${S_ARTWORK}","${S_PROOF}","${S_QC}"]){id text value}}}}}}`;
   const data=await mq(q);
   return data.boards[0].items_page.items;
 }
