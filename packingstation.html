@@ -810,7 +810,7 @@ async function markReadyToShip() {
     const mutation = `mutation {
       change_multiple_column_values(
         board_id: ${BOARD_ID}, item_id: ${currentOrder.id},
-        column_values: "{\\"color_mm27qyta\\": {\\"label\\": \\"Ready for Shipping\\"}}"
+        column_values: "{\\\"color_mm27qyta\\\": {\\\"index\\\": 6}}"
       ) { id }
     }`;
     await gql(mutation);
@@ -996,7 +996,7 @@ async function markReadyFromDash(orderId, btn) {
     const mutation = `mutation {
       change_multiple_column_values(
         board_id: ${BOARD_ID}, item_id: ${orderId},
-        column_values: "{\"color_mm27qyta\": {\"label\": \"Ready for Shipping\"}}"
+        column_values: "{\"color_mm27qyta\": {\"index\": 6}}"
       ) { id }
     }`;
     await gql(mutation);
@@ -1027,7 +1027,7 @@ async function markReadyToShipFromSlip(orderId, btn) {
     const mutation = `mutation {
       change_multiple_column_values(
         board_id: ${BOARD_ID}, item_id: ${orderId},
-        column_values: "{\"color_mm27qyta\": {\"label\": \"Ready for Shipping\"}}"
+        column_values: "{\"color_mm27qyta\": {\"index\": 6}}"
       ) { id }
     }`;
     await gql(mutation);
