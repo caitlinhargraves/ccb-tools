@@ -123,7 +123,7 @@ main{max-width:1200px;margin:0 auto;padding:20px}
 @media(max-width:700px){
   thead th:nth-child(4),tbody td:nth-child(4){display:none}
 }
-</style>
+.search-wrap{padding:16px 20px 0;max-width:1200px;margin:0 auto}.search-input{width:100%;padding:9px 14px 9px 36px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none;transition:border-color .15s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239b9890' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center}.search-input:focus{border-color:var(--border2)}.search-input::placeholder{color:var(--text3)}.detail-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}.detail-modal-overlay.open{opacity:1;pointer-events:all}.detail-modal{background:var(--surface);border-radius:var(--radius-lg);max-width:560px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15);transform:scale(.97);transition:transform .2s}.detail-modal-overlay.open .detail-modal{transform:scale(1)}.detail-modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}.detail-modal-title{font-size:14px;font-weight:500}.detail-modal-close{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;border-radius:6px;color:var(--text2)}.detail-modal-close:hover{background:var(--surface2)}.detail-modal-close svg{width:14px;height:14px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}.detail-modal-body{padding:20px}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.detail-cell{background:var(--surface2);border-radius:var(--radius);padding:10px 12px}.detail-lbl{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:3px}.detail-val{font-size:12px;color:var(--text)}.detail-mockup img{width:100%;border-radius:var(--radius);margin-top:12px}.product-card{cursor:pointer}.product-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}</style>
 </head>
 <body>
 <header>
@@ -160,6 +160,9 @@ main{max-width:1200px;margin:0 auto;padding:20px}
   </div>
 </div>
 
+<div class="search-wrap" style="margin-bottom:0;padding-bottom:12px">
+  <input class="search-input" id="search-input" type="text" placeholder="Search by order, contact, product, supplier, style..." oninput="applySearch()">
+</div>
 <main id="main">
   <div class="loading-state"><div class="spinner"></div><span style="font-size:13px;color:var(--text2)">Loading purchase orders...</span></div>
 </main>
@@ -169,7 +172,7 @@ main{max-width:1200px;margin:0 auto;padding:20px}
 <script>
 const API_KEY='eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0MTk0NTk5MCwiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMDZUMTQ6MDg6NTcuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.ihgQ7xsNZfKIQjaHDVWUy_7BY0aWoeWjS1oTEkTCKTg';
 const ORDERS_BOARD='18407165363';const SUBS_BOARD='18407165552';
-const O_NUM='pulse_id_mm27vwa5';const O_STATUS='color_mm27qyta';const O_INHAND='date_mm22wpk2';const O_CONTACT='text_mm221kg3';const O_SHIPTO='text_mm26gtxp';
+const O_NUM='pulse_id_mm27vwa5';const O_STATUS='color_mm27qyta';const O_INHAND='date_mm22wpk2';const O_CONTACT='text_mm221kg3';const O_SHIPTO='text_mm26gtxp';const O_SALESPERSON='dropdown_mm22w5rr';
 const S_STATUS='color_mm25v786';const S_TYPE='color_mm2dd6d5';const S_QTY='numeric_mm22crjt';const S_COLOR='text_mm2276wz';const S_SIZE='text_mm22yw8s';const S_STYLE='text_mm22fv7y';const S_SUPPLIER='text_mm22qdag';const S_PO_NUM='text_mm27ns9d';const S_PO_DATE='date_mm26mc76';const S_TRACKING='link_mm26rzea';const S_COST='numeric_mm266zz9';const S_MOCKUP='file_mm26e29h';const S_PRICE='numeric_mm2299qw';
 
 // Timers for 30-second countdown before auto-committing
@@ -199,7 +202,7 @@ async function loadData(){
   if(!main.querySelector('.order-card'))main.innerHTML='<div class="loading-state"><div class="spinner"></div><span style="font-size:13px;color:var(--text2)">Loading...</span></div>';
 
   try{
-    const q=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name url column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHIPTO}"]){id text value}subitems{id name url column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_SUPPLIER}","${S_PO_NUM}","${S_PO_DATE}","${S_TRACKING}","${S_COST}","${S_MOCKUP}","${S_PRICE}"]){id text value}}}}}}`;
+    const q=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name url column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHIPTO}","${O_SALESPERSON}"]){id text value}subitems{id name url column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_SUPPLIER}","${S_PO_NUM}","${S_PO_DATE}","${S_TRACKING}","${S_COST}","${S_MOCKUP}","${S_PRICE}"]){id text value}}}}}}`;
     const data=await mq(q);
     const items=data.boards[0].items_page.items;
 
@@ -213,7 +216,7 @@ async function loadData(){
       // Skip shipped, completed, paid, promo code order status (we handle promo via subitem type)
       if(['shipped','3rd party complete'].includes(orderStatus))continue;
 
-      const orderInfo={id:item.id,name:item.name,url:item.url,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',shipTo:cv[O_SHIPTO]?.text||'',inHands:cv[O_INHAND]?.text||''};
+      const orderInfo={id:item.id,name:item.name,url:item.url,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',shipTo:cv[O_SHIPTO]?.text||'',inHands:cv[O_INHAND]?.text||'',salesperson:cv[O_SALESPERSON]?.text||''};
 
       for(const sub of(item.subitems||[])){
         const sc={};for(const c of sub.column_values)sc[c.id]=c;
@@ -254,6 +257,7 @@ async function loadData(){
     // Sort all by in-hands date
     const srt=(a,b)=>{const ai=a.orderInfo.inHands,bi=b.orderInfo.inHands;if(!ai&&!bi)return 0;if(!ai)return 1;if(!bi)return-1;return new Date(ai)-new Date(bi);};
     toBeOrdered.sort(srt);ordered.sort(srt);thirdParty.sort(srt);promoCodes.sort(srt);
+    allToBeOrdered=[...toBeOrdered];allOrdered=[...ordered];allThirdParty=[...thirdParty];allPromoCodes=[...promoCodes];
 
     render();
     document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
@@ -338,6 +342,7 @@ function buildOrderCard(group,section){
           ${o.ccbNum?`<span class="order-num">${o.ccbNum}</span>`:''}
           ${o.contact?`<span class="chip">${o.contact}</span>`:''}
           ${o.shipTo?`<span class="chip">${o.shipTo}</span>`:''}
+          ${o.salesperson?`<span class="chip" style="background:var(--blue-bg);color:var(--blue);border-color:var(--blue-border)">${o.salesperson}</span>`:''}
           ${duechip(o.inHands)}
         </div>
       </div>
@@ -351,7 +356,7 @@ function buildProductCard(p,section){
   // Mockup section
   let mockupHtml='';
   if(p.mockupUrl){
-    mockupHtml=`<div class="product-card-mockup" onclick="window.open('${p.mockupUrl}','_blank')">
+    mockupHtml=`<div class="product-card-mockup" onclick="event.stopPropagation();window.open('${p.mockupUrl}','_blank')">
       <img src="${p.mockupUrl}" alt="Mockup" onerror="this.parentElement.innerHTML='<div class=\\"no-mockup\\"><svg viewBox=\\"0 0 24 24\\"><rect x=\\"3\\" y=\\"3\\" width=\\"18\\" height=\\"18\\" rx=\\"2\\"/><circle cx=\\"8.5\\" cy=\\"8.5\\" r=\\"1.5\\"/><polyline points=\\"21 15 16 10 5 21\\"/></svg><span>No preview</span></div>'">
       <div class="mockup-overlay"><span>View mockup</span></div>
     </div>`;
@@ -392,27 +397,31 @@ function buildProductCard(p,section){
     poHtml=`<div class="product-card-po">
       <div class="po-row">
         <span class="po-lbl">Supplier</span>
-        <input class="po-input" style="width:100%" type="text" placeholder="Supplier name" value="${p.supplier}" id="sup-${p.id}" oninput="onPoInput('${p.id}','${p.orderId}')">
+        <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="text" placeholder="Supplier name" value="${p.supplier}" id="sup-${p.id}" oninput="onPoInput('${p.id}','${p.orderId}')">
       </div>
       <div class="po-row-inline">
         <div class="po-row" style="flex:1">
           <span class="po-lbl">PO Number</span>
-          <input class="po-input" style="width:100%" type="text" placeholder="PO-001" value="${p.poNum}" id="ponum-${p.id}" oninput="onPoInput('${p.id}','${p.orderId}')">
+          <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="text" placeholder="PO-001" value="${p.poNum}" id="ponum-${p.id}" oninput="onPoInput('${p.id}','${p.orderId}')">
         </div>
         <div class="po-row" style="flex:1">
           <span class="po-lbl">PO Date</span>
-          <input class="po-input date-input" style="width:100%" type="date" id="date-${p.id}" value="${p.poDate||''}" oninput="onDateInput('${p.id}','${p.orderId}',this.value)">
+          <input class="po-input date-input" style="width:100%" onclick="event.stopPropagation()" type="date" id="date-${p.id}" value="${p.poDate||''}" oninput="onDateInput('${p.id}','${p.orderId}',this.value)">
         </div>
       </div>
       <div class="po-row">
         <span class="po-lbl">Tracking Link</span>
-        <input class="po-input" style="width:100%" type="url" placeholder="https://..." value="${p.tracking}" id="track-${p.id}" oninput="onPoInput('${p.id}','${p.orderId}')">
+        <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="url" placeholder="https://..." value="${p.tracking}" id="track-${p.id}" oninput="onPoInput('${p.id}','${p.orderId}')">
+      </div>
+      <div class="po-row">
+        <span class="po-lbl">Our Cost / Item</span>
+        <input class="po-input cost-input" style="width:100%" onclick="event.stopPropagation()" type="number" placeholder="0.00" step="0.01" value="${p.cost}" id="cost-${p.id}" onblur="saveCost('${p.id}',this.value)">
       </div>
       <div id="countdown-wrap-${p.id}" style="display:none">
         <div class="countdown-wrap">
-          <span class="countdown-badge" id="cd-val-${p.id}">30s</span>
-          <span class="countdown-label">until ordered</span>
-          <button class="cancel-btn" onclick="cancelCountdown('${p.id}')">Cancel</button>
+          <span class="countdown-badge" id="cd-val-${p.id}">10s</span>
+          <span class="countdown-label">until ordered (tap cancel to stop)</span>
+          <button class="cancel-btn" onclick="event.stopPropagation();cancelCountdown('${p.id}')">Cancel</button>
         </div>
       </div>
     </div>`;
@@ -425,14 +434,14 @@ function buildProductCard(p,section){
       <div class="po-row-inline" style="align-items:flex-end;justify-content:space-between">
         <div class="po-row" style="flex:1">
           <span class="po-lbl">Our Cost / Item</span>
-          <input class="po-input cost-input" style="width:100%" type="number" placeholder="0.00" value="${p.cost}" id="cost-${p.id}" onblur="saveCost('${p.id}',this.value)">
+          <input class="po-input cost-input" style="width:100%" onclick="event.stopPropagation()" type="number" placeholder="0.00" value="${p.cost}" id="cost-${p.id}" onblur="saveCost('${p.id}',this.value)">
         </div>
-        ${section==='tp_ord'?`<button class="complete-btn" onclick="mark3rdPartyComplete('${p.orderId}','${p.id}',this)">Mark Complete</button>`:''}
+        ${section==='tp_ord'?`<button class="complete-btn" onclick="event.stopPropagation();mark3rdPartyComplete('${p.orderId}','${p.id}',this)">Mark Complete</button>`:''}
       </div>
     </div>`;
   }
 
-  return `<div class="product-card" id="row-${p.id}">
+  return `<div class="product-card" id="row-${p.id}" onclick="openProductDetail('${p.id}')">
     ${mockupHtml}
     <div class="product-card-body">
       <div class="product-card-name">${p.name}</div>
@@ -457,9 +466,9 @@ function buildPoFields(group,section){
       </div>
       <div id="promo-countdown-${o.id}" style="display:none">
         <div class="countdown-wrap">
-          <span class="countdown-badge" id="promo-cd-val-${o.id}">30s</span>
-          <span class="countdown-label">until marked sent</span>
-          <button class="cancel-btn" onclick="cancelPromoCountdown('${o.id}')">Cancel</button>
+          <span class="countdown-badge" id="promo-cd-val-${o.id}">10s</span>
+          <span class="countdown-label">until marked sent (tap cancel to stop)</span>
+          <button class="cancel-btn" onclick="event.stopPropagation();cancelPromoCountdown('${o.id}')">Cancel</button>
         </div>
       </div>
     </div>`;
@@ -490,7 +499,7 @@ function startCountdown(subId,orderId,explicitDate=null){
   const valEl=document.getElementById('cd-val-'+subId);
   if(!wrapEl||!valEl)return;
   wrapEl.style.display='block';
-  let remaining=30;
+  let remaining=10;
   valEl.textContent=remaining+'s';
   pendingTimers[subId]={
     interval:setInterval(()=>{
@@ -512,7 +521,7 @@ function cancelCountdown(subId){
   const wrapEl=document.getElementById('countdown-wrap-'+subId);
   if(wrapEl)wrapEl.style.display='none';
   const valEl=document.getElementById('cd-val-'+subId);
-  if(valEl)valEl.textContent='30s';
+  if(valEl)valEl.textContent='10s';
 }
 
 async function commitPoEntry(subId,orderId,explicitDate=null){
@@ -594,7 +603,7 @@ function startPromoCountdown(orderId,subIds,date){
   const valEl=document.getElementById('promo-cd-val-'+orderId);
   if(!cdEl||!valEl)return;
   cdEl.style.display='block';
-  let remaining=30;
+  let remaining=10;
   valEl.textContent=remaining+'s';
   promoCountdownTimers[orderId]=setInterval(()=>{
     remaining--;
@@ -642,7 +651,117 @@ function scrollToSection(id,btn){
   if(btn)btn.classList.add('active');
 }
 
+
+// ── SEARCH ────────────────────────────────────────────────────────────────────
+let allToBeOrdered=[],allOrdered=[],allThirdParty=[],allPromoCodes=[];
+
+function applySearch(){
+  const q=document.getElementById('search-input').value.toLowerCase().trim();
+  if(!q){
+    toBeOrdered=allToBeOrdered;ordered=allOrdered;thirdParty=allThirdParty;promoCodes=allPromoCodes;
+  } else {
+    const match=p=>[p.name,p.orderInfo.name,p.orderInfo.ccbNum,p.orderInfo.contact,p.orderInfo.salesperson,p.supplier,p.style,p.color,p.type].join(' ').toLowerCase().includes(q);
+    toBeOrdered=allToBeOrdered.filter(match);ordered=allOrdered.filter(match);
+    thirdParty=allThirdParty.filter(match);promoCodes=allPromoCodes.filter(match);
+  }
+  render();
+}
+
+// ── DETAIL MODAL ──────────────────────────────────────────────────────────────
+function openProductDetail(subId){
+  const all=[...allToBeOrdered,...allOrdered,...allThirdParty,...allPromoCodes];
+  const p=all.find(x=>x.id===subId);
+  if(!p)return;
+  const isOrdered=[...allOrdered,...allThirdParty.filter(x=>x.poDate)].some(x=>x.id===subId);
+  document.getElementById('detail-modal-title').textContent=p.name;
+
+  const staticFields=[
+    ['Order',p.orderInfo.name],['CCB #',p.orderInfo.ccbNum],
+    ['Contact',p.orderInfo.contact],['Sales Person',p.orderInfo.salesperson],
+    ['In Hands',p.orderInfo.inHands||'—'],['Ship To',p.orderInfo.shipTo||'—'],
+    ['Type',p.type||'—'],['Qty',p.qty||'—'],['Color',p.color||'—'],
+    ['Size',p.size||'—'],['Style #',p.style||'—'],['Supplier',p.supplier||'—'],
+    ['Price/Item',p.price?'$'+p.price:'—'],
+  ].filter(([,v])=>v&&v!=='—').map(([l,v])=>`<div class="detail-cell"><div class="detail-lbl">${l}</div><div class="detail-val">${v}</div></div>`).join('');
+
+  let editHtml='';
+  if(isOrdered){
+    editHtml=`
+      <div style="margin:14px 0 6px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)">Edit PO Details</div>
+      <div style="display:flex;flex-direction:column;gap:10px;background:var(--surface2);border-radius:var(--radius);padding:14px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:120px">
+            <div class="detail-lbl" style="margin-bottom:4px">PO Number</div>
+            <input class="po-input" style="width:100%" type="text" placeholder="PO-001"
+              value="${p.poNum}" id="modal-ponum-${p.id}"
+              onblur="savePoField('${p.id}','ponum',this.value)">
+          </div>
+          <div style="flex:1;min-width:120px">
+            <div class="detail-lbl" style="margin-bottom:4px">PO Date</div>
+            <input class="po-input date-input" style="width:100%" type="date"
+              value="${p.poDate||''}" id="modal-date-${p.id}"
+              onblur="savePoField('${p.id}','date',this.value)">
+          </div>
+        </div>
+        <div>
+          <div class="detail-lbl" style="margin-bottom:4px">Tracking Link</div>
+          <input class="po-input" style="width:100%" type="url" placeholder="https://..."
+            value="${p.tracking}" id="modal-track-${p.id}"
+            onblur="savePoField('${p.id}','tracking',this.value)">
+        </div>
+        <div>
+          <div class="detail-lbl" style="margin-bottom:4px">Our Cost / Item</div>
+          <input class="po-input cost-input" style="width:160px" type="number" placeholder="0.00" step="0.01"
+            value="${p.cost}" id="modal-cost-${p.id}"
+            onblur="saveCost('${p.id}',this.value)">
+        </div>
+        <div style="font-size:11px;color:var(--text3)">Changes save when you click out of each field.</div>
+      </div>`;
+  }
+
+  const img=p.mockupUrl?`<div class="detail-mockup"><img src="${p.mockupUrl}" alt="Mockup" onerror="this.style.display='none'"></div>`:'';
+  document.getElementById('detail-modal-body').innerHTML=`<div class="detail-grid">${staticFields}</div>${editHtml}${img}`;
+  document.getElementById('detail-modal-overlay').classList.add('open');
+}
+
+async function savePoField(subId,field,val){
+  if(!val)return;
+  const all=[...allOrdered,...allThirdParty];
+  const p=all.find(x=>x.id===subId);
+  showToast('Saving...');
+  try{
+    let mutation='';
+    if(field==='ponum'){
+      mutation=`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"text_mm27ns9d",value:${JSON.stringify(JSON.stringify(val))}){id}}`;
+      if(p)p.poNum=val;
+    } else if(field==='date'){
+      mutation=`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"date_mm26mc76",value:"{\"date\":\"${val}\"}"){id}}`;
+      if(p)p.poDate=val;
+    } else if(field==='tracking'){
+      mutation=`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"link_mm26rzea",value:"{\"url\":\"${val}\",\"text\":\"Track\"}"){id}}`;
+      if(p)p.tracking=val;
+    }
+    await mq(mutation);
+    showToast('Saved',false);hideToast();
+  }catch(err){showToast('Error: '+err.message,false);hideToast(3000);}
+}
+function closeDetailModal(e){if(e.target===document.getElementById('detail-modal-overlay'))closeDetailModalDirect();}
+function closeDetailModalDirect(){document.getElementById('detail-modal-overlay').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDetailModalDirect();});
+
 loadData();
 </script>
+
+<div class="detail-modal-overlay" id="detail-modal-overlay" onclick="closeDetailModal(event)">
+  <div class="detail-modal">
+    <div class="detail-modal-header">
+      <span class="detail-modal-title" id="detail-modal-title">Product Detail</span>
+      <button class="detail-modal-close" onclick="closeDetailModalDirect()">
+        <svg viewBox="0 0 14 14"><path d="M1 1l12 12M13 1L1 13"/></svg>
+      </button>
+    </div>
+    <div class="detail-modal-body" id="detail-modal-body"></div>
+  </div>
+</div>
 </body>
 </html>
