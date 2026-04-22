@@ -43,8 +43,8 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 .section-line{flex:1;height:1px;background:var(--border)}
 .product-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);transition:opacity .3s,transform .3s}
 .product-card.fading{opacity:0;transform:translateY(-6px)}
-.product-card.locked{border-left:3px solid var(--amber-border)}
-.product-card.qcd{border-left:3px solid var(--green-border)}
+
+
 .card-header{display:grid;grid-template-columns:1fr auto;gap:16px;padding:14px 18px 12px;border-bottom:1px solid var(--border);background:var(--surface2);align-items:start}
 .card-name{font-size:14px;font-weight:500;letter-spacing:-.01em;margin-bottom:4px}
 .card-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -52,8 +52,8 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 .chip.due-soon{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-border)}
 .chip.overdue{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
 .chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
-.chip.qc-ok{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
-.chip.qc-pending{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-border)}
+
+
 .card-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0;border-bottom:1px solid var(--border)}
 .info-cell{padding:10px 14px;border-right:1px solid var(--border)}
 .info-cell:last-child{border-right:none}
@@ -67,13 +67,13 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 .footer-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .deco-select{font-size:12px;font-family:'DM Sans',sans-serif;padding:5px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);cursor:pointer}
 .deco-select:focus{outline:none;border-color:var(--text)}
-.qc-btn{font-size:12px;font-family:'DM Sans',sans-serif;padding:6px 12px;background:transparent;color:var(--text2);border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;transition:all .15s;white-space:nowrap}
-.qc-btn:hover{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
-.qc-btn.qcd{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
+
+
+
 .decorated-btn{font-size:12px;font-family:'DM Sans',sans-serif;padding:7px 16px;background:var(--decorated-btn-bg,var(--text));color:white;border:none;border-radius:var(--radius);cursor:pointer;transition:opacity .15s;white-space:nowrap}
 .decorated-btn:hover{opacity:.85}
 .decorated-btn:disabled{opacity:.4;cursor:not-allowed}
-.decorated-btn.locked-btn{background:var(--amber)}
+
 .media-btn{font-size:11px;padding:4px 9px;background:transparent;color:var(--text2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block;transition:all .15s}
 .media-btn:hover{background:var(--surface2)}
 .deco-badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:4px;white-space:nowrap}
@@ -103,7 +103,7 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 .pname{max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 :root{--logo-bg:#2d6a4f;--decorated-btn-bg:#2d6a4f}
-</style>
+.search-wrap{margin-bottom:20px}.search-input{width:100%;padding:9px 14px 9px 36px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none;transition:border-color .15s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239b9890' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center}.search-input:focus{border-color:var(--border2)}.search-input::placeholder{color:var(--text3)}.no-results{font-size:13px;color:var(--text2);padding:20px 0}</style>
 </head>
 <body>
 <header>
@@ -130,6 +130,8 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
     <div class="stat-card"><div class="stat-label">Active</div><div class="stat-value" id="stat-ac">—</div><div class="stat-sub">ready to decorate</div></div>
     <div class="stat-card"><div class="stat-label">Done This Session</div><div class="stat-value" id="stat-done">0</div><div class="stat-sub">decorated today</div></div>
   </div>
+
+  <div class="search-wrap"><input class="search-input" id="search-input" type="text" placeholder="Search by product, order name, CCB #, color, style..." oninput="applySearch()"></div>
   <div id="content">
     <div class="loading-state"><div class="spinner"></div><span style="font-size:13px;color:var(--text2)">Loading DTG / DTF queue...</span></div>
   </div>
@@ -149,7 +151,7 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 const API_KEY='eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0MTk0NTk5MCwiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMDZUMTQ6MDg6NTcuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.ihgQ7xsNZfKIQjaHDVWUy_7BY0aWoeWjS1oTEkTCKTg';
 const ORDERS_BOARD='18407165363';const SUBS_BOARD='18407165552';
 const O_NUM='pulse_id_mm27vwa5';const O_STATUS='color_mm27qyta';const O_INHAND='date_mm22wpk2';const O_CONTACT='text_mm221kg3';
-const S_STATUS='color_mm25v786';const S_TYPE='color_mm2dd6d5';const S_QTY='numeric_mm22crjt';const S_COLOR='text_mm2276wz';const S_SIZE='text_mm22yw8s';const S_STYLE='text_mm22fv7y';const S_DECO='dropdown_mm22dn1f';const S_PLACEMENT='text_mm226hzf';const S_ARTWORK_DESC='text_mm2521d5';const S_PROD_NOTES='long_text_mm27e9c4';const S_MOCKUP='file_mm26e29h';const S_ARTWORK='file_mm221c09';const S_PROOF='file_mm25ph2d';const S_QC='boolean_mm27779w';
+const S_STATUS='color_mm25v786';const S_TYPE='color_mm2dd6d5';const S_QTY='numeric_mm22crjt';const S_COLOR='text_mm2276wz';const S_SIZE='text_mm22yw8s';const S_STYLE='text_mm22fv7y';const S_DECO='dropdown_mm22dn1f';const S_PLACEMENT='text_mm226hzf';const S_ARTWORK_DESC='text_mm2521d5';const S_PROD_NOTES='long_text_mm27e9c4';const S_MOCKUP='file_mm26e29h';const S_ARTWORK='file_mm221c09';const S_PROOF='file_mm25ph2d';
 const DECO_STYLES={1:'Embroidery',2:'Screenprint',3:'DTG',4:'DTF',5:'Engrave',6:'Other'};
 const DECO_DISPLAY={1:'Embroidery',2:'Screenprint',3:'DTG / DTF',4:'DTG / DTF',5:'Engrave',6:'Other'};
 const DECO_BG={'Embroidery':'#dbeafe','Screenprint':'#fef3c7','DTG / DTF':'#e8f5ee','DTG':'#e8f5ee','DTF':'#e8f5ee','Engrave':'#f3e8ff','Other':'#f0efe9'};
@@ -166,7 +168,6 @@ function hideToast(d=1500){setTimeout(()=>document.getElementById('toast').class
 
 async function markDecorated(subId,orderId,btn){
   const p=allActive.find(x=>x.id===subId)||allUpcoming.find(x=>x.id===subId);
-  if(p&&!p.qc){showToast('QC sign-off required first',false);hideToast(2500);return;}
   btn.disabled=true;btn.textContent='Updating...';
   showToast('Marking decorated...');
   try{
@@ -185,28 +186,7 @@ async function markDecorated(subId,orderId,btn){
   }catch(err){btn.disabled=false;btn.textContent='✓ Mark Decorated';showToast('Error: '+err.message,false);hideToast(3000);}
 }
 
-async function toggleQC(subId,checked,btn){
-  btn.disabled=true;
-  showToast(checked?'Marking QC approved...':'Removing QC...');
-  try{
-    await mq(`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"boolean_mm27779w",value:"{\\"checked\\":\\"${checked?'true':'false'}\\"}"){ id}}`);
-    const p=allActive.find(x=>x.id===subId)||allUpcoming.find(x=>x.id===subId);
-    if(p)p.qc=checked;
-    btn.className='qc-btn'+(checked?' qcd':'');
-    btn.textContent=checked?"✓ QC'd":'QC Sign-off';
-    btn.disabled=false;
-    // update the card lock state
-    const card=document.getElementById('card-'+subId);
-    if(card){card.className='product-card '+(checked?'qcd':'locked');}
-    // update decorated btn
-    const decBtn=document.getElementById('dec-btn-'+subId);
-    if(decBtn){decBtn.className='decorated-btn'+(checked?'':' locked-btn');decBtn.textContent=checked?'✓ Mark Decorated':'🔒 QC Required';}
-    // update qc chip in header
-    const qcChip=document.getElementById('qc-chip-'+subId);
-    if(qcChip){qcChip.className='chip '+(checked?'qc-ok':'qc-pending');qcChip.textContent=checked?"✓ QC'd":'Awaiting QC';}
-    showToast(checked?'QC approved':'QC removed',false);hideToast();
-  }catch(err){btn.disabled=false;showToast('Error: '+err.message,false);hideToast(3000);}
-}
+
 
 async function moveStation(subId,newStyleId,selectEl){
   showToast('Reassigning station...');
@@ -223,12 +203,11 @@ function decoSelectHTML(p){
 }
 
 function buildCard(p,section){
-  const locked=!p.qc;
   const bg=DECO_BG[p.decoStyleDisplay]||'#f0efe9';const tc=DECO_TC[p.decoStyleDisplay]||'#6b6960';
   const mediaLinks=[p.mockupUrl?`<a class="media-btn" href="${p.mockupUrl}" target="_blank">Mockup</a>`:'',p.artworkUrl?`<a class="media-btn" href="${p.artworkUrl}" target="_blank">Artwork</a>`:'',p.proofUrl?`<a class="media-btn" href="${p.proofUrl}" target="_blank">Proof</a>`:''].filter(Boolean).join('');
   const opts=[[1,'Embroidery'],[2,'Screenprint'],[3,'DTG'],[4,'DTF'],[5,'Engrave'],[6,'Other']];
   const decoSel=`<select class="deco-select" onchange="moveStation('${p.id}',this.value,this)">${opts.map(([id,name])=>`<option value="${id}" ${p.decoStyleId===id?'selected':''}>${name}</option>`).join('')}</select>`;
-  return `<div class="product-card ${locked?'locked':'qcd'}" id="card-${p.id}">
+  return `<div class="product-card" id="card-${p.id}">
     <div class="card-header">
       <div>
         <div class="card-name">${p.name}</div>
@@ -237,7 +216,6 @@ function buildCard(p,section){
           <span class="chip">${p.orderName}</span>
           ${duechip(p.inHands)}
           <span class="deco-badge" style="background:${bg};color:${tc};border:1px solid ${tc}22">${p.decoStyleDisplay||'—'}</span>
-          <span class="chip ${locked?'qc-pending':'qc-ok'}" id="qc-chip-${p.id}">${locked?"Awaiting QC":"✓ QC'd"}</span>
         </div>
       </div>
       <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">${mediaLinks}</div>
@@ -255,9 +233,8 @@ function buildCard(p,section){
       <div class="footer-left">
         <span style="font-size:11px;color:var(--text3)">Station:</span>
         ${decoSel}
-        <button class="qc-btn ${p.qc?'qcd':''}" onclick="toggleQC('${p.id}',${!p.qc},this)">${p.qc?"✓ QC'd":'QC Sign-off'}</button>
       </div>
-      ${section==='active'?`<button class="decorated-btn ${locked?'locked-btn':''}" id="dec-btn-${p.id}" onclick="markDecorated('${p.id}','${p.orderId}',this)">${locked?'🔒 QC Required':'✓ Mark Decorated'}</button>`:''}
+      ${section==='active'?`<button class="decorated-btn" id="dec-btn-${p.id}" onclick="markDecorated('${p.id}','${p.orderId}',this)">✓ Mark Decorated</button>`:''}
     </div>
   </div>`;
 }
@@ -265,8 +242,19 @@ function buildCard(p,section){
 
 let allUpcoming=[],allActive=[],sessionDone=[];
 
+let searchQuery='';
+function applySearch(){
+  searchQuery=document.getElementById('search-input').value.toLowerCase().trim();
+  renderContent();
+}
+function filterItems(arr){
+  if(!searchQuery)return arr;
+  return arr.filter(p=>[p.name,p.orderName,p.ccbNum,p.color,p.size,p.style,p.placement,p.artworkDesc,p.contact].join(' ').toLowerCase().includes(searchQuery));
+}
+
+
 async function fetchItems(){
-  const q=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name url column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}"]){id text value}subitems{id name url column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_DECO}","${S_PLACEMENT}","${S_ARTWORK_DESC}","${S_PROD_NOTES}","${S_MOCKUP}","${S_ARTWORK}","${S_PROOF}","${S_QC}"]){id text value}}}}}}`;
+  const q=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name url column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}"]){id text value}subitems{id name url column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_DECO}","${S_PLACEMENT}","${S_ARTWORK_DESC}","${S_PROD_NOTES}","${S_MOCKUP}","${S_ARTWORK}","${S_PROOF}"]){id text value}}}}}}`;
   const data=await mq(q);
   return data.boards[0].items_page.items;
 }
@@ -277,8 +265,7 @@ function parseProduct(item,sub){
   const decoStyleId=parseInt(sc[S_DECO]?.value?JSON.parse(sc[S_DECO].value||'{}')?.ids?.[0]||0:0);
   const decoStyleText=sc[S_DECO]?.text||'';
   const decoStyleDisplay=decoStyleId===3||decoStyleId===4?'DTG / DTF':decoStyleText||'Other';
-  let qcVal=false;try{qcVal=JSON.parse(sc[S_QC]?.value||'{}').checked===true;}catch(e){}
-  return{id:sub.id,name:sub.name,url:sub.url,orderId:item.id,orderName:item.name,orderUrl:item.url,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',inHands:cv[O_INHAND]?.text||'',qty:sc[S_QTY]?.text||'',color:sc[S_COLOR]?.text||'',size:sc[S_SIZE]?.text||'',style:sc[S_STYLE]?.text||'',decoStyleId,decoStyleText,decoStyleDisplay,placement:sc[S_PLACEMENT]?.text||'',artworkDesc:sc[S_ARTWORK_DESC]?.text||'',prodNotes:sc[S_PROD_NOTES]?.text||'',mockupUrl:ffile(sc[S_MOCKUP]?.value,sc[S_MOCKUP]?.text),artworkUrl:ffile(sc[S_ARTWORK]?.value,sc[S_ARTWORK]?.text),proofUrl:ffile(sc[S_PROOF]?.value,sc[S_PROOF]?.text),qc:qcVal};
+  return{id:sub.id,name:sub.name,url:sub.url,orderId:item.id,orderName:item.name,orderUrl:item.url,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',inHands:cv[O_INHAND]?.text||'',qty:sc[S_QTY]?.text||'',color:sc[S_COLOR]?.text||'',size:sc[S_SIZE]?.text||'',style:sc[S_STYLE]?.text||'',decoStyleId,decoStyleText,decoStyleDisplay,placement:sc[S_PLACEMENT]?.text||'',artworkDesc:sc[S_ARTWORK_DESC]?.text||'',prodNotes:sc[S_PROD_NOTES]?.text||'',mockupUrl:ffile(sc[S_MOCKUP]?.value,sc[S_MOCKUP]?.text),artworkUrl:ffile(sc[S_ARTWORK]?.value,sc[S_ARTWORK]?.text),proofUrl:ffile(sc[S_PROOF]?.value,sc[S_PROOF]?.text)};
 }
 
 function sortByDate(arr){return arr.sort((a,b)=>{if(!a.inHands&&!b.inHands)return 0;if(!a.inHands)return 1;if(!b.inHands)return-1;return new Date(a.inHands)-new Date(b.inHands);});}
