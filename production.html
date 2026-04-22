@@ -100,7 +100,35 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 .toast-spinner{width:14px;height:14px;border:1.5px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .6s linear infinite}
 .mono{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2)}
 .pname{max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.search-wrap{margin-bottom:20px}.search-input{width:100%;padding:9px 14px 9px 36px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none;transition:border-color .15s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239b9890' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center}.search-input:focus{border-color:var(--border2)}.search-input::placeholder{color:var(--text3)}.no-results{font-size:13px;color:var(--text2);padding:20px 0}</style>
+.search-wrap{margin-bottom:20px}.search-input{width:100%;padding:9px 14px 9px 36px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none;transition:border-color .15s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239b9890' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center}.search-input:focus{border-color:var(--border2)}.search-input::placeholder{color:var(--text3)}.no-results{font-size:13px;color:var(--text2);padding:20px 0}
+.section-bar{background:var(--surface);border-bottom:1px solid var(--border);border-top:1px solid var(--border);display:flex;position:sticky;top:56px;z-index:90}
+.sec-btn{font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;padding:9px 18px;cursor:pointer;white-space:nowrap;transition:all .15s;display:flex;align-items:center;gap:6px}
+.sec-btn:hover{color:var(--text)}
+.sec-btn.active{color:var(--text);border-bottom-color:var(--text);font-weight:500}
+.sec-count-nav{font-size:10px;font-family:'DM Mono',monospace;background:var(--surface2);border:.5px solid var(--border);border-radius:8px;padding:0 5px}
+.section-anchor{scroll-margin-top:100px}
+.view-toggle{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;flex-shrink:0;margin-left:auto}
+.view-btn{font-size:12px;font-family:'DM Sans',sans-serif;padding:6px 12px;background:var(--surface);border:none;cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px;transition:all .15s}
+.view-btn svg{width:13px;height:13px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.view-btn:first-child{border-right:1px solid var(--border)}
+.view-btn.active{background:var(--text);color:white}
+.card-mockup-thumb{width:52px;height:52px;border-radius:6px;object-fit:cover;border:1px solid var(--border);cursor:pointer;transition:opacity .15s;display:block}
+.card-mockup-thumb:hover{opacity:.85}
+.card-mockup-placeholder{width:52px;height:52px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:center}
+.card-mockup-placeholder svg{width:18px;height:18px;stroke:var(--text3);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:var(--radius-lg);max-width:560px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);transform:scale(.97);transition:transform .2s}
+.modal-overlay.open .modal{transform:scale(1)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:13px;font-weight:500}
+.modal-close{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;border-radius:5px;color:var(--text2)}
+.modal-close:hover{background:var(--surface2)}
+.modal-close svg{width:13px;height:13px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.modal-body{padding:16px}
+.modal-body img{width:100%;border-radius:var(--radius);margin-bottom:8px;display:block}
+.modal-body .no-img{text-align:center;padding:40px;color:var(--text3);font-size:13px}
+</style>
 </head>
 <body>
 <header>
@@ -116,6 +144,20 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
     </button>
   </div>
 </header>
+<div class="section-bar">
+  <button class="sec-btn active" onclick="scrollToSection('sec-active',this)">Active <span class="sec-count-nav" id="nav-count-ac">—</span></button>
+  <button class="sec-btn" onclick="scrollToSection('sec-upcoming',this)">Upcoming <span class="sec-count-nav" id="nav-count-up">—</span></button>
+  <div class="view-toggle" style="margin:6px 16px 6px auto">
+    <button class="view-btn" id="btn-card" onclick="setView('card')">
+      <svg viewBox="0 0 14 14"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>
+      Cards
+    </button>
+    <button class="view-btn" id="btn-table" onclick="setView('table')">
+      <svg viewBox="0 0 14 14"><path d="M1 4h12M1 8h12M1 12h12M1 1v12"/></svg>
+      Table
+    </button>
+  </div>
+</div>
 <main>
   <div class="stats-row">
     <div class="stat-card"><div class="stat-label">Upcoming</div><div class="stat-value" id="stat-up">—</div><div class="stat-sub">product ordered</div></div>
@@ -197,7 +239,8 @@ function decoSelectHTML(p){
 
 function buildCard(p,section){
   const bg=DECO_BG[p.decoStyleDisplay]||'#f0efe9';const tc=DECO_TC[p.decoStyleDisplay]||'#6b6960';
-  const mediaLinks=[p.mockupUrl?`<a class="media-btn" href="${p.mockupUrl}" target="_blank">Mockup</a>`:'',p.artworkUrl?`<a class="media-btn" href="${p.artworkUrl}" target="_blank">Artwork</a>`:'',p.proofUrl?`<a class="media-btn" href="${p.proofUrl}" target="_blank">Proof</a>`:''].filter(Boolean).join('');
+  const mockupThumb=p.mockupUrl?`<img class="card-mockup-thumb" src="${p.mockupUrl}" alt="Mockup" title="Click to view" onclick="openMockup('${p.mockupUrl}','${p.name.replace(/'/g,"\\'")}');" onerror="this.style.display='none'">`:`<div class="card-mockup-placeholder"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
+  const mediaLinks=[p.artworkUrl?`<a class="media-btn" href="${p.artworkUrl}" target="_blank">Artwork</a>`:'',p.proofUrl?`<a class="media-btn" href="${p.proofUrl}" target="_blank">Proof</a>`:''].filter(Boolean).join('');
   const opts=[[1,'Embroidery'],[2,'Screenprint'],[3,'DTG'],[4,'DTF'],[5,'Engrave'],[6,'Other']];
   const decoSel=`<select class="deco-select" onchange="moveStation('${p.id}',this.value,this)">${opts.map(([id,name])=>`<option value="${id}" ${p.decoStyleId===id?'selected':''}>${name}</option>`).join('')}</select>`;
   return `<div class="product-card" id="card-${p.id}">
@@ -211,7 +254,7 @@ function buildCard(p,section){
           <span class="deco-badge" style="background:${bg};color:${tc};border:1px solid ${tc}22">${p.decoStyleDisplay||'—'}</span>
         </div>
       </div>
-      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">${mediaLinks}</div>
+      <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">${mockupThumb}<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${mediaLinks}</div></div>
     </div>
     <div class="card-body">
       <div class="info-cell"><div class="info-lbl">Qty</div><div class="info-val mono">${p.qty||'—'}</div></div>
@@ -233,6 +276,15 @@ function buildCard(p,section){
 }
 
 
+
+const VIEW_KEY='ccb_prod_view';
+let currentView=localStorage.getItem(VIEW_KEY)||'card';
+function setView(v){currentView=v;localStorage.setItem(VIEW_KEY,v);renderContent();}
+function scrollToSection(id,btn){const el=document.getElementById(id);if(el){const off=56+40;const top=el.getBoundingClientRect().top+window.scrollY-off-8;window.scrollTo({top,behavior:'smooth'});}document.querySelectorAll('.sec-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');}
+function openMockup(url,name){if(!url)return;document.getElementById('modal-title').textContent=name;document.getElementById('modal-body').innerHTML=`<img src="${url}" alt="Mockup" onerror="this.parentElement.innerHTML='<div class=no-img>Image could not load</div>'">`;document.getElementById('modal-overlay').classList.add('open');}
+function closeModal(e){if(e.target===document.getElementById('modal-overlay'))closeModalDirect();}
+function closeModalDirect(){document.getElementById('modal-overlay').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModalDirect();});
 let allUpcoming=[],allActive=[],sessionDone=[];
 
 let searchQuery='';
@@ -297,6 +349,7 @@ function stationCounts(arr){
 }
 
 function renderContent(){
+  const filtUp=filterItems(allUpcoming);const filtAc=filterItems(allActive);
   const upCounts=stationCounts(allUpcoming);
   const acCounts=stationCounts(allActive);
   let html='';
@@ -328,19 +381,21 @@ function renderContent(){
   }
   html+=`</div>`;
 
-  // Upcoming
-  html+=`<div class="section-header" style="margin-top:8px"><span class="section-label">Upcoming — All Stations</span><span class="section-count">${allUpcoming.length}</span><div class="section-line"></div></div>`;
-  const filtUp=filterItems(allUpcoming);
-  if(filtUp.length===0)html+=`<p class="empty-msg">${searchQuery?'No results matching "'+searchQuery+'"':'No products currently in Product Ordered status.'}</p>`;
-  else { for(const p of filtUp){try{html+=buildCard(p,"upcoming")}catch(e){html+=`<div class="error-box"><strong>Card error (${p.name}):</strong> ${e.message}</div>`}} };
+  // Active first
+  html+=`<div id="sec-active" style="scroll-margin-top:100px"><div class="section-header" style="margin-top:0"><span class="section-label">Active — All Stations</span><span class="section-count">${filtAc.length}</span><div class="section-line"></div></div>`;
+  if(filtAc.length===0)html+=`<p class="empty-msg">${searchQuery?'No results for "'+searchQuery+'"':'No active products in production.'}</p>`;
+  else { for(const p of filtAc){try{html+=buildCard(p,"active")}catch(e){html+=`<div class="error-box"><strong>Error:</strong> ${e.message}</div>`}} }
+  html+=`</div>`;
 
-  // Active
-  html+=`<div class="section-header" style="margin-top:20px"><span class="section-label">Active — All Stations</span><span class="section-count">${allActive.length}</span><div class="section-line"></div></div>`;
-  const filtAc=filterItems(allActive);
-  if(filtAc.length===0)html+=`<p class="empty-msg">${searchQuery?'No results matching "'+searchQuery+'"':'No active products in production.'}</p>`;
-  else { for(const p of filtAc){try{html+=buildCard(p,"active")}catch(e){html+=`<div class="error-box"><strong>Card error (${p.name}):</strong> ${e.message}</div>`}} };
+  // Upcoming
+  html+=`<div id="sec-upcoming" style="scroll-margin-top:100px"><div class="section-header" style="margin-top:20px"><span class="section-label">Upcoming — All Stations</span><span class="section-count">${filtUp.length}</span><div class="section-line"></div></div>`;
+  if(filtUp.length===0)html+=`<p class="empty-msg">${searchQuery?'No results for "'+searchQuery+'"':'No products currently in Product Ordered status.'}</p>`;
+  else { for(const p of filtUp){try{html+=buildCard(p,"upcoming")}catch(e){html+=`<div class="error-box"><strong>Error:</strong> ${e.message}</div>`}} }
+  html+=`</div>`;
 
   document.getElementById('content').innerHTML=html;
+  document.getElementById('nav-count-ac').textContent=filtAc.length;
+  document.getElementById('nav-count-up').textContent=filtUp.length;
 }
 
 async function loadData(){
@@ -367,5 +422,15 @@ async function loadData(){
 }
 loadData();
 </script>
+
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Mockup</span>
+      <button class="modal-close" onclick="closeModalDirect()"><svg viewBox="0 0 14 14"><path d="M1 1l12 12M13 1L1 13"/></svg></button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
 </body>
 </html>
