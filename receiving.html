@@ -589,6 +589,18 @@
     font-size: 13px;
   }
 
+
+  .search-wrap { padding: 0 0 16px; }
+  .search-input { width: 100%; padding: 9px 14px 9px 36px; font-size: 13px; font-family: 'DM Sans', sans-serif; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); outline: none; transition: border-color 0.15s; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239b9890' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: 12px center; }
+  .search-input:focus { border-color: var(--border2); }
+  .search-input::placeholder { color: var(--text3); }
+
+
+  .shelf-display { display: flex; align-items: center; gap: 8px; }
+  .shelf-value { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; color: var(--text); letter-spacing: 0.05em; }
+  .shelf-edit-btn { font-size: 11px; padding: 3px 8px; background: transparent; color: var(--text3); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; transition: all 0.15s; }
+  .shelf-edit-btn:hover { color: var(--text2); border-color: var(--border2); }
+
   @media (max-width: 700px) {
     .order-header { flex-direction: column; }
     .shelf-section { align-items: flex-start; }
@@ -619,10 +631,11 @@
 </header>
 
 <main id="main">
-  <div class="loading-state">
-    <div class="spinner"></div>
-    <span style="font-size:13px;color:var(--text2)">Loading orders...</span>
+  <div id="initial-loader" class="loading-state"><div class="spinner"></div><span style="font-size:13px;color:var(--text2)">Loading orders...</span></div>
+  <div class="search-wrap" id="search-section" style="display:none">
+    <input class="search-input" id="search-input" type="text" placeholder="Search by order, contact, product, supplier, style..." oninput="applySearch()">
   </div>
+  <div id="orders-container"></div>
 </main>
 
 <div class="updating-overlay" id="updating-overlay">
@@ -660,11 +673,10 @@ const ORDER_NUM_COL = 'pulse_id_mm27vwa5';
 const IN_HANDS_COL = 'date_mm22wpk2';
 const CONTACT_COL = 'text_mm221kg3';
 const ORDER_STATUS_COL = 'color_mm29xat9';
+const SHELF_COL = 'text_mm2ngkpv';
 
 const EXCLUDED_TYPES = ['promo code', '3rd party'];
 const EXCLUDED_ORDER_STATUSES = ['promo code', '3rd party', '3rd party ordered'];
-
-const shelves = {};
 
 async function mondayQuery(query) {
   const res = await fetch('https://api.monday.com/v2', {
@@ -687,9 +699,7 @@ async function loadOrders() {
   btn.classList.add('spinning');
 
   const main = document.getElementById('main');
-  if (!main.querySelector('.order-card')) {
-    main.innerHTML = '<div class="loading-state"><div class="spinner"></div><span style="font-size:13px;color:var(--text2)">Loading orders...</span></div>';
-  }
+  // loader is shown on initial load via HTML
 
   try {
     const query = `{
@@ -698,7 +708,7 @@ async function loadOrders() {
           items {
             id
             name
-            column_values(ids: ["${ORDER_NUM_COL}","${IN_HANDS_COL}","${CONTACT_COL}","${ORDER_STATUS_COL}"]) {
+            column_values(ids: ["${ORDER_NUM_COL}","${IN_HANDS_COL}","${CONTACT_COL}","${ORDER_STATUS_COL}","${SHELF_COL}"]) {
               id value text
             }
             subitems {
@@ -769,6 +779,7 @@ async function loadOrders() {
           ccb: colMap[ORDER_NUM_COL]?.text || '',
           inHands: colMap[IN_HANDS_COL]?.text || '',
           contact: colMap[CONTACT_COL]?.text || '',
+          shelf: colMap[SHELF_COL]?.text || '',
           products: orderedProducts
         });
       }
@@ -781,6 +792,8 @@ async function loadOrders() {
       return new Date(a.inHands) - new Date(b.inHands);
     });
 
+    document.getElementById("initial-loader").style.display = "none";
+    document.getElementById("search-section").style.display = "block";
     renderDashboard(orders);
 
     const now = new Date();
@@ -806,13 +819,26 @@ function getDueBadge(inHands) {
   return `<span class="chip ok">Due ${fmt}</span>`;
 }
 
-function renderDashboard(orders) {
-  const main = document.getElementById('main');
+let allOrders = [];
+
+function applySearch() {
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+  const filtered = q ? allOrders.filter(o =>
+    [o.name, o.ccb, o.contact].join(' ').toLowerCase().includes(q) ||
+    o.products.some(p => [p.name, p.supplier, p.style, p.color].join(' ').toLowerCase().includes(q))
+  ) : allOrders;
+  renderDashboard(filtered, false);
+}
+
+function renderDashboard(orders, snapshot = true) {
+  if (snapshot) allOrders = orders;
+  const main = document.getElementById('orders-container') || document.getElementById('main');
   const countPill = document.getElementById('count-pill');
 
   if (orders.length === 0) {
     countPill.textContent = '0 pending';
-    main.innerHTML = `
+    if (snapshot) document.getElementById('search-section') && (document.getElementById('search-section').style.display = orders.length > 0 ? 'block' : 'none');
+  main.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">
           <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -827,7 +853,7 @@ function renderDashboard(orders) {
 
   main.innerHTML = orders.map(order => {
     const total = order.products.length;
-    const shelf = shelves[order.id] || '';
+    const shelf = order.shelf || '';
 
     const rows = order.products.map(p => {
       const typeClass = p.type === 'Pre-Decorated' ? 'type-pd' : 'type-ih';
@@ -853,6 +879,7 @@ function renderDashboard(orders) {
         <td>${p.size || '—'}</td>
         <td class="mono">${p.style || '—'}</td>
         <td>${p.supplier || '—'}</td>
+        <td class="mono" id="shelf-cell-${p.id}">${order.shelf || '—'}</td>
         <td>${mockupCell}</td>
       </tr>`;
     }).join('');
@@ -875,15 +902,32 @@ function renderDashboard(orders) {
             <div class="progress-label" id="prog-label-${order.id}">0 of ${total} received</div>
           </div>
         </div>
-        <div class="shelf-section">
+        <div class="shelf-section" id="shelf-section-${order.id}">
           <span class="shelf-label-text">Shelf Location</span>
-          <div class="shelf-input-wrap">
-            <input class="shelf-input" type="text" placeholder="e.g. A-12"
-              value="${shelf}"
-              id="shelf-input-${order.id}"
-              onkeydown="if(event.key==='Enter')saveShelf('${order.id}')">
-            <button class="shelf-save-btn" onclick="saveShelf('${order.id}')">Save</button>
-          </div>
+          ${order.shelf
+            ? `<div class="shelf-display" id="shelf-display-${order.id}">
+                <span class="shelf-value">${order.shelf}</span>
+                <button class="shelf-edit-btn" onclick="editShelf('${order.id}')">Edit</button>
+              </div>
+              <div class="shelf-input-wrap" id="shelf-edit-${order.id}" style="display:none">
+                <input class="shelf-input" type="text" placeholder="e.g. A-12"
+                  value="${order.shelf}"
+                  id="shelf-input-${order.id}"
+                  onkeydown="if(event.key==='Enter')saveShelf('${order.id}')">
+                <button class="shelf-save-btn" onclick="saveShelf('${order.id}')">Save</button>
+              </div>`
+            : `<div class="shelf-display" id="shelf-display-${order.id}" style="display:none">
+                <span class="shelf-value" id="shelf-val-${order.id}"></span>
+                <button class="shelf-edit-btn" onclick="editShelf('${order.id}')">Edit</button>
+              </div>
+              <div class="shelf-input-wrap" id="shelf-edit-${order.id}">
+                <input class="shelf-input" type="text" placeholder="e.g. A-12"
+                  value=""
+                  id="shelf-input-${order.id}"
+                  onkeydown="if(event.key==='Enter')saveShelf('${order.id}')">
+                <button class="shelf-save-btn" onclick="saveShelf('${order.id}')">Save</button>
+              </div>`
+          }
           <span class="shelf-saved-msg" id="shelf-saved-${order.id}"></span>
         </div>
       </div>
@@ -899,6 +943,7 @@ function renderDashboard(orders) {
               <th>Size</th>
               <th>Style #</th>
               <th>Supplier</th>
+              <th>Shelf</th>
               <th>Mockup</th>
             </tr>
           </thead>
@@ -968,7 +1013,7 @@ function updateCountPill() {
   const pill = document.getElementById('count-pill');
   if (pill) pill.textContent = `${count} order${count !== 1 ? 's' : ''} pending`;
   if (count === 0) {
-    document.getElementById('main').innerHTML = `
+    (document.getElementById('orders-container') || document.getElementById('main')).innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">
           <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -1010,17 +1055,59 @@ async function updateSubitemStatus(subitemId, statusLabel) {
   }
 }
 
-function saveShelf(orderId) {
+function editShelf(orderId) {
+  const display = document.getElementById('shelf-display-' + orderId);
+  const edit = document.getElementById('shelf-edit-' + orderId);
+  if (display) display.style.display = 'none';
+  if (edit) edit.style.display = 'flex';
+  const input = document.getElementById('shelf-input-' + orderId);
+  if (input) { input.focus(); input.select(); }
+}
+
+async function saveShelf(orderId) {
   const input = document.getElementById('shelf-input-' + orderId);
   if (!input) return;
   const val = input.value.trim().toUpperCase();
+  if (!val) return;
   input.value = val;
-  shelves[orderId] = val;
 
-  const saved = document.getElementById('shelf-saved-' + orderId);
-  if (saved) {
-    saved.textContent = val ? `Saved: ${val}` : 'Cleared';
-    setTimeout(() => saved.textContent = '', 2000);
+  const overlay = document.getElementById('updating-overlay');
+  const msg = document.getElementById('updating-msg');
+  msg.textContent = 'Saving shelf location...';
+  overlay.classList.add('visible');
+
+  try {
+    await mondayQuery(`mutation{change_column_value(board_id:${BOARD_ID},item_id:${orderId},column_id:"${SHELF_COL}",value:${JSON.stringify(JSON.stringify(val))}){id}}`);
+
+    // Update local order data
+    const order = allOrders.find(o => o.id === orderId);
+    if (order) order.shelf = val;
+
+    // Update all shelf cells in the table for this order
+    document.querySelectorAll(`#card-${orderId} [id^="shelf-cell-"]`).forEach(cell => {
+      cell.textContent = val;
+    });
+
+    // Switch from edit mode to display mode
+    const display = document.getElementById('shelf-display-' + orderId);
+    const edit = document.getElementById('shelf-edit-' + orderId);
+    const valEl = display?.querySelector('.shelf-value') || display?.querySelector('span.shelf-value');
+    if (valEl) valEl.textContent = val;
+    if (display) display.style.display = 'flex';
+    if (edit) edit.style.display = 'none';
+
+    // Also update the shelf-val span if it exists
+    const shelfValEl = document.getElementById('shelf-val-' + orderId);
+    if (shelfValEl) shelfValEl.textContent = val;
+
+    msg.textContent = 'Saved';
+    setTimeout(() => overlay.classList.remove('visible'), 1200);
+
+    const saved = document.getElementById('shelf-saved-' + orderId);
+    if (saved) { saved.textContent = `Saved: ${val}`; setTimeout(() => saved.textContent = '', 2000); }
+  } catch(err) {
+    msg.textContent = 'Error saving — check connection';
+    setTimeout(() => overlay.classList.remove('visible'), 2500);
   }
 }
 
