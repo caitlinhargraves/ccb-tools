@@ -247,9 +247,12 @@ async function loadData(){
           if(!subStatus.includes('3rd party complete')&&subStatus!=='')thirdParty.push(product);
           else if(!subStatus)thirdParty.push(product);
         } else if(subType.includes('in house')||subType.includes('pre')){
-          // IH + PreDec: split by whether PO date is set
-          if(!poDate)toBeOrdered.push(product);
-          else if(subStatus==='product ordered'||statusIndex===1)ordered.push(product);
+          // To Be Ordered: no PO date, OR status manually reverted to blank
+          // Ordered: has PO date AND status is Product Ordered
+          const isBlank=statusIndex===5||subStatus==='';
+          const isProductOrdered=subStatus==='product ordered'||statusIndex===1;
+          if(!poDate||isBlank)toBeOrdered.push(product);
+          else if(isProductOrdered)ordered.push(product);
         }
       }
     }
