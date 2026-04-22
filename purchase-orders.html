@@ -89,14 +89,15 @@ main{max-width:1200px;margin:0 auto;padding:20px}
 .po-input::placeholder{color:var(--text3);font-family:'DM Sans',sans-serif}
 .po-input.date-input{width:130px}
 .po-input.cost-input{width:110px}
-.countdown-wrap{display:flex;align-items:center;gap:6px;padding:4px 0}
-.countdown-badge{font-size:11px;font-family:'DM Mono',monospace;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);border-radius:4px;padding:2px 8px;min-width:50px;text-align:center}
-.countdown-label{font-size:11px;color:var(--text3)}
-.cancel-btn{font-size:11px;padding:3px 8px;background:transparent;color:var(--text2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
-.cancel-btn:hover{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
+
+
+
+
+
 
 /* 3RD PARTY COMPLETE BTN */
 .complete-btn{font-size:12px;font-family:'DM Sans',sans-serif;padding:6px 14px;background:var(--green);color:white;border:none;border-radius:var(--radius);cursor:pointer;transition:opacity .15s;white-space:nowrap}
+.po-save-btn{font-size:12px;font-family:'DM Sans',sans-serif;padding:6px 14px;background:var(--text);color:white;border:none;border-radius:var(--radius);cursor:pointer;transition:opacity .15s;white-space:nowrap;align-self:flex-end}.po-save-btn:hover{opacity:.85}.po-save-btn:disabled{opacity:.4;cursor:not-allowed}.po-saved-msg{font-size:11px;font-family:'DM Mono',monospace;color:var(--green);align-self:flex-end;height:16px}
 .complete-btn:hover{opacity:.85}
 .complete-btn:disabled{opacity:.4;cursor:not-allowed}
 
@@ -175,8 +176,7 @@ const ORDERS_BOARD='18407165363';const SUBS_BOARD='18407165552';
 const O_NUM='pulse_id_mm27vwa5';const O_STATUS='color_mm27qyta';const O_INHAND='date_mm22wpk2';const O_CONTACT='text_mm221kg3';const O_SHIPTO='text_mm26gtxp';const O_SALESPERSON='dropdown_mm22w5rr';
 const S_STATUS='color_mm25v786';const S_TYPE='color_mm2dd6d5';const S_QTY='numeric_mm22crjt';const S_COLOR='text_mm2276wz';const S_SIZE='text_mm22yw8s';const S_STYLE='text_mm22fv7y';const S_SUPPLIER='text_mm22qdag';const S_PO_NUM='text_mm27ns9d';const S_PO_DATE='date_mm26mc76';const S_TRACKING='link_mm26rzea';const S_COST='numeric_mm266zz9';const S_MOCKUP='file_mm26e29h';const S_PRICE='numeric_mm2299qw';
 
-// Timers for 30-second countdown before auto-committing
-const pendingTimers={};
+const autoSaveTimers={};
 
 async function mq(q){const r=await fetch('https://api.monday.com/v2',{method:'POST',headers:{'Content-Type':'application/json','Authorization':API_KEY,'API-Version':'2024-01'},body:JSON.stringify({query:q})});const d=await r.json();if(d.errors)throw new Error(d.errors[0].message);return d.data;}
 
@@ -397,12 +397,12 @@ function buildProductCard(p,section){
     poHtml=`<div class="product-card-po">
       <div class="po-row">
         <span class="po-lbl">Supplier</span>
-        <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="text" placeholder="Supplier name" value="${p.supplier}" id="sup-${p.id}" oninput="onPoInput('${p.id}','${p.orderId}')">
+        <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="text" placeholder="Supplier name" value="${p.supplier}" id="sup-${p.id}" oninput="scheduleAutoSave('${p.id}','${p.orderId}')">
       </div>
       <div class="po-row-inline">
         <div class="po-row" style="flex:1">
           <span class="po-lbl">PO Number</span>
-          <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="text" placeholder="PO-001" value="${p.poNum}" id="ponum-${p.id}" oninput="onPoInput('${p.id}','${p.orderId}')">
+          <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="text" placeholder="PO-001" value="${p.poNum}" id="ponum-${p.id}" oninput="scheduleAutoSave('${p.id}','${p.orderId}')">
         </div>
         <div class="po-row" style="flex:1">
           <span class="po-lbl">PO Date</span>
@@ -411,18 +411,15 @@ function buildProductCard(p,section){
       </div>
       <div class="po-row">
         <span class="po-lbl">Tracking Link</span>
-        <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="url" placeholder="https://..." value="${p.tracking}" id="track-${p.id}" oninput="onPoInput('${p.id}','${p.orderId}')">
+        <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="url" placeholder="https://..." value="${p.tracking}" id="track-${p.id}" oninput="scheduleAutoSave('${p.id}','${p.orderId}')">
       </div>
       <div class="po-row">
         <span class="po-lbl">Our Cost / Item</span>
         <input class="po-input cost-input" style="width:100%" onclick="event.stopPropagation()" type="number" placeholder="0.00" step="0.01" value="${p.cost}" id="cost-${p.id}" onblur="saveCost('${p.id}',this.value)">
       </div>
-      <div id="countdown-wrap-${p.id}" style="display:none">
-        <div class="countdown-wrap">
-          <span class="countdown-badge" id="cd-val-${p.id}">10s</span>
-          <span class="countdown-label">until ordered (tap cancel to stop)</span>
-          <button class="cancel-btn" onclick="event.stopPropagation();cancelCountdown('${p.id}')">Cancel</button>
-        </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+        <button class="po-save-btn" onclick="event.stopPropagation();commitPoEntry('${p.id}','${p.orderId}')" id="po-save-btn-${p.id}">Save PO</button>
+        <span class="po-saved-msg" id="po-saved-${p.id}"></span>
       </div>
     </div>`;
   }
@@ -462,14 +459,11 @@ function buildPoFields(group,section){
       <div class="po-field-group">
         <span class="po-lbl">Date Sent</span>
         <input class="po-input date-input" type="date" id="promo-date-${o.id}"
-          oninput="onPromoDateInput('${o.id}',${JSON.stringify(group.products.map(p=>p.id))})">
+          onchange="schedulePromoAutoSave('${o.id}',${JSON.stringify(group.products.map(p=>p.id))})" id="promo-date-${o.id}">
       </div>
-      <div id="promo-countdown-${o.id}" style="display:none">
-        <div class="countdown-wrap">
-          <span class="countdown-badge" id="promo-cd-val-${o.id}">10s</span>
-          <span class="countdown-label">until marked sent (tap cancel to stop)</span>
-          <button class="cancel-btn" onclick="event.stopPropagation();cancelPromoCountdown('${o.id}')">Cancel</button>
-        </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <button class="po-save-btn" onclick="event.stopPropagation();triggerPromoSave('${o.id}')" id="promo-save-btn-${o.id}">Mark Sent</button>
+        <span class="po-saved-msg" id="promo-saved-${o.id}"></span>
       </div>
     </div>`;
   }
@@ -477,51 +471,13 @@ function buildPoFields(group,section){
 }
 
 // ── COUNTDOWN & COMMIT ────────────────────────────────────────────────────────
-function onPoInput(subId,orderId){
-  // When PO# or tracking changes, start/reset the countdown
-  const poNum=document.getElementById('ponum-'+subId)?.value.trim();
-  const tracking=document.getElementById('track-'+subId)?.value.trim();
-  if(poNum||tracking){
-    startCountdown(subId,orderId);
-  }
-}
-
-function onDateInput(subId,orderId,val){
-  if(val){
-    // Date manually set — commit immediately after 30s
-    startCountdown(subId,orderId,val);
-  }
-}
-
-function startCountdown(subId,orderId,explicitDate=null){
-  if(pendingTimers[subId])clearInterval(pendingTimers[subId].interval);
-  const wrapEl=document.getElementById('countdown-wrap-'+subId);
-  const valEl=document.getElementById('cd-val-'+subId);
-  if(!wrapEl||!valEl)return;
-  wrapEl.style.display='block';
-  let remaining=10;
-  valEl.textContent=remaining+'s';
-  pendingTimers[subId]={
-    interval:setInterval(()=>{
-      remaining--;
-      if(valEl)valEl.textContent=remaining+'s';
-      if(remaining<=0){
-        clearInterval(pendingTimers[subId].interval);
-        delete pendingTimers[subId];
-        commitPoEntry(subId,orderId,explicitDate);
-      }
-    },1000),
-    orderId
-  };
-}
-
-function cancelCountdown(subId){
-  if(pendingTimers[subId])clearInterval(pendingTimers[subId].interval);
-  delete pendingTimers[subId];
-  const wrapEl=document.getElementById('countdown-wrap-'+subId);
-  if(wrapEl)wrapEl.style.display='none';
-  const valEl=document.getElementById('cd-val-'+subId);
-  if(valEl)valEl.textContent='10s';
+function scheduleAutoSave(subId,orderId){
+  // Debounce: wait 1.5s after user stops typing then autosave
+  if(autoSaveTimers[subId])clearTimeout(autoSaveTimers[subId]);
+  autoSaveTimers[subId]=setTimeout(()=>{
+    delete autoSaveTimers[subId];
+    commitPoEntry(subId,orderId);
+  },1500);
 }
 
 async function commitPoEntry(subId,orderId,explicitDate=null){
@@ -553,11 +509,11 @@ async function commitPoEntry(subId,orderId,explicitDate=null){
 
     const valStr=JSON.stringify(JSON.stringify(vals));
     await mq(`mutation{change_multiple_column_values(board_id:${SUBS_BOARD},item_id:${subId},column_values:${valStr}){id}}`);
-    showToast('Ordered',false);hideToast();
+    showToast('Saved',false);hideToast();
 
-    // Hide countdown
-    const wrapEl=document.getElementById('countdown-wrap-'+subId);
-    if(wrapEl)wrapEl.style.display='none';
+    // Show saved message
+    const savedEl=document.getElementById('po-saved-'+subId);
+    if(savedEl){savedEl.textContent='Saved';setTimeout(()=>savedEl.textContent='',2000);}
 
     // Refresh after short delay
     setTimeout(()=>loadData(),1000);
@@ -589,40 +545,22 @@ async function mark3rdPartyComplete(orderId,subId,btn){
 }
 
 // ── PROMO CODE SENT ───────────────────────────────────────────────────────────
-const promoCountdownTimers={};
+const promoSubIdsMap={};
 
-function onPromoDateInput(orderId,subIds){
-  const dateEl=document.getElementById('promo-date-'+orderId);
-  if(!dateEl||!dateEl.value)return;
-  startPromoCountdown(orderId,subIds,dateEl.value);
+function schedulePromoAutoSave(orderId,subIds){
+  promoSubIdsMap[orderId]=subIds;
+  // autosave 1.5s after date is selected
+  setTimeout(()=>{
+    const dateEl=document.getElementById('promo-date-'+orderId);
+    if(dateEl&&dateEl.value)commitPromoSent(orderId,subIds,dateEl.value);
+  },1500);
 }
 
-function startPromoCountdown(orderId,subIds,date){
-  if(promoCountdownTimers[orderId])clearInterval(promoCountdownTimers[orderId]);
-  const cdEl=document.getElementById('promo-countdown-'+orderId);
-  const valEl=document.getElementById('promo-cd-val-'+orderId);
-  if(!cdEl||!valEl)return;
-  cdEl.style.display='block';
-  let remaining=10;
-  valEl.textContent=remaining+'s';
-  promoCountdownTimers[orderId]=setInterval(()=>{
-    remaining--;
-    if(valEl)valEl.textContent=remaining+'s';
-    if(remaining<=0){
-      clearInterval(promoCountdownTimers[orderId]);
-      delete promoCountdownTimers[orderId];
-      commitPromoSent(orderId,subIds,date);
-    }
-  },1000);
-}
-
-function cancelPromoCountdown(orderId){
-  if(promoCountdownTimers[orderId])clearInterval(promoCountdownTimers[orderId]);
-  delete promoCountdownTimers[orderId];
-  const cdEl=document.getElementById('promo-countdown-'+orderId);
-  if(cdEl)cdEl.style.display='none';
+function triggerPromoSave(orderId){
   const dateEl=document.getElementById('promo-date-'+orderId);
-  if(dateEl)dateEl.value='';
+  if(!dateEl||!dateEl.value){showToast('Enter a date sent first',false);hideToast(2000);return;}
+  const subIds=promoSubIdsMap[orderId]||[];
+  commitPromoSent(orderId,subIds,dateEl.value);
 }
 
 async function commitPromoSent(orderId,subIds,date){
@@ -634,7 +572,9 @@ async function commitPromoSent(orderId,subIds,date){
     }
     // Set order status to Shipped (acts as Delivered for promo)
     await mq(`mutation{change_column_value(board_id:${ORDERS_BOARD},item_id:${orderId},column_id:"color_mm27qyta",value:"{\\"index\\":4}"){id}}`);
-    showToast('Promo codes marked sent',false);hideToast();
+    showToast('Saved',false);hideToast();
+    const savedEl=document.getElementById('promo-saved-'+orderId);
+    if(savedEl){savedEl.textContent='Saved';setTimeout(()=>savedEl.textContent='',2000);}
     setTimeout(()=>loadData(),800);
   }catch(err){showToast('Error: '+err.message,false);hideToast(3000);}
 }
