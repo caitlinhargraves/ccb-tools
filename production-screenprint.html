@@ -311,10 +311,10 @@ function renderContent(){
   let html='';
   html+=`<div class="section-header"><span class="section-label">Upcoming</span><span class="section-count">${allUpcoming.length}</span><div class="section-line"></div></div>`;
   if(allUpcoming.length===0)html+=`<p class="empty-msg">No upcoming products for Screenprint.</p>`;
-  else html+=allUpcoming.map(p=>buildCard(p,'upcoming')).join('');
+  else { for(const p of allUpcoming){try{html+=buildCard(p,"upcoming")}catch(e){html+=`<div class="error-box"><strong>Card error (${p.name}):</strong> ${e.message}</div>`}} };
   html+=`<div class="section-header" style="margin-top:20px"><span class="section-label">Active</span><span class="section-count">${allActive.length}</span><div class="section-line"></div></div>`;
   if(allActive.length===0)html+=`<p class="empty-msg">No active products for Screenprint.</p>`;
-  else html+=allActive.map(p=>buildCard(p,'active')).join('');
+  else { for(const p of allActive){try{html+=buildCard(p,"active")}catch(e){html+=`<div class="error-box"><strong>Card error (${p.name}):</strong> ${e.message}</div>`}} };
   document.getElementById('content').innerHTML=html;
 }
 
