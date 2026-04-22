@@ -54,6 +54,13 @@ header { background: var(--surface); border-bottom: 1px solid var(--border); pad
 .tab-btn.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
 .tab-count { font-size: 11px; font-family: 'DM Mono', monospace; background: var(--surface2); border: 0.5px solid var(--border); border-radius: 10px; padding: 1px 6px; margin-left: 6px; color: var(--text3); }
 
+.nav-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; position: sticky; top: 97px; z-index: 98; }
+.nav-bar::-webkit-scrollbar { display: none; }
+.nav-btn { font-size: 12px; font-family: 'DM Sans', sans-serif; font-weight: 400; color: var(--text2); background: none; border: none; border-bottom: 2px solid transparent; padding: 9px 16px; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+.nav-btn:hover { color: var(--text); }
+.nav-btn.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+.nav-count { font-size: 10px; font-family: 'DM Mono', monospace; background: var(--surface2); border: 0.5px solid var(--border); border-radius: 8px; padding: 0 5px; margin-left: 5px; color: var(--text3); }
+
 main { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
 
 .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; gap: 12px; color: var(--text2); }
@@ -164,6 +171,12 @@ tbody tr:hover td { background: var(--surface2); }
   <button class="tab-btn" id="tab-insight" onclick="switchTab('insight')">
     CCB Insight <span class="tab-count" id="count-insight">—</span>
   </button>
+</div>
+
+<div class="nav-bar" id="inv-nav">
+  <button class="nav-btn active" onclick="scrollToInvSection('sec-not-invoiced', this)">Not Invoiced <span class="nav-count" id="nav-count-ni">—</span></button>
+  <button class="nav-btn" onclick="scrollToInvSection('sec-invoice-sent', this)">Invoice Sent <span class="nav-count" id="nav-count-is">—</span></button>
+  <button class="nav-btn" onclick="scrollToInvSection('sec-recently-paid', this)">Recently Paid <span class="nav-count" id="nav-count-rp">—</span></button>
 </div>
 
 <main id="main">
@@ -372,10 +385,18 @@ function renderTab() {
 
   let html = '';
 
-  for (const [status, label] of [['not-invoiced', 'Not Invoiced'], ['invoice-sent', 'Invoice Sent']]) {
+  // Update nav counts
+  const niCount = groups['not-invoiced'].length;
+  const isCount = groups['invoice-sent'].length;
+  const rpCount = recentlyPaid.filter(r => r.companyKey === currentTab).length;
+  document.getElementById('nav-count-ni').textContent = niCount;
+  document.getElementById('nav-count-is').textContent = isCount;
+  document.getElementById('nav-count-rp').textContent = rpCount;
+
+  for (const [status, label, anchorId] of [['not-invoiced', 'Not Invoiced', 'sec-not-invoiced'], ['invoice-sent', 'Invoice Sent', 'sec-invoice-sent']]) {
     const grp = groups[status];
     if (grp.length === 0) continue;
-    html += `<div class="section-header">
+    html += `<div id="${anchorId}" class="section-header">
       <span class="section-label">${label}</span>
       <span class="section-count">${grp.length}</span>
       <div class="section-line"></div>
@@ -386,7 +407,7 @@ function renderTab() {
   // Recently paid section
   const paid = recentlyPaid.filter(r => r.companyKey === currentTab);
   if (paid.length > 0) {
-    html += `<div style="max-width:100%;margin-top:32px">
+    html += `<div id="sec-recently-paid" style="max-width:100%;margin-top:32px">
       <div class="recently-section">
         <div class="recently-header">Recently paid</div>
         <div id="recently-paid-list-${currentTab}">
@@ -749,6 +770,17 @@ async function undoPaid(orderId) {
     showToast('Error: ' + err.message, false);
     hideToast(3000);
   }
+}
+
+function scrollToInvSection(id, btn) {
+  const el = document.getElementById(id);
+  if (el) {
+    const offset = 56 + 41 + 38 + 12; // header + tabs + nav + padding
+    const top = el.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top, behavior: 'smooth' });
+  }
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
 }
 
 loadOrders();
