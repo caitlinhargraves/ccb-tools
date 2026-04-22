@@ -573,8 +573,8 @@ async function commitPromoSent(orderId,subIds,date){
     for(const subId of subIds){
       await mq(`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"date_mm26mc76",value:"{\\"date\\":\\"${date}\\"}"){id}}`);
     }
-    // Set order status to Shipped (acts as Delivered for promo)
-    await mq(`mutation{change_column_value(board_id:${ORDERS_BOARD},item_id:${orderId},column_id:"color_mm27qyta",value:"{\\"index\\":4}"){id}}`);
+    // Set order status to Delivered
+    await mq(`mutation{change_column_value(board_id:${ORDERS_BOARD},item_id:${orderId},column_id:"color_mm27qyta",value:"{\\"index\\":3}"){id}}`);
     showToast('Saved',false);hideToast();
     const savedEl=document.getElementById('promo-saved-'+orderId);
     if(savedEl){savedEl.textContent='Saved';setTimeout(()=>savedEl.textContent='',2000);}
