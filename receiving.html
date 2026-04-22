@@ -1032,9 +1032,9 @@ async function updateSubitemStatus(subitemId, statusLabel) {
 
   try {
     const statusMap = {
-      'Product Ordered': 0,
-      'In House': 3,
-      'Decorated': 1
+      'Product Ordered': 1,
+      'In House': 0,
+      'Decorated': 8
     };
 
     const query = `mutation {
