@@ -22,12 +22,21 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 .refresh-btn svg{width:13px;height:13px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .refresh-btn.spinning svg{animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.nav-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;position:sticky;top:56px;z-index:99}
+
+/* TABS — matches invoicing.html exactly */
+.tabs-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:0;position:sticky;top:56px;z-index:99}
+.tab-btn{font-size:13px;font-family:'DM Sans',sans-serif;font-weight:400;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;padding:12px 20px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--text);border-bottom-color:var(--text);font-weight:500}
+.tab-count{font-size:11px;font-family:'DM Mono',monospace;background:var(--surface2);border:.5px solid var(--border);border-radius:10px;padding:1px 6px;margin-left:6px;color:var(--text3)}
+
+.nav-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;position:sticky;top:97px;z-index:98}
 .nav-bar::-webkit-scrollbar{display:none}
 .nav-btn{font-size:12px;font-family:'DM Sans',sans-serif;font-weight:400;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;padding:10px 14px;cursor:pointer;white-space:nowrap;transition:all .15s}
 .nav-btn:hover{color:var(--text)}
 .nav-btn.active{color:var(--text);border-bottom-color:var(--text);font-weight:500}
 .nav-count{font-size:10px;font-family:'DM Mono',monospace;background:var(--surface2);border:.5px solid var(--border);border-radius:8px;padding:0 5px;margin-left:5px;color:var(--text3)}
+
 .stats-row{display:flex;gap:12px;padding:20px 20px 0;max-width:1200px;margin:0 auto;flex-wrap:wrap}
 .stat-card{background:var(--surface2);border:.5px solid var(--border);border-radius:var(--radius);padding:14px 20px;flex:1;min-width:140px}
 .stat-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:6px}
@@ -55,6 +64,11 @@ main{max-width:1200px;margin:0 auto;padding:20px}
 .chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
 .order-num{font-family:'DM Mono',monospace;font-size:12px;color:var(--text3);background:var(--surface);border:.5px solid var(--border);border-radius:4px;padding:1px 6px}
 
+/* Company badge — same pattern as invoicing chips */
+.company-imprint{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border);font-size:10px;padding:2px 8px;border-radius:4px;white-space:nowrap;font-weight:500}
+.company-insight{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border);font-size:10px;padding:2px 8px;border-radius:4px;white-space:nowrap;font-weight:500}
+.company-unknown{background:var(--surface2);color:var(--text3);border:1px solid var(--border);font-size:10px;padding:2px 8px;border-radius:4px;white-space:nowrap}
+
 /* PRODUCT CARDS */
 .products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;padding:14px}
 .product-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
@@ -76,10 +90,10 @@ main{max-width:1200px;margin:0 auto;padding:20px}
 .product-card-po{padding:10px 12px;border-top:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:8px}
 .po-row{display:flex;flex-direction:column;gap:3px}
 .po-row-inline{display:flex;gap:8px;flex-wrap:wrap}
-
 .mono{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2)}
 .media-btn{font-size:11px;padding:3px 7px;background:transparent;color:var(--text2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block;transition:all .15s}
 .media-btn:hover{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-border)}
+
 /* PO INPUT FIELDS */
 .po-fields{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:10px 12px;background:var(--surface2);border-top:1px solid var(--border)}
 .po-field-group{display:flex;flex-direction:column;gap:3px}
@@ -89,11 +103,6 @@ main{max-width:1200px;margin:0 auto;padding:20px}
 .po-input::placeholder{color:var(--text3);font-family:'DM Sans',sans-serif}
 .po-input.date-input{width:130px}
 .po-input.cost-input{width:110px}
-
-
-
-
-
 
 /* 3RD PARTY COMPLETE BTN */
 .complete-btn{font-size:12px;font-family:'DM Sans',sans-serif;padding:6px 14px;background:var(--green);color:white;border:none;border-radius:var(--radius);cursor:pointer;transition:opacity .15s;white-space:nowrap}
@@ -116,17 +125,19 @@ main{max-width:1200px;margin:0 auto;padding:20px}
 .type-pd{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap}
 .type-3p{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border);font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap}
 .type-pc{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap}
-
 .ordered-badge{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);font-size:10px;padding:2px 6px;border-radius:4px}
 .pending-badge{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);font-size:10px;padding:2px 6px;border-radius:4px}
-.sent-badge{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);font-size:10px;padding:2px 6px;border-radius:4px}
 
 @media(max-width:700px){
   thead th:nth-child(4),tbody td:nth-child(4){display:none}
 }
-.search-wrap{padding:16px 20px 0;max-width:1200px;margin:0 auto}.search-input{width:100%;padding:9px 14px 9px 36px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none;transition:border-color .15s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239b9890' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center}.search-input:focus{border-color:var(--border2)}.search-input::placeholder{color:var(--text3)}.detail-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}.detail-modal-overlay.open{opacity:1;pointer-events:all}.detail-modal{background:var(--surface);border-radius:var(--radius-lg);max-width:560px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15);transform:scale(.97);transition:transform .2s}.detail-modal-overlay.open .detail-modal{transform:scale(1)}.detail-modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}.detail-modal-title{font-size:14px;font-weight:500}.detail-modal-close{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;border-radius:6px;color:var(--text2)}.detail-modal-close:hover{background:var(--surface2)}.detail-modal-close svg{width:14px;height:14px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}.detail-modal-body{padding:20px}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.detail-cell{background:var(--surface2);border-radius:var(--radius);padding:10px 12px}.detail-lbl{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:3px}.detail-val{font-size:12px;color:var(--text)}.detail-mockup img{width:100%;border-radius:var(--radius);margin-top:12px}.product-card{cursor:pointer}.product-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}</style>
+
+.search-wrap{padding:16px 20px 0;max-width:1200px;margin:0 auto}.search-input{width:100%;padding:9px 14px 9px 36px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none;transition:border-color .15s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239b9890' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center}.search-input:focus{border-color:var(--border2)}.search-input::placeholder{color:var(--text3)}
+.detail-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}.detail-modal-overlay.open{opacity:1;pointer-events:all}.detail-modal{background:var(--surface);border-radius:var(--radius-lg);max-width:560px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15);transform:scale(.97);transition:transform .2s}.detail-modal-overlay.open .detail-modal{transform:scale(1)}.detail-modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}.detail-modal-title{font-size:14px;font-weight:500}.detail-modal-close{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;border-radius:6px;color:var(--text2)}.detail-modal-close:hover{background:var(--surface2)}.detail-modal-close svg{width:14px;height:14px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}.detail-modal-body{padding:20px}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.detail-cell{background:var(--surface2);border-radius:var(--radius);padding:10px 12px}.detail-lbl{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:3px}.detail-val{font-size:12px;color:var(--text)}.detail-mockup img{width:100%;border-radius:var(--radius);margin-top:12px}.product-card{cursor:pointer}.product-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
+</style>
 </head>
 <body>
+
 <header>
   <div class="header-left">
     <div class="logo-mark">CCB</div>
@@ -140,6 +151,16 @@ main{max-width:1200px;margin:0 auto;padding:20px}
     </button>
   </div>
 </header>
+
+<!-- Imprint / Insight tabs — mirrors invoicing.html -->
+<div class="tabs-bar">
+  <button class="tab-btn active" id="tab-imprint" onclick="switchTab('imprint')">
+    CCB Imprint <span class="tab-count" id="count-imprint">—</span>
+  </button>
+  <button class="tab-btn" id="tab-insight" onclick="switchTab('insight')">
+    CCB Insight <span class="tab-count" id="count-insight">—</span>
+  </button>
+</div>
 
 <div class="nav-bar" id="nav-bar">
   <button class="nav-btn active" onclick="scrollToSection('sec-tbo',this)">To Be Ordered <span class="nav-count" id="nav-count-tbo">—</span></button>
@@ -164,6 +185,7 @@ main{max-width:1200px;margin:0 auto;padding:20px}
 <div class="search-wrap" style="margin-bottom:0;padding-bottom:12px">
   <input class="search-input" id="search-input" type="text" placeholder="Search by order, contact, product, supplier, style..." oninput="applySearch()">
 </div>
+
 <main id="main">
   <div class="loading-state"><div class="spinner"></div><span style="font-size:13px;color:var(--text2)">Loading purchase orders...</span></div>
 </main>
@@ -171,29 +193,95 @@ main{max-width:1200px;margin:0 auto;padding:20px}
 <div class="toast" id="toast"><div class="toast-spinner" id="toast-spinner"></div><span id="toast-msg"></span></div>
 
 <script>
-const API_KEY='eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0OTQ0NjE4NywiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMjNUMTU6Mzc6MTkuNzc3WiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.5gdxh8FmHM2DYyCX0tZa_bupYYFVJYiOXCljmsbNngs';
-const ORDERS_BOARD='18407165363';const SUBS_BOARD='18407165552';
-const O_NUM='pulse_id_mm27vwa5';const O_STATUS='color_mm27qyta';const O_INHAND='date_mm22wpk2';const O_CONTACT='text_mm221kg3';const O_SHIPTO='text_mm26gtxp';const O_SALESPERSON='dropdown_mm22w5rr';
-const S_STATUS='color_mm25v786';const S_TYPE='color_mm2dd6d5';const S_QTY='numeric_mm22crjt';const S_COLOR='text_mm2276wz';const S_SIZE='text_mm22yw8s';const S_STYLE='text_mm22fv7y';const S_SUPPLIER='text_mm22qdag';const S_PO_NUM='text_mm27ns9d';const S_PO_DATE='date_mm26mc76';const S_TRACKING='link_mm26rzea';const S_COST='numeric_mm266zz9';const S_MOCKUP='file_mm26e29h';const S_PRICE='numeric_mm2299qw';
+const API_KEY='eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0MTk0NTk5MCwiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMDZUMTQ6MDg6NTcuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.ihgQ7xsNZfKIQjaHDVWUy_7BY0aWoeWjS1oTEkTCKTg';
+const ORDERS_BOARD='18407165363';
+const SUBS_BOARD='18407165552';
+
+const O_NUM='pulse_id_mm27vwa5';
+const O_STATUS='color_mm27qyta';
+const O_INHAND='date_mm22wpk2';
+const O_CONTACT='text_mm221kg3';
+const O_SHIPTO='text_mm26gtxp';
+const O_SALESPERSON='dropdown_mm22w5rr';
+const O_COMPANY='dropdown_mm276wtz'; // Imprint/Insight
+
+const S_STATUS='color_mm25v786';
+const S_TYPE='color_mm2dd6d5';
+const S_QTY='numeric_mm22crjt';
+const S_COLOR='text_mm2276wz';
+const S_SIZE='text_mm22yw8s';
+const S_STYLE='text_mm22fv7y';
+const S_SUPPLIER='text_mm22qdag';
+const S_PO_NUM='text_mm27ns9d';
+const S_PO_DATE='date_mm26mc76';
+const S_TRACKING='link_mm26rzea';
+const S_COST='numeric_mm266zz9';
+const S_MOCKUP='file_mm26e29h';
+const S_PRICE='numeric_mm2299qw';
 
 const autoSaveTimers={};
+let currentTab='imprint';
 
-async function mq(q){const r=await fetch('https://api.monday.com/v2',{method:'POST',headers:{'Content-Type':'application/json','Authorization':API_KEY,'API-Version':'2024-01'},body:JSON.stringify({query:q})});const d=await r.json();if(d.errors)throw new Error(d.errors[0].message);return d.data;}
+// All data buckets (full, unfiltered)
+let allToBeOrdered=[], allOrdered=[], allThirdParty=[], allPromoCodes=[];
+// Active (filtered by tab + search)
+let toBeOrdered=[], ordered=[], thirdParty=[], promoCodes=[];
 
-function ffile(val,txt){if(!val&&!txt)return null;try{const p=JSON.parse(val||'{}');if(p.files&&p.files.length)return p.files[p.files.length-1].url||p.files[p.files.length-1].public_url||null;if(p.url)return p.url;}catch(e){}const m=((val||'')+' '+(txt||'')).match(/https?:\/\/[^\s"',)]+/);return m?m[0]:null;}
+async function mq(q){
+  const r=await fetch('https://api.monday.com/v2',{method:'POST',headers:{'Content-Type':'application/json','Authorization':API_KEY,'API-Version':'2024-01'},body:JSON.stringify({query:q})});
+  const d=await r.json();
+  if(d.errors)throw new Error(d.errors[0].message);
+  return d.data;
+}
 
-function duechip(d){if(!d)return'';const due=new Date(d+'T00:00:00');const t=new Date();t.setHours(0,0,0,0);const diff=Math.round((due-t)/86400000);const fmt=due.toLocaleDateString('en-US',{month:'short',day:'numeric'});if(diff<0)return`<span class="chip overdue">Due ${fmt}</span>`;if(diff===0)return`<span class="chip due-soon">Due Today</span>`;if(diff<=5)return`<span class="chip due-soon">Due ${fmt}</span>`;return`<span class="chip ok">Due ${fmt}</span>`;}
+function ffile(val,txt){
+  if(!val&&!txt)return null;
+  try{const p=JSON.parse(val||'{}');if(p.files&&p.files.length)return p.files[p.files.length-1].url||p.files[p.files.length-1].public_url||null;if(p.url)return p.url;}catch(e){}
+  const m=((val||'')+' '+(txt||'')).match(/https?:\/\/[^\s"',)]+/);
+  return m?m[0]:null;
+}
 
-function typeBadge(t){const tl=(t||'').toLowerCase();if(tl.includes('in house'))return'<span class="type-ih">In House</span>';if(tl.includes('pre'))return'<span class="type-pd">Pre-Dec</span>';if(tl.includes('3rd'))return'<span class="type-3p">3rd Party</span>';if(tl.includes('promo'))return'<span class="type-pc">Promo</span>';return'';}
+function duechip(d){
+  if(!d)return'';
+  const due=new Date(d+'T00:00:00');
+  const t=new Date();t.setHours(0,0,0,0);
+  const diff=Math.round((due-t)/86400000);
+  const fmt=due.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  if(diff<0)return`<span class="chip overdue">Due ${fmt}</span>`;
+  if(diff===0)return`<span class="chip due-soon">Due Today</span>`;
+  if(diff<=5)return`<span class="chip due-soon">Due ${fmt}</span>`;
+  return`<span class="chip ok">Due ${fmt}</span>`;
+}
 
-function showToast(msg,spinning=true){document.getElementById('toast-msg').textContent=msg;document.getElementById('toast-spinner').style.display=spinning?'block':'none';document.getElementById('toast').classList.add('visible');}
+function typeBadge(t){
+  const tl=(t||'').toLowerCase();
+  if(tl.includes('in house'))return'<span class="type-ih">In House</span>';
+  if(tl.includes('pre'))return'<span class="type-pd">Pre-Dec</span>';
+  if(tl.includes('3rd'))return'<span class="type-3p">3rd Party</span>';
+  if(tl.includes('promo'))return'<span class="type-pc">Promo</span>';
+  return'';
+}
+
+function companyBadge(companyKey){
+  if(companyKey==='imprint')return'<span class="company-imprint">CCB Imprint</span>';
+  if(companyKey==='insight')return'<span class="company-insight">CCB Insight</span>';
+  return'<span class="company-unknown">Unknown</span>';
+}
+
+function companyKey(companyText){
+  const t=(companyText||'').toLowerCase();
+  if(t.includes('insight'))return'insight';
+  return'imprint'; // default to imprint
+}
+
+function showToast(msg,spinning=true){
+  document.getElementById('toast-msg').textContent=msg;
+  document.getElementById('toast-spinner').style.display=spinning?'block':'none';
+  document.getElementById('toast').classList.add('visible');
+}
 function hideToast(d=1500){setTimeout(()=>document.getElementById('toast').classList.remove('visible'),d);}
 
 // ── DATA ─────────────────────────────────────────────────────────────────────
-let toBeOrdered=[];    // IH + PreDec, product status = blank/default (index 5)
-let ordered=[];        // IH + PreDec, product status = Product Ordered (index 1)
-let thirdParty=[];     // 3rd Party, any status except 3rd party complete
-let promoCodes=[];     // Promo Code type, no PO date yet
 
 async function loadData(){
   const btn=document.getElementById('refresh-btn');
@@ -202,21 +290,51 @@ async function loadData(){
   if(!main.querySelector('.order-card'))main.innerHTML='<div class="loading-state"><div class="spinner"></div><span style="font-size:13px;color:var(--text2)">Loading...</span></div>';
 
   try{
-    const q=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name url column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHIPTO}","${O_SALESPERSON}"]){id text value}subitems{id name url column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_SUPPLIER}","${S_PO_NUM}","${S_PO_DATE}","${S_TRACKING}","${S_COST}","${S_MOCKUP}","${S_PRICE}"]){id text value}}}}}}`;
-    const data=await mq(q);
-    const items=data.boards[0].items_page.items;
+    // Query 1: parent orders + subitem IDs only (no subitem column_values = no concurrency issue)
+    const q1=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHIPTO}","${O_SALESPERSON}","${O_COMPANY}"]){id text value}subitems{id name}}}}}`;
+    const data1=await mq(q1);
+    const rawItems=data1.boards[0].items_page.items;
 
-    toBeOrdered=[];ordered=[];thirdParty=[];promoCodes=[];
+    // Collect all subitem IDs
+    const allSubIds=[];
+    for(const item of rawItems)
+      for(const sub of(item.subitems||[])) allSubIds.push(sub.id);
 
-    // Group subitems by parent order, split into sections
-    const orderMap={};
+    // Query 2: subitem column values in batches of 100 via items() — avoids board-level concurrency
+    const subColMap={};
+    for(let i=0;i<allSubIds.length;i+=100){
+      const batch=allSubIds.slice(i,i+100);
+      const q2=`{items(ids:[${batch.join(',')}]){id column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_SUPPLIER}","${S_PO_NUM}","${S_PO_DATE}","${S_TRACKING}","${S_COST}","${S_MOCKUP}","${S_PRICE}"]){id text value}}}`;
+      const data2=await mq(q2);
+      for(const sub of(data2.items||[])) subColMap[sub.id]=sub.column_values;
+    }
+
+    // Merge column values back onto subitems
+    const items=rawItems.map(item=>({
+      ...item,
+      subitems:(item.subitems||[]).map(sub=>({...sub,column_values:subColMap[sub.id]||[]}))
+    }));
+
+    allToBeOrdered=[];allOrdered=[];allThirdParty=[];allPromoCodes=[];
+
     for(const item of items){
       const cv={};for(const c of item.column_values)cv[c.id]=c;
       const orderStatus=(cv[O_STATUS]?.text||'').toLowerCase();
-      // Skip shipped, completed, paid, promo code order status (we handle promo via subitem type)
       if(['shipped','3rd party complete'].includes(orderStatus))continue;
 
-      const orderInfo={id:item.id,name:item.name,url:item.url,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',shipTo:cv[O_SHIPTO]?.text||'',inHands:cv[O_INHAND]?.text||'',salesperson:cv[O_SALESPERSON]?.text||''};
+      const companyText=cv[O_COMPANY]?.text||'';
+      const cKey=companyKey(companyText);
+
+      const orderInfo={
+        id:item.id,name:item.name,url:item.url,
+        ccbNum:cv[O_NUM]?.text||'',
+        contact:cv[O_CONTACT]?.text||'',
+        shipTo:cv[O_SHIPTO]?.text||'',
+        inHands:cv[O_INHAND]?.text||'',
+        salesperson:cv[O_SALESPERSON]?.text||'',
+        company:companyText,
+        companyKey:cKey
+      };
 
       for(const sub of(item.subitems||[])){
         const sc={};for(const c of sub.column_values)sc[c.id]=c;
@@ -236,39 +354,69 @@ async function loadData(){
           poNum:sc[S_PO_NUM]?.text||'',poDate,
           tracking:sc[S_TRACKING]?.text||'',cost:sc[S_COST]?.text||'',price:sc[S_PRICE]?.text||'',
           mockupUrl:ffile(sc[S_MOCKUP]?.value,sc[S_MOCKUP]?.text),
-          statusIndex
+          statusIndex,
+          companyKey:cKey
         };
 
         if(subType.includes('promo')){
-          // Promo: only show if no PO date yet (not sent)
-          if(!poDate)promoCodes.push(product);
+          if(!poDate)allPromoCodes.push(product);
         } else if(subType.includes('3rd')){
-          // 3rd Party: show unless 3rd party complete
-          if(!subStatus.includes('3rd party complete')&&subStatus!=='')thirdParty.push(product);
-          else if(!subStatus)thirdParty.push(product);
+          if(!subStatus.includes('3rd party complete')&&subStatus!=='')allThirdParty.push(product);
+          else if(!subStatus)allThirdParty.push(product);
         } else if(subType.includes('in house')||subType.includes('pre')){
-          // To Be Ordered: no PO date, OR status manually reverted to blank
-          // Ordered: has PO date AND status is Product Ordered
           const isBlank=statusIndex===5||subStatus==='';
           const isProductOrdered=subStatus==='product ordered'||statusIndex===1;
-          if(!poDate||isBlank)toBeOrdered.push(product);
-          else if(isProductOrdered)ordered.push(product);
+          if(!poDate||isBlank)allToBeOrdered.push(product);
+          else if(isProductOrdered)allOrdered.push(product);
         }
       }
     }
 
-    // Sort all by in-hands date
     const srt=(a,b)=>{const ai=a.orderInfo.inHands,bi=b.orderInfo.inHands;if(!ai&&!bi)return 0;if(!ai)return 1;if(!bi)return-1;return new Date(ai)-new Date(bi);};
-    toBeOrdered.sort(srt);ordered.sort(srt);thirdParty.sort(srt);promoCodes.sort(srt);
-    allToBeOrdered=[...toBeOrdered];allOrdered=[...ordered];allThirdParty=[...thirdParty];allPromoCodes=[...promoCodes];
+    allToBeOrdered.sort(srt);allOrdered.sort(srt);allThirdParty.sort(srt);allPromoCodes.sort(srt);
 
-    render();
+    updateTabCounts();
+    applyTabFilter();
+
     document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-  }catch(err){document.getElementById('main').innerHTML=`<div class="error-box"><strong>Error:</strong> ${err.message}</div>`;}
+  }catch(err){
+    document.getElementById('main').innerHTML=`<div class="error-box"><strong>Error:</strong> ${err.message}</div>`;
+  }
   btn.disabled=false;btn.classList.remove('spinning');
 }
 
+// ── TAB LOGIC ─────────────────────────────────────────────────────────────────
+
+function updateTabCounts(){
+  const imprintCount=[...allToBeOrdered,...allOrdered,...allThirdParty,...allPromoCodes].filter(p=>p.companyKey==='imprint').length;
+  const insightCount=[...allToBeOrdered,...allOrdered,...allThirdParty,...allPromoCodes].filter(p=>p.companyKey==='insight').length;
+  // Count by unique orders instead of products for a cleaner number
+  const imprintOrders=new Set([...allToBeOrdered,...allOrdered,...allThirdParty,...allPromoCodes].filter(p=>p.companyKey==='imprint').map(p=>p.orderId)).size;
+  const insightOrders=new Set([...allToBeOrdered,...allOrdered,...allThirdParty,...allPromoCodes].filter(p=>p.companyKey==='insight').map(p=>p.orderId)).size;
+  document.getElementById('count-imprint').textContent=imprintOrders;
+  document.getElementById('count-insight').textContent=insightOrders;
+}
+
+function switchTab(tab){
+  currentTab=tab;
+  document.getElementById('tab-imprint').classList.toggle('active',tab==='imprint');
+  document.getElementById('tab-insight').classList.toggle('active',tab==='insight');
+  // Reset search
+  document.getElementById('search-input').value='';
+  applyTabFilter();
+}
+
+function applyTabFilter(){
+  const filter=p=>p.companyKey===currentTab;
+  toBeOrdered=allToBeOrdered.filter(filter);
+  ordered=allOrdered.filter(filter);
+  thirdParty=allThirdParty.filter(filter);
+  promoCodes=allPromoCodes.filter(filter);
+  render();
+}
+
 // ── GROUP BY ORDER ────────────────────────────────────────────────────────────
+
 function groupByOrder(products){
   const map=new Map();
   for(const p of products){
@@ -279,17 +427,16 @@ function groupByOrder(products){
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
+
 function render(){
   const main=document.getElementById('main');
   let html='';
 
-  // Update nav counts
   document.getElementById('nav-count-tbo').textContent=toBeOrdered.length;
   document.getElementById('nav-count-ord').textContent=ordered.length;
   document.getElementById('nav-count-tp').textContent=thirdParty.length;
   document.getElementById('nav-count-promo').textContent=promoCodes.length;
 
-  // Update stat cards
   document.getElementById('stat-tbo').textContent=toBeOrdered.length;
   document.getElementById('stat-ord').textContent=ordered.length;
 
@@ -310,7 +457,6 @@ function render(){
   html+=`<div id="sec-tp" class="section-header"><span class="section-label">3rd Party</span><span class="section-count">${thirdParty.length} products · ${tpGroups.length} orders</span><div class="section-line"></div></div>`;
   if(tpGroups.length===0)html+=`<p class="empty-msg">No active 3rd party orders.</p>`;
   else{
-    // Split into sub-sections: To Be Ordered and Ordered
     const tp_tbo=thirdParty.filter(p=>!p.poDate);
     const tp_ord=thirdParty.filter(p=>!!p.poDate);
     if(tp_tbo.length>0){
@@ -337,12 +483,14 @@ function render(){
 function buildOrderCard(group,section){
   const o=group.info;
   const cards=group.products.map(p=>buildProductCard(p,section)).join('');
+
   return `<div class="order-card" id="order-${section}-${o.id}">
     <div class="order-header">
       <div>
         <div class="order-name">${o.name}</div>
         <div class="order-meta">
           ${o.ccbNum?`<span class="order-num">${o.ccbNum}</span>`:''}
+          ${companyBadge(o.companyKey)}
           ${o.contact?`<span class="chip">${o.contact}</span>`:''}
           ${o.shipTo?`<span class="chip">${o.shipTo}</span>`:''}
           ${o.salesperson?`<span class="chip" style="background:var(--blue-bg);color:var(--blue);border-color:var(--blue-border)">${o.salesperson}</span>`:''}
@@ -356,7 +504,6 @@ function buildOrderCard(group,section){
 }
 
 function buildProductCard(p,section){
-  // Mockup section
   let mockupHtml='';
   if(p.mockupUrl){
     mockupHtml=`<div class="product-card-mockup" onclick="event.stopPropagation();window.open('${p.mockupUrl}','_blank')">
@@ -372,7 +519,6 @@ function buildProductCard(p,section){
     </div>`;
   }
 
-  // Fields grid
   const fields=[
     ['Qty', p.qty||'—', false],
     ['Color', p.color||'—', false],
@@ -387,14 +533,12 @@ function buildProductCard(p,section){
   if(section==='promo'){
     fields.push(['Price/Item', p.price?'$'+p.price:'—', false]);
   }
-
   const fieldsHtml=fields.map(([lbl,val,mono])=>`
     <div class="pcf-item">
       <span class="pcf-lbl">${lbl}</span>
       <span class="pcf-val${mono?' mono':''}">${val}</span>
     </div>`).join('');
 
-  // PO inputs (for tbo / tp_tbo sections — inside the card)
   let poHtml='';
   if(section==='tbo'||section==='tp_tbo'){
     poHtml=`<div class="product-card-po">
@@ -427,7 +571,6 @@ function buildProductCard(p,section){
     </div>`;
   }
 
-  // Cost input for ordered sections
   let costHtml='';
   if(section==='ord'||section==='tp_ord'){
     costHtml=`<div class="product-card-po">
@@ -453,16 +596,14 @@ function buildProductCard(p,section){
 }
 
 function buildPoFields(group,section){
-  // tbo and tp_tbo PO fields are now inside each product card
   if(section==='tbo'||section==='tp_tbo'||section==='ord'||section==='tp_ord')return'';
-
   if(section==='promo'){
     const o=group.info;
     return `<div class="po-fields" id="po-fields-promo-${o.id}">
       <div class="po-field-group">
         <span class="po-lbl">Date Sent</span>
         <input class="po-input date-input" type="date" id="promo-date-${o.id}"
-          onchange="schedulePromoAutoSave('${o.id}',${JSON.stringify(group.products.map(p=>p.id))})" id="promo-date-${o.id}">
+          onchange="schedulePromoAutoSave('${o.id}',${JSON.stringify(group.products.map(p=>p.id))})">
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
         <button class="po-save-btn" onclick="event.stopPropagation();triggerPromoSave('${o.id}')" id="promo-save-btn-${o.id}">Mark Sent</button>
@@ -474,8 +615,8 @@ function buildPoFields(group,section){
 }
 
 // ── COUNTDOWN & COMMIT ────────────────────────────────────────────────────────
+
 function scheduleAutoSave(subId,orderId){
-  // Debounce: wait 1.5s after user stops typing then autosave
   if(autoSaveTimers[subId])clearTimeout(autoSaveTimers[subId]);
   autoSaveTimers[subId]=setTimeout(()=>{
     delete autoSaveTimers[subId];
@@ -483,47 +624,39 @@ function scheduleAutoSave(subId,orderId){
   },1500);
 }
 
+function onDateInput(subId,orderId,val){
+  if(val)commitPoEntry(subId,orderId,val);
+}
+
 async function commitPoEntry(subId,orderId,explicitDate=null){
   const supplier=document.getElementById('sup-'+subId)?.value.trim()||'';
   const poNum=document.getElementById('ponum-'+subId)?.value.trim()||'';
   const tracking=document.getElementById('track-'+subId)?.value.trim()||'';
   const today=explicitDate||new Date().toISOString().split('T')[0];
-
-  // Update date input to show today
   const dateEl=document.getElementById('date-'+subId);
   if(dateEl&&!dateEl.value)dateEl.value=today;
 
   showToast('Saving PO...');
   try{
-    // Determine new product status based on product type
-    // We'll set to Product Ordered (index 1) for IH/PreDec, 3rd Party Ordered (index 2) for 3rd party
-    // We read the type from the row
     const typeEl=document.querySelector(`#row-${subId} .type-3p`);
-    const statusIndex=typeEl?2:1; // 2=3rd Party Ordered, 1=Product Ordered
-
-    let colVals={};
-    colVals[`${SUBS_BOARD}`]=null; // placeholder
+    const statusIndex=typeEl?2:1;
     const vals={};
     if(supplier)vals['text_mm22qdag']=supplier;
     if(poNum)vals['text_mm27ns9d']=poNum;
     if(tracking)vals['link_mm26rzea']={url:tracking,text:'Track'};
     vals['date_mm26mc76']={date:today};
     vals['color_mm25v786']={index:statusIndex};
-
     const valStr=JSON.stringify(JSON.stringify(vals));
     await mq(`mutation{change_multiple_column_values(board_id:${SUBS_BOARD},item_id:${subId},column_values:${valStr}){id}}`);
     showToast('Saved',false);hideToast();
-
-    // Show saved message
     const savedEl=document.getElementById('po-saved-'+subId);
     if(savedEl){savedEl.textContent='Saved';setTimeout(()=>savedEl.textContent='',2000);}
-
-    // Refresh after short delay
     setTimeout(()=>loadData(),1000);
   }catch(err){showToast('Error: '+err.message,false);hideToast(3000);}
 }
 
 // ── COST SAVE ─────────────────────────────────────────────────────────────────
+
 async function saveCost(subId,val){
   if(!val)return;
   const num=parseFloat(val);
@@ -536,11 +669,11 @@ async function saveCost(subId,val){
 }
 
 // ── 3RD PARTY COMPLETE ────────────────────────────────────────────────────────
+
 async function mark3rdPartyComplete(orderId,subId,btn){
   btn.disabled=true;btn.textContent='Updating...';
   showToast('Marking 3rd party complete...');
   try{
-    // Update order status to 3rd Party Complete
     await mq(`mutation{change_column_value(board_id:${ORDERS_BOARD},item_id:${orderId},column_id:"color_mm27qyta",value:"{\\"index\\":9}"){id}}`);
     showToast('Marked complete',false);hideToast();
     setTimeout(()=>loadData(),800);
@@ -548,11 +681,11 @@ async function mark3rdPartyComplete(orderId,subId,btn){
 }
 
 // ── PROMO CODE SENT ───────────────────────────────────────────────────────────
+
 const promoSubIdsMap={};
 
 function schedulePromoAutoSave(orderId,subIds){
   promoSubIdsMap[orderId]=subIds;
-  // autosave 1.5s after date is selected
   setTimeout(()=>{
     const dateEl=document.getElementById('promo-date-'+orderId);
     if(dateEl&&dateEl.value)commitPromoSent(orderId,subIds,dateEl.value);
@@ -569,11 +702,9 @@ function triggerPromoSave(orderId){
 async function commitPromoSent(orderId,subIds,date){
   showToast('Marking promo codes sent...');
   try{
-    // Set PO date on all subitems and order status to Delivered (index... we'll use Shipped = 4 as Delivered)
     for(const subId of subIds){
       await mq(`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"date_mm26mc76",value:"{\\"date\\":\\"${date}\\"}"){id}}`);
     }
-    // Set order status to Delivered
     await mq(`mutation{change_column_value(board_id:${ORDERS_BOARD},item_id:${orderId},column_id:"color_mm27qyta",value:"{\\"index\\":3}"){id}}`);
     showToast('Saved',false);hideToast();
     const savedEl=document.getElementById('promo-saved-'+orderId);
@@ -585,41 +716,48 @@ async function commitPromoSent(orderId,subIds,date){
 function scrollToSection(id,btn){
   const el=document.getElementById(id);
   if(el){
-    // offset for sticky header + nav bar
-    const offset=56+41;
-    const top=el.getBoundingClientRect().top+window.scrollY-offset-12;
+    const offset=56+41+38+12; // header + tabs + nav + buffer
+    const top=el.getBoundingClientRect().top+window.scrollY-offset;
     window.scrollTo({top,behavior:'smooth'});
   }
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
 }
 
-
 // ── SEARCH ────────────────────────────────────────────────────────────────────
-let allToBeOrdered=[],allOrdered=[],allThirdParty=[],allPromoCodes=[];
 
 function applySearch(){
   const q=document.getElementById('search-input').value.toLowerCase().trim();
+  const filter=p=>p.companyKey===currentTab;
+  const match=p=>[p.name,p.orderInfo.name,p.orderInfo.ccbNum,p.orderInfo.contact,p.orderInfo.salesperson,p.supplier,p.style,p.color,p.type].join(' ').toLowerCase().includes(q);
   if(!q){
-    toBeOrdered=allToBeOrdered;ordered=allOrdered;thirdParty=allThirdParty;promoCodes=allPromoCodes;
+    toBeOrdered=allToBeOrdered.filter(filter);
+    ordered=allOrdered.filter(filter);
+    thirdParty=allThirdParty.filter(filter);
+    promoCodes=allPromoCodes.filter(filter);
   } else {
-    const match=p=>[p.name,p.orderInfo.name,p.orderInfo.ccbNum,p.orderInfo.contact,p.orderInfo.salesperson,p.supplier,p.style,p.color,p.type].join(' ').toLowerCase().includes(q);
-    toBeOrdered=allToBeOrdered.filter(match);ordered=allOrdered.filter(match);
-    thirdParty=allThirdParty.filter(match);promoCodes=allPromoCodes.filter(match);
+    toBeOrdered=allToBeOrdered.filter(p=>filter(p)&&match(p));
+    ordered=allOrdered.filter(p=>filter(p)&&match(p));
+    thirdParty=allThirdParty.filter(p=>filter(p)&&match(p));
+    promoCodes=allPromoCodes.filter(p=>filter(p)&&match(p));
   }
   render();
 }
 
 // ── DETAIL MODAL ──────────────────────────────────────────────────────────────
+
 function openProductDetail(subId){
   const all=[...allToBeOrdered,...allOrdered,...allThirdParty,...allPromoCodes];
   const p=all.find(x=>x.id===subId);
   if(!p)return;
+
   const isOrdered=[...allOrdered,...allThirdParty.filter(x=>x.poDate)].some(x=>x.id===subId);
+
   document.getElementById('detail-modal-title').textContent=p.name;
 
   const staticFields=[
     ['Order',p.orderInfo.name],['CCB #',p.orderInfo.ccbNum],
+    ['Company',p.orderInfo.company||'—'],
     ['Contact',p.orderInfo.contact],['Sales Person',p.orderInfo.salesperson],
     ['In Hands',p.orderInfo.inHands||'—'],['Ship To',p.orderInfo.shipTo||'—'],
     ['Type',p.type||'—'],['Qty',p.qty||'—'],['Color',p.color||'—'],
@@ -678,16 +816,17 @@ async function savePoField(subId,field,val){
       mutation=`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"text_mm27ns9d",value:${JSON.stringify(JSON.stringify(val))}){id}}`;
       if(p)p.poNum=val;
     } else if(field==='date'){
-      mutation=`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"date_mm26mc76",value:"{\"date\":\"${val}\"}"){id}}`;
+      mutation=`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"date_mm26mc76",value:"{\\"date\\":\\"${val}\\"}"){id}}`;
       if(p)p.poDate=val;
     } else if(field==='tracking'){
-      mutation=`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"link_mm26rzea",value:"{\"url\":\"${val}\",\"text\":\"Track\"}"){id}}`;
+      mutation=`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"link_mm26rzea",value:"{\\"url\\":\\"${val}\\",\\"text\\":\\"Track\\"}"){id}}`;
       if(p)p.tracking=val;
     }
     await mq(mutation);
     showToast('Saved',false);hideToast();
   }catch(err){showToast('Error: '+err.message,false);hideToast(3000);}
 }
+
 function closeDetailModal(e){if(e.target===document.getElementById('detail-modal-overlay'))closeDetailModalDirect();}
 function closeDetailModalDirect(){document.getElementById('detail-modal-overlay').classList.remove('open');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDetailModalDirect();});
@@ -706,5 +845,6 @@ loadData();
     <div class="detail-modal-body" id="detail-modal-body"></div>
   </div>
 </div>
+
 </body>
 </html>
