@@ -485,9 +485,19 @@ function renderContent(){
 async function loadData(){
   const btn=document.getElementById('refresh-btn');btn.disabled=true;btn.classList.add('spinning');
   try{
-    const q=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHELF}"]){id text value}subitems{id name column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_DECO}","${S_PLACEMENT}","${S_ARTWORK_DESC}","${S_PROD_NOTES}","${S_MOCKUP}","${S_ARTWORK}"]){id text value}}}}}}`;
-    const data=await mq(q);
-    const items=data.boards[0].items_page.items;
+    const q1=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHELF}"]){id text value}subitems{id name}}}}}`;
+    const data1=await mq(q1);
+    const rawItems=data1.boards[0].items_page.items;
+    const allSubIds=[];
+    for(const item of rawItems)for(const sub of(item.subitems||[]))allSubIds.push(sub.id);
+    const subColMap={};
+    for(let i=0;i<allSubIds.length;i+=100){
+      const batch=allSubIds.slice(i,i+100);
+      const q2=`{items(ids:[${batch.join(',')}]){id column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_DECO}","${S_PLACEMENT}","${S_ARTWORK_DESC}","${S_PROD_NOTES}","${S_MOCKUP}","${S_ARTWORK}"]){id text value}}}`;
+      const d2=await mq(q2);
+      for(const sub of(d2.items||[]))subColMap[sub.id]=sub.column_values;
+    }
+    const items=rawItems.map(item=>({...item,subitems:(item.subitems||[]).map(sub=>({...sub,column_values:subColMap[sub.id]||[]}))}));
     allUpcoming=[];allActive=[];
     for(const item of items){
       for(const sub of(item.subitems||[])){
