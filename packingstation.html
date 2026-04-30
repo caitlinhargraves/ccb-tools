@@ -449,7 +449,7 @@ let pickedState = {};
 let slipPrinted = {}; // track per session
 
 // ── API KEY ──
-function getKey() { return localStorage.getItem('ccb_api_key') || ''; }
+function getKey() { return 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0OTQ0NjE4NywiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMjNUMTU6Mzc6MTkuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.6FPYgwwTj-05GWXHxxq5lSstcJTGfVOqATNhk5FQBic'; }
 function saveApiKey() {
   const v = document.getElementById('api-key-input').value.trim();
   if (!v) return;
@@ -463,7 +463,7 @@ async function gql(query) {
   if (!key) throw new Error('No API key');
   const r = await fetch('https://api.monday.com/v2', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': key, 'API-Version': '2024-10' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': key, 'API-Version': '2024-01' },
     body: JSON.stringify({ query })
   });
   const d = await r.json();
@@ -479,7 +479,7 @@ async function loadQueue() {
     const q = `{
       boards(ids: ${BOARD_ID}) {
         items_page(limit: 100, query_params: {
-          rules: [{ column_id: "color_mm27qyta", compare_value: [2] }]
+          rules: [{ column_id: "color_mm27qyta", compare_value: ["Decorated"], compare_attribute: "LABEL" }]
           order_by: [{ column_id: "date_mm22wpk2", direction: asc }]
         }) {
           items {
@@ -488,7 +488,7 @@ async function loadQueue() {
               "pulse_id_mm27vwa5","text_mm29djkk","color_mm27qyta","date_mm22wpk2",
               "lookup_mm259bvv","dropdown_mm276wtz","text_mm26gtxp","location_mm2682nc",
               "boolean_mm22xdfn","text_mm253t97","long_text_mm225vbf","text_mm221kg3",
-              "email_mm22ap28"
+              "email_mm22ap28","dropdown_mm22w5rr"
             ]) { id text value }
           }
         }
@@ -694,6 +694,8 @@ function renderDetail() {
     const color = daysLeft <= 3 ? 'background:#ffe0d6;color:#7a2000;border:1px solid #f09090' : 'background:var(--green-light);color:var(--green)';
     chips.innerHTML += `<span class="chip" style="${color}">${daysLeft <= 0 ? '🚨 OVERDUE' : daysLeft <= 3 ? '⚡ ' + daysLeft + 'd left' : '📅 ' + daysLeft + 'd'}</span>`;
   }
+  const sales = t('dropdown_mm22w5rr') || '';
+  if (sales) chips.innerHTML += `<span class="chip">${sales}</span>`;
   const brand = t('dropdown_mm276wtz') || '';
   chips.innerHTML += brand.includes('Insight') ? `<span class="chip chip-purple">Insight</span>` : `<span class="chip chip-gold">Imprint</span>`;
 
@@ -886,6 +888,7 @@ function buildSlipHTML(order) {
             <tr><td class="ml">Order #</td><td style="font-family:'Courier New',monospace;">${num}</td></tr>
             <tr><td class="ml">In Hands</td><td style="font-weight:700;color:#c0522a;">${handsDisplay}</td></tr>
             <tr><td class="ml">Contact</td><td>${t('text_mm221kg3') || '—'}</td></tr>
+            <tr><td class="ml">Sales Rep</td><td>${t('dropdown_mm22w5rr') || '—'}</td></tr>
           </table>
         </div>
         <div class="slip-meta-right">
@@ -1066,12 +1069,7 @@ function closePrintPreview() {
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
-  if (!getKey()) {
-    document.getElementById('setup-banner').style.display = 'block';
-    document.getElementById('queue-body').innerHTML = '<tr class="empty-row"><td colspan="8">Enter your API token above to load orders.</td></tr>';
-  } else {
-    loadQueue();
-  }
+  loadQueue();
   document.getElementById('api-key-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') saveApiKey(); });
 });
 </script>
