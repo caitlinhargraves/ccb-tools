@@ -159,7 +159,7 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
       All Stations
     </a>
     <span class="last-updated" id="last-updated"></span>
-    <button class="refresh-btn" id="refresh-btn" onclick="loadData()">
+    <button class="refresh-btn" id="refresh-btn" onclick="window._forceRefresh=true;loadData()">
       <svg viewBox="0 0 16 16"><path d="M1 4s1-3 7-3a7 7 0 0 1 7 7"/><path d="M15 12s-1 3-7 3a7 7 0 0 1-7-7"/><polyline points="1 1 1 4 4 4"/><polyline points="15 15 15 12 12 12"/></svg>
       Refresh
     </button>
@@ -217,7 +217,7 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 <script>
 const API_KEY='eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0OTQ0NjE4NywiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMjNUMTU6Mzc6MTkuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.6FPYgwwTj-05GWXHxxq5lSstcJTGfVOqATNhk5FQBic';
 const ORDERS_BOARD='18407165363';const SUBS_BOARD='18407165552';
-const O_NUM='pulse_id_mm27vwa5';const O_STATUS='color_mm27qyta';const O_INHAND='date_mm22wpk2';const O_CONTACT='text_mm221kg3';const O_SHELF='text_mm2ngkpv';
+const O_NUM='pulse_id_mm27vwa5';const O_STATUS='color_mm27qyta';const O_INHAND='date_mm22wpk2';const O_CONTACT='text_mm221kg3';const O_SHELF='text_mm2ngkpv';const O_SALES='dropdown_mm22w5rr';
 const S_STATUS='color_mm25v786';const S_TYPE='color_mm2dd6d5';const S_QTY='numeric_mm22crjt';const S_COLOR='text_mm2276wz';const S_SIZE='text_mm22yw8s';const S_STYLE='text_mm22fv7y';const S_DECO='dropdown_mm22dn1f';const S_PLACEMENT='text_mm226hzf';const S_ARTWORK_DESC='text_mm2521d5';const S_PROD_NOTES='long_text_mm27e9c4';const S_MOCKUP='file_mm26e29h';const S_ARTWORK='file_mm221c09';
 const DECO_BG={Embroidery:'#dbeafe',Screenprint:'#fef3c7','DTG / DTF':'#e8f5ee',DTG:'#e8f5ee',DTF:'#e8f5ee',Engrave:'#f3e8ff',Other:'#f0efe9'};
 const DECO_TC={Embroidery:'#1e3a5f',Screenprint:'#92400e','DTG / DTF':'#2d6a4f',DTG:'#2d6a4f',DTF:'#2d6a4f',Engrave:'#6b21a8',Other:'#6b6960'};
@@ -225,6 +225,7 @@ const STATION_IDS=[6];
 const VIEW_KEY='ccb_prod_view';
 let currentView=localStorage.getItem(VIEW_KEY)||'card';
 let allUpcoming=[],allActive=[],sessionDone=[],searchQuery='';
+let cachedData=null,cacheTime=0;
 // asset URL cache: assetId -> {url, name}
 const assetCache={};
 
@@ -358,6 +359,7 @@ function buildCardView(p,section){
           <span class="chip">${p.orderName}</span>
           ${duechip(p.inHands)}
           ${shelfChip}
+          ${p.salesperson?`<span class="chip">${p.salesperson}</span>`:''}
           <span class="deco-badge" style="background:${bg};color:${tc};border:1px solid ${tc}22">${p.decoStyleDisplay||'—'}</span>
         </div>
       </div>
@@ -398,6 +400,7 @@ function buildTableRow(p,section){
     :`<span style="color:var(--text3);font-size:11px">—</span>`;
   return `<tr id="tr-${p.id}" onclick="openProductModal('${p.id}','${section}')">
     <td><div class="pname" title="${p.name}">${p.name}</div><div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:1px">${p.ccbNum} · ${p.orderName}</div></td>
+    <td style="font-size:12px">${p.salesperson||'—'}</td>
     <td>${duechip(p.inHands)}</td>
     <td>${p.shelf?`<span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--blue)">${p.shelf}</span>`:'—'}</td>
     <td class="mono">${p.qty||'—'}</td>
@@ -416,7 +419,7 @@ function buildSection(items,section,label,emptyMsg){
   if(filt.length===0){html+=`<p class="empty-msg">${searchQuery?`No results for "${searchQuery}"`:emptyMsg}</p>`;}
   else if(currentView==='card'){for(const p of filt){try{html+=buildCardView(p,section)}catch(e){html+=`<div class="error-box"><strong>Error:</strong> ${e.message}</div>`;}}}
   else{
-    html+=`<div class="table-view-wrap"><table class="prod-table"><thead><tr><th>Product</th><th>In Hands</th><th>Shelf</th><th>Qty</th><th>Color</th><th>Size</th><th>Style #</th><th>Mockup</th><th>Artwork</th>${section==='active'?'<th></th>':''}</tr></thead><tbody>`;
+    html+=`<div class="table-view-wrap"><table class="prod-table"><thead><tr><th>Product</th><th>Salesperson</th><th>In Hands</th><th>Shelf</th><th>Qty</th><th>Color</th><th>Size</th><th>Style #</th><th>Mockup</th><th>Artwork</th>${section==='active'?'<th></th>':''}</tr></thead><tbody>`;
     for(const p of filt){try{html+=buildTableRow(p,section)}catch(e){html+=`<tr><td colspan="10" style="color:var(--red)">Error: ${e.message}</td></tr>`;}}
     html+=`</tbody></table></div>`;
   }
@@ -447,7 +450,7 @@ function parseProduct(item,sub){
   return{
     id:sub.id,name:sub.name,orderId:item.id,orderName:item.name,
     ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',
-    inHands:cv[O_INHAND]?.text||'',shelf:cv[O_SHELF]?.text||'',
+    inHands:cv[O_INHAND]?.text||'',shelf:cv[O_SHELF]?.text||'',salesperson:cv[O_SALES]?.text||'',
     qty:sc[S_QTY]?.text||'',color:sc[S_COLOR]?.text||'',size:sc[S_SIZE]?.text||'',
     style:sc[S_STYLE]?.text||'',decoStyleId,decoStyleText,decoStyleDisplay,
     placement:sc[S_PLACEMENT]?.text||'',artworkDesc:sc[S_ARTWORK_DESC]?.text||'',
@@ -483,11 +486,13 @@ function renderContent(){
 }
 
 async function loadData(){
+  const now=Date.now();if(cachedData&&(now-cacheTime)<60000&&!window._forceRefresh){renderContent();updateStats();return;}
+  window._forceRefresh=false;
   const btn=document.getElementById('refresh-btn');btn.disabled=true;btn.classList.add('spinning');
   try{
-    const q1=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHELF}"]){id text value}subitems{id name}}}}}`;
+    const q1=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name group{id}column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHELF}","${O_SALES}"]){id text value}subitems{id name}}}}}`;
     const data1=await mq(q1);
-    const rawItems=data1.boards[0].items_page.items;
+    const rawItems=data1.boards[0].items_page.items.filter(i=>i.group?.id==='topics');
     const allSubIds=[];
     for(const item of rawItems)for(const sub of(item.subitems||[]))allSubIds.push(sub.id);
     const subColMap={};
@@ -503,8 +508,6 @@ async function loadData(){
       for(const sub of(item.subitems||[])){
         const sc={};for(const c of sub.column_values)sc[c.id]=c;
         const subStatus=(sc[S_STATUS]?.text||'').toLowerCase();
-        const subType=(sc[S_TYPE]?.text||'').toLowerCase();
-        if(subType!=='in house decoration')continue;
         let decoId=0;try{decoId=JSON.parse(sc[S_DECO]?.value||'{}')?.ids?.[0]||0;}catch(e){}
         if(!STATION_IDS.includes(parseInt(decoId)))continue;
         const p=parseProduct(item,sub);
@@ -512,6 +515,7 @@ async function loadData(){
         else if(subStatus==='in house')allActive.push(p);
       }
     }
+    cachedData=true;cacheTime=Date.now();
     sortByDate(allUpcoming);sortByDate(allActive);
 
     updateStats();renderContent();
