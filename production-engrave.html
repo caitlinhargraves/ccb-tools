@@ -485,9 +485,9 @@ function renderContent(){
 async function loadData(){
   const btn=document.getElementById('refresh-btn');btn.disabled=true;btn.classList.add('spinning');
   try{
-    const q1=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHELF}"]){id text value}subitems{id name}}}}}`;
-    const data1=await mq(q1);
-    const rawItems=data1.boards[0].items_page.items;
+    const q1=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name group{id}column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHELF}"]){id text value}subitems{id name}}}}}`;
+    const data1=await mq(q1);
+    const rawItems=data1.boards[0].items_page.items.filter(i=>i.group?.id==='topics');
     const allSubIds=[];
     for(const item of rawItems)for(const sub of(item.subitems||[]))allSubIds.push(sub.id);
     const subColMap={};
@@ -503,8 +503,6 @@ async function loadData(){
       for(const sub of(item.subitems||[])){
         const sc={};for(const c of sub.column_values)sc[c.id]=c;
         const subStatus=(sc[S_STATUS]?.text||'').toLowerCase();
-        const subType=(sc[S_TYPE]?.text||'').toLowerCase();
-        if(subType!=='in house decoration')continue;
         let decoId=0;try{decoId=JSON.parse(sc[S_DECO]?.value||'{}')?.ids?.[0]||0;}catch(e){}
         if(!STATION_IDS.includes(parseInt(decoId)))continue;
         const p=parseProduct(item,sub);
