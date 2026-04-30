@@ -609,6 +609,52 @@
     thead th:nth-child(7),
     tbody td:nth-child(7) { display: none; }
   }
+
+  /* RECEIVING SLIP */
+  .print-slip-btn { font-size: 12px; padding: 6px 12px; background: #185FA5; color: white; border: none; border-radius: var(--radius); cursor: pointer; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 5px; transition: opacity .15s; flex-shrink: 0; }
+  .print-slip-btn:hover { opacity: .88; }
+  .print-slip-btn svg { width: 12px; height: 12px; stroke: white; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .slip-print-area { display: none; }
+  @media print {
+    header, .search-wrap, #initial-loader, .refresh-btn, .shelf-edit-btn, .shelf-save-btn, .shelf-input-wrap, .mockup-btn, .modal-overlay, .print-slip-btn { display: none !important; }
+    body { background: white; }
+    main { padding: 0; }
+    .order-card { display: none !important; }
+    .order-card.printing { display: block !important; border: none; box-shadow: none; border-radius: 0; }
+    .table-wrap { display: none !important; }
+    .slip-print-area { display: block !important; }
+    .order-header { border-bottom: none !important; }
+    @page { margin: 0.5in; }
+  }
+  /* SLIP LAYOUT */
+  .slip-wrap { font-family: 'DM Sans', sans-serif; padding: 0; }
+  .slip-hdr { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 2px solid #185FA5; }
+  .slip-brand { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; color: #185FA5; letter-spacing: 1px; }
+  .slip-brand-sub { font-size: 10px; color: #9b9890; margin-top: 2px; letter-spacing: .05em; }
+  .slip-doc-title { font-size: 18px; font-weight: 600; color: #1a1916; text-align: right; }
+  .slip-doc-date { font-size: 10px; color: #9b9890; text-align: right; font-family: 'DM Mono', monospace; margin-top: 3px; }
+  .slip-meta-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; border: 1px solid #e2e0d8; border-radius: 8px; overflow: hidden; margin-bottom: 18px; }
+  .slip-meta-cell { padding: 11px 15px; border-right: 1px solid #e2e0d8; }
+  .slip-meta-cell:last-child { border-right: none; }
+  .slip-meta-lbl { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #9b9890; margin-bottom: 4px; }
+  .slip-meta-val { font-size: 13px; font-weight: 500; color: #1a1916; }
+  .slip-meta-val.mono { font-family: 'DM Mono', monospace; font-size: 12px; color: #185FA5; }
+  .slip-meta-val.shelf { font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 700; color: #185FA5; }
+  .slip-meta-sub { font-size: 11px; color: #6b6960; margin-top: 2px; }
+  .slip-tbl-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #9b9890; margin-bottom: 8px; }
+  .slip-tbl { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  .slip-tbl th { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: #9b9890; text-align: left; padding: 7px 10px; border-bottom: 2px solid #e2e0d8; background: #f0efe9; }
+  .slip-tbl td { padding: 9px 10px; border-bottom: 1px solid #e2e0d8; font-size: 12px; vertical-align: top; }
+  .slip-tbl tbody tr:last-child td { border-bottom: none; }
+  .slip-tbl .pname { font-weight: 500; font-size: 13px; }
+  .slip-tbl .pdetail { font-size: 11px; color: #6b6960; margin-top: 2px; }
+  .slip-deco-tag { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 3px; font-weight: 500; margin-top: 3px; }
+  .slip-footer-bar { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid #e2e0d8; margin-top: 8px; }
+  .slip-footer-txt { font-size: 10px; color: #9b9890; }
+  .slip-checks { display: flex; gap: 20px; }
+  .slip-check { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #6b6960; }
+  .slip-check-box { width: 14px; height: 14px; border: 1.5px solid #d0cec4; border-radius: 3px; flex-shrink: 0; }
+
 </style>
 </head>
 <body>
@@ -674,6 +720,8 @@ const IN_HANDS_COL = 'date_mm22wpk2';
 const CONTACT_COL = 'text_mm221kg3';
 const ORDER_STATUS_COL = 'color_mm29xat9';
 const SHELF_COL = 'text_mm2ngkpv';
+const SALES_COL = 'dropdown_mm22w5rr';
+const NOTES_COL = 'long_text_mm225vbf';
 
 const EXCLUDED_TYPES = ['promo code', '3rd party'];
 const EXCLUDED_ORDER_STATUSES = ['promo code', '3rd party', '3rd party ordered'];
@@ -767,6 +815,8 @@ async function loadOrders() {
           size: sMap[SIZE_COL]?.text || '',
           style: sMap[STYLE_COL]?.text || '',
           supplier: sMap[SUPPLIER_COL]?.text || '',
+          deco: sMap['dropdown_mm22dn1f']?.text || '',
+          status: sMap[STATUS_COL]?.text || '',
           mockupUrls,
           poDate: sMap[PO_DATE_COL]?.text || ''
         });
@@ -780,6 +830,8 @@ async function loadOrders() {
           inHands: colMap[IN_HANDS_COL]?.text || '',
           contact: colMap[CONTACT_COL]?.text || '',
           shelf: colMap[SHELF_COL]?.text || '',
+          salesperson: colMap[SALES_COL]?.text || '',
+          notes: colMap[NOTES_COL]?.text || '',
           products: orderedProducts
         });
       }
@@ -794,6 +846,7 @@ async function loadOrders() {
 
     document.getElementById("initial-loader").style.display = "none";
     document.getElementById("search-section").style.display = "block";
+    allOrdersData = orders;
     renderDashboard(orders);
 
     const now = new Date();
@@ -931,6 +984,13 @@ function renderDashboard(orders, snapshot = true) {
           <span class="shelf-saved-msg" id="shelf-saved-${order.id}"></span>
         </div>
       </div>
+      <div style="padding:8px 18px 12px;display:flex;justify-content:flex-end;">
+        <button class="print-slip-btn" onclick="printSlip('${order.id}')">
+          <svg viewBox="0 0 16 16"><polyline points="4 6 4 2 12 2 12 6"/><path d="M4 11H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-2"/><rect x="4" y="11" width="8" height="5"/></svg>
+          Print Receiving Slip
+        </button>
+      </div>
+      <div class="slip-print-area" id="slip-${order.id}"></div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -1142,6 +1202,97 @@ document.addEventListener('keydown', e => {
 });
 
 loadOrders();
+
+const DECO_BG = {Embroidery:'#dbeafe',Screenprint:'#fef3c7',DTG:'#e8f5ee',DTF:'#e8f5ee',Engrave:'#f3e8ff',Other:'#f0efe9'};
+const DECO_TC = {Embroidery:'#1e3a5f',Screenprint:'#92400e',DTG:'#2d6a4f',DTF:'#2d6a4f',Engrave:'#6b21a8',Other:'#6b6960'};
+
+function printSlip(orderId) {
+  const order = allOrdersData.find(o => o.id === orderId);
+  if (!order) return;
+  const today = new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+  const inHandsDisplay = order.inHands
+    ? new Date(order.inHands + 'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})
+    : '—';
+
+  const products = order.products || [];
+  const ihProds = products.filter(p => (p.type||'').toLowerCase() === 'in house decoration');
+
+  const rows = ihProds.map(p => {
+    const details = [
+      p.color && 'Color: ' + p.color,
+      p.size && 'Size: ' + p.size,
+      p.style && 'Style #: ' + p.style,
+    ].filter(Boolean).join(' · ');
+    const deco = p.deco || '';
+    const decoTags = deco ? deco.split(',').map(d => d.trim()).filter(Boolean).map(d => {
+      const bg = DECO_BG[d] || '#f0efe9'; const tc = DECO_TC[d] || '#6b6960';
+      return `<span class="slip-deco-tag" style="background:${bg};color:${tc};border:1px solid ${tc}22">${d}</span>`;
+    }).join(' ') : '';
+    return `<tr>
+      <td><div class="pname">${p.name}</div>${details ? `<div class="pdetail">${details}</div>` : ''}${decoTags ? `<div style="margin-top:3px">${decoTags}</div>` : ''}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;text-align:center">${p.qty || '—'}</td>
+      <td style="font-size:11px;color:#6b6960">${p.status || ''}</td>
+    </tr>`;
+  }).join('');
+
+  const totalQty = ihProds.reduce((s, p) => s + (parseInt(p.qty) || 0), 0);
+
+  const notesHtml = order.notes
+    ? `<div style="background:#f0efe9;border:1px solid #e2e0d8;border-radius:8px;padding:11px 14px;margin-bottom:16px"><div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#9b9890;margin-bottom:5px">Order Notes</div><div style="font-size:12px;color:#1a1916;line-height:1.6">${order.notes}</div></div>`
+    : '';
+
+  const slipHtml = `<div class="slip-wrap">
+    <div class="slip-hdr">
+      <div><div class="slip-brand">CCB IMPRINT</div><div class="slip-brand-sub">ccbimprint.com</div></div>
+      <div><div class="slip-doc-title">Receiving Slip</div><div class="slip-doc-date">Printed ${today}</div></div>
+    </div>
+    <div class="slip-meta-grid">
+      <div class="slip-meta-cell">
+        <div class="slip-meta-lbl">Client</div>
+        <div class="slip-meta-val">${order.name}</div>
+        ${order.contact ? `<div class="slip-meta-sub">${order.contact}</div>` : ''}
+      </div>
+      <div class="slip-meta-cell">
+        <div class="slip-meta-lbl">CCB Order #</div>
+        <div class="slip-meta-val mono">${order.ccb || order.id}</div>
+        ${order.salesperson ? `<div class="slip-meta-sub">Rep: ${order.salesperson}</div>` : ''}
+      </div>
+      <div class="slip-meta-cell">
+        <div class="slip-meta-lbl">In Hands</div>
+        <div class="slip-meta-val">${inHandsDisplay}</div>
+        <div class="slip-meta-lbl" style="margin-top:8px">Shelf Location</div>
+        ${order.shelf ? `<div class="slip-meta-val shelf">${order.shelf}</div>` : '<div style="font-size:12px;color:#9b9890;font-style:italic">Not assigned</div>'}
+      </div>
+    </div>
+    ${ihProds.length ? `
+    <div class="slip-tbl-title">In-House Decoration Products (${ihProds.length})</div>
+    <table class="slip-tbl">
+      <thead><tr><th>Product</th><th style="text-align:center;width:55px">Qty</th><th style="width:110px">Status</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr>
+        <td style="font-size:11px;color:#9b9890;padding:7px 10px">Total pieces</td>
+        <td style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;text-align:center;padding:7px 10px">${totalQty}</td>
+        <td></td>
+      </tr></tfoot>
+    </table>` : '<div style="font-size:13px;color:#9b9890;padding:16px 0">No in-house decoration products for this order.</div>'}
+    ${notesHtml}
+    <div class="slip-footer-bar">
+      <div class="slip-footer-txt">CCB Imprint · ${today}</div>
+      <div class="slip-checks">
+        <div class="slip-check"><div class="slip-check-box"></div>Received &amp; Counted</div>
+        <div class="slip-check"><div class="slip-check-box"></div>Shelved</div>
+      </div>
+    </div>
+  </div>`;
+
+  // Inject slip and trigger print
+  document.getElementById('slip-' + orderId).innerHTML = slipHtml;
+  document.querySelectorAll('.order-card').forEach(c => c.classList.remove('printing'));
+  document.getElementById('card-' + orderId).classList.add('printing');
+  window.print();
+  document.getElementById('card-' + orderId).classList.remove('printing');
+}
+
 </script>
 </body>
 </html>
