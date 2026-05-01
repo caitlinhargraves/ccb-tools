@@ -47,6 +47,7 @@ async function fetchFromMonday() {
               text
               value
             }
+            group { id }
             subitems {
               id
               name
