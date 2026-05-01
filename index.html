@@ -1,10 +1,145 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Error</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCB Tools Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#1B2A4A;--cyan:#00AEEF;--magenta:#EC008C;--yellow:#F5D53B;--bg:#E8EBF4;--white:#FFFFFF;--body:#374151;--muted:#6B7280;--subtle:#9CA3AF;--border:#D1D5DB;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--navy);font-family:Inter,sans-serif;min-height:100vh;}
+.header{background:var(--white);border-bottom:1px solid var(--border);padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:64px;box-shadow:0 1px 4px rgba(27,42,74,.06);}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-bars{display:flex;gap:3px;}
+.logo-bar{height:12px;width:24px;border-radius:2px;}
+.logo-text{font-size:18px;font-weight:800;color:var(--navy);letter-spacing:-.3px;}
+.logo-text span{color:var(--muted);font-weight:600;}
+.header-tag{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--subtle);padding:3px 10px;border:1px solid var(--border);border-radius:50px;}
+.hero{padding:48px 40px 32px;max-width:1200px;margin:0 auto;}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:10px;}
+.hero h1{font-size:40px;font-weight:800;color:var(--navy);line-height:1.1;margin-bottom:10px;letter-spacing:-.5px;}
+.hl{background:var(--yellow);padding:0 4px;border-radius:3px;}
+.hero p{font-size:16px;color:var(--muted);max-width:500px;line-height:1.6;}
+.cache-bar{max-width:1200px;margin:0 auto 4px;padding:0 40px;}
+.cache-pill{display:inline-flex;align-items:center;gap:8px;padding:5px 14px;background:var(--white);border:1px solid var(--border);border-radius:50px;font-size:12px;color:var(--muted);}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--subtle);}
+.dot.live{background:#22C55E;box-shadow:0 0 0 2px rgba(34,197,94,.2);}
+.ct{color:var(--cyan);font-weight:600;}
+.section{max-width:1200px;margin:0 auto;padding:0 40px 40px;}
+.section-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:12px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px;text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:10px;transition:box-shadow .2s,transform .15s,border-color .2s;position:relative;overflow:hidden;}
+.card:hover{box-shadow:0 4px 20px rgba(27,42,74,.1);transform:translateY(-2px);border-color:var(--cyan);}
+.card::after{content:'92';position:absolute;bottom:16px;right:18px;font-size:16px;color:var(--border);transition:color .2s,transform .2s;}
+.card:hover::after{color:var(--cyan);transform:translateX(3px);}
+.ci{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.ct2{font-size:15px;font-weight:700;color:var(--navy);}
+.cd{font-size:12px;color:var(--muted);line-height:1.5;flex:1;}
+.live-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#16A34A;background:#ECFDF5;padding:2px 7px;border-radius:50px;width:fit-content;}
+.live-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:#22C55E;}
+.sc{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 18px;text-decoration:none;color:inherit;display:flex;align-items:center;gap:12px;transition:box-shadow .2s,transform .15s,border-color .2s;}
+.sc:hover{box-shadow:0 4px 14px rgba(27,42,74,.08);transform:translateY(-1px);border-color:var(--cyan);}
+.si{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.sn{font-size:13px;font-weight:700;color:var(--navy);}
+.sd{font-size:11px;color:var(--muted);}
+.sa{color:var(--border);font-size:14px;margin-left:auto;transition:color .2s,transform .2s;}
+.sc:hover .sa{color:var(--cyan);transform:translateX(2px);}
+.footer{max-width:1200px;margin:0 auto;padding:0 40px 40px;display:flex;align-items:center;justify-content:space-between;}
+.fl{font-size:12px;color:var(--subtle);}
+.fl strong{color:var(--muted);}
+.ml{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);text-decoration:none;padding:5px 14px;border:1px solid var(--border);border-radius:50px;transition:border-color .2s,color .2s;}
+.ml:hover{border-color:var(--navy);color:var(--navy);}
+@media(max-width:1024px){.grid-4{grid-template-columns:repeat(2,1fr);}.grid-3{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:768px){.header{padding:0 20px;}.hero,.section,.cache-bar{padding-left:20px;padding-right:20px;}.grid-4,.grid-3,.grid-2{grid-template-columns:1fr;}.hero h1{font-size:28px;}.footer{padding:0 20px 32px;flex-direction:column;gap:10px;align-items:flex-start;}}
+</style>
 </head>
 <body>
-<pre>Cannot GET /index.html</pre>
+<div class="header">
+  <div class="logo">
+    <div class="logo-bars">
+      <div class="logo-bar" style="background:#00AEEF"></div>
+      <div class="logo-bar" style="background:#EC008C"></div>
+      <div class="logo-bar" style="background:#F5D53B"></div>
+    </div>
+    <div class="logo-text">CCB <span>TOOLS</span></div>
+  </div>
+  <div class="header-tag">Internal Operations</div>
+</div>
+<div class="hero">
+  <div class="eyebrow">CCB Imprint + CCB Insight</div>
+  <h1>Your <span class="hl">operations hub.</span></h1>
+  <p>Everything you need to manage orders, production, and shipping. No Monday required.</p>
+</div>
+<div class="cache-bar">
+  <div class="cache-pill">
+    <div class="dot" id="d"></div>
+    <span id="s">Connecting...</span>
+  </div>
+</div>
+<div class="section" style="padding-top:20px">
+  <div class="section-label">Orders &amp; Management</div>
+  <div class="grid-4">
+    <a href="orders-dashboard.html" class="card dark">
+      <div class="ci" style="background:rgba(255,255,255,.1)">&#x1F4CB;</div>
+      <div><div class="ct2">Orders Dashboard</div><div class="live-badge">Live</div></div>
+      <div class="cd">Full order list with status, in-hands dates, products, and decoration details.</div>
+    </a>
+    <a href="invoicing.html" class="card">
+      <div class="ci" style="background:#E0F5FD">&#x1F9FE;</div>
+      <div class="ct2">Invoicing &amp; NetSuite Export</div>
+      <div class="cd">Generate NetSuite-ready CSV exports and packing slips for completed orders.</div>
+    </a>
+    <a href="purchase-orders.html" class="card">
+      <div class="ci" style="background:#EEF1F7">&#x1F4E6;</div>
+      <div class="ct2">Purchase Orders</div>
+      <div class="cd">Track supplier POs, receiving status, and product order history.</div>
+    </a>
+    <a href="receiving.html" class="card">
+      <div class="ci" style="background:#ECFDF5">&#x1F3D7;&#xFE0F;</div>
+      <div class="ct2">Receiving</div>
+      <div class="cd">Log incoming product, confirm quantities, and assign shelf locations.</div>
+    </a>
+  </div>
+</div>
+<div class="section">
+  <div class="section-label">Production</div>
+  <div class="grid-2">
+    <a href="production.html" class="card dark">
+      <div class="ci">&#x1F3ED;</div>
+      <div><div class="ct2">Production Dashboard</div><div class="live-badge">Live</div></div>
+      <div class="cd">All active production jobs across every station with real-time workload overview.</div>
+    </a>
+    <a href="packingstation.html" class="card">
+      <div class="ci" style="background:#FFFBEB">&#x1F4EB;</div>
+      <div><div class="ct2">Packing Station</div><div class="live-badge">Live</div></div>
+      <div class="cd">Pick, pack, and generate packing slips. Mark orders as packed for shipping.</div>
+    </a>
+  </div>
+  <div class="grid-3">
+    <a href="production-embroidery.html" class="sc"><div class="si" style="background:#EEF1F7">&#x1F9F5;</div><div><div class="sn">Embroidery</div><div class="sd">Active embroidery jobs</div></div><div class="sa">&#x203A;</div></a>
+    <a href="production-screenprint.html" class="sc"><div class="si" style="background:#E0F5FD">&#x1F5A8;&#xFE0F;</div><div><div class="sn">Screenprint</div><div class="sd">Jobs and screen counts</div></div><div class="sa">&#x203A;</div></a>
+    <a href="production-dtgdtf.html" class="sc"><div class="si" style="background:#FDE8F5">&#x1F3A8;</div><div><div class="sn">DTG / DTF</div><div class="sd">Digital print queue</div></div><div class="sa">&#x203A;</div></a>
+    <a href="production-engrave.html" class="sc"><div class="si" style="background:#FFFBEB">&#x270F;&#xFE0F;</div><div><div class="sn">Engrave</div><div class="sd">Engraving jobs and specs</div></div><div class="sa">&#x203A;</div></a>
+    <a href="production-other.html" class="sc"><div class="si" style="background:#FAF5FF">&#x2699;&#xFE0F;</div><div><div class="sn">Other / Specialty</div><div class="sd">Custom and specialty jobs</div></div><div class="sa">&#x203A;</div></a>
+    <a href="shipping.html" class="sc"><div class="si" style="background:#ECFDF5">&#x1F69A;</div><div><div class="sn">Shipping</div><div class="sd">Shipments and ShipStation</div></div><div class="sa">&#x203A;</div></a>
+  </div>
+</div>
+<div class="footer">
+  <div class="fl"><strong>CCB Tools</strong> &middot; Internal use only &middot; Data refreshes every 60s during business hours</div>
+  <a href="https://ccbimprint.monday.com" target="_blank" class="ml">Open Monday.com &#x2197;</a>
+</div>
+<script>
+fetch('https://ccb-api-jorp.onrender.com/api/orders').then(r=>r.json()).then(d=>{
+  if(d.lastUpdated){
+    const t=new Date(d.lastUpdated).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+    document.getElementById('d').classList.add('live');
+    document.getElementById('s').innerHTML='Live data &middot; <span class="ct'+('')+'">'+d.count+' orders</span> &middot; Updated '+t;
+  }
+}).catch(()=>{document.getElementById('s').textContent='Could not connect to CCB API';});
+</script>
 </body>
 </html>
