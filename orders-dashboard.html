@@ -1,10 +1,995 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Error</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCB Orders Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:#1B2A4A;--cyan:#00AEEF;--magenta:#EC008C;--yellow:#F5D53B;
+    --bg:#E8EBF4;--white:#FFFFFF;--body:#374151;--muted:#6B7280;--subtle:#9CA3AF;
+    --border:#D1D5DB;--border2:#E5E7EB;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--navy);font-family:'Inter',sans-serif;min-height:100vh;font-size:15px;line-height:1.65;}
+
+  /* HEADER */
+  .header{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(27,42,74,.06);}
+  .header-left{display:flex;align-items:center;gap:20px;}
+  .logo{display:flex;align-items:center;gap:8px;}
+  .logo-bars{display:flex;gap:2px;}
+  .logo-bar{height:10px;width:22px;border-radius:1px;}
+  .logo-text{font-weight:800;font-size:16px;color:var(--navy);letter-spacing:-.3px;}
+  .logo-text span{color:var(--muted);font-weight:600;}
+  .nav-div{width:1px;height:22px;background:var(--border);}
+  .page-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .header-right{display:flex;align-items:center;gap:10px;}
+  .last-updated{font-size:12px;color:var(--muted);}
+  .last-updated strong{color:var(--cyan);}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:50px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .2s,transform .1s;}
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--navy);color:#fff;}
+  .btn-primary:hover{opacity:.85;}
+  .btn-ghost{background:transparent;color:var(--navy);border:1.5px solid var(--border);}
+  .btn-ghost:hover{border-color:var(--navy);}
+  .btn-cyan{background:var(--cyan);color:#fff;}
+  .btn-cyan:hover{opacity:.88;}
+  .btn.loading{opacity:.5;pointer-events:none;}
+  .btn svg{width:13px;height:13px;}
+  .btn.loading svg{animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ALERT */
+  .alert{background:#FFF3CD;border-bottom:1px solid var(--yellow);padding:10px 32px;font-size:13px;color:#856404;display:none;align-items:center;gap:8px;}
+
+  /* STATS */
+  .stats-bar{background:var(--white);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;}
+  .stat{flex:1;min-width:100px;padding:13px 18px;cursor:pointer;border-right:1px solid var(--border);border-bottom:3px solid transparent;transition:background .15s,border-color .15s;user-select:none;}
+  .stat:last-child{border-right:none;}
+  .stat:hover{background:var(--bg);}
+  .stat.active{border-bottom-color:var(--cyan);background:#F0FAFF;}
+  .stat.active .stat-value{color:var(--cyan);}
+  .stat-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--subtle);margin-bottom:3px;}
+  .stat-value{font-size:22px;font-weight:800;color:var(--navy);line-height:1;}
+
+  /* FILTERS */
+  .filters{background:var(--white);border-bottom:1px solid var(--border);padding:11px 32px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .filter-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--subtle);}
+  .search-wrap{position:relative;}
+  .search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--muted);pointer-events:none;}
+  .search-input{padding:7px 12px 7px 32px;border:1px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;color:var(--navy);width:230px;outline:none;background:var(--bg);transition:border-color .2s,background .2s;}
+  .search-input:focus{border-color:var(--cyan);background:var(--white);}
+  .search-input::placeholder{color:var(--subtle);}
+  .filter-select{padding:7px 28px 7px 11px;border:1px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;color:var(--navy);background:var(--bg);appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7280' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;outline:none;cursor:pointer;}
+  .filter-select:focus{border-color:var(--cyan);}
+  .filter-count{margin-left:auto;font-size:12px;color:var(--muted);font-weight:500;}
+
+  /* TABLE */
+  .table-wrap{overflow-x:auto;padding:20px 32px;}
+  table{width:100%;border-collapse:separate;border-spacing:0;background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;min-width:860px;}
+  thead th{padding:10px 15px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:var(--bg);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;transition:color .15s;}
+  thead th:hover{color:var(--navy);}
+  thead th.sorted{color:var(--cyan);}
+  .sort-arrow{margin-left:3px;opacity:.4;}
+  thead th.sorted .sort-arrow{opacity:1;}
+  tbody tr{transition:background .1s;cursor:pointer;}
+  tbody tr:hover{background:#F8FAFF;}
+  tbody tr.expanded{background:#F0FAFF;}
+  td{padding:12px 15px;font-size:13px;vertical-align:middle;border-bottom:1px solid var(--border2);}
+  tbody tr:last-child td{border-bottom:none;}
+  .expand-icon{color:var(--subtle);transition:transform .2s,color .2s;display:flex;align-items:center;}
+  tr.expanded .expand-icon{transform:rotate(90deg);color:var(--cyan);}
+  .order-num{font-weight:700;font-size:13px;color:var(--cyan);}
+  .company-name{font-weight:700;font-size:14px;color:var(--navy);}
+  .contact-name{font-size:12px;color:var(--muted);margin-top:1px;}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:8px;font-size:11px;font-weight:600;white-space:nowrap;}
+  .badge::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+  .badge-new{background:#F3F4F6;color:#6B7280;} .badge-new::before{background:#9CA3AF;}
+  .badge-inhouse{background:#EFF6FF;color:#3B82F6;} .badge-inhouse::before{background:#3B82F6;}
+  .badge-ordered{background:#ECFDF5;color:#059669;} .badge-ordered::before{background:#059669;}
+  .badge-decorated{background:#FFFBEB;color:#D97706;} .badge-decorated::before{background:var(--yellow);}
+  .badge-ready{background:#F0FDF4;color:#16A34A;} .badge-ready::before{background:#22C55E;}
+  .badge-shipped{background:#F0FDF4;color:#15803D;} .badge-shipped::before{background:#16A34A;}
+  .badge-3rdparty{background:#FAF5FF;color:#7C3AED;} .badge-3rdparty::before{background:#8B5CF6;}
+  .badge-3rdcomplete{background:#ECFDF5;color:#059669;} .badge-3rdcomplete::before{background:#059669;}
+  .badge-promo{background:#FFF0F8;color:var(--magenta);} .badge-promo::before{background:var(--magenta);}
+  .badge-delivered{background:#F3F4F6;color:#374151;} .badge-delivered::before{background:#6B7280;}
+  .date-val{font-size:13px;font-weight:500;}
+  .date-past{color:var(--magenta);font-weight:700;}
+  .date-urgent{color:#EF4444;font-weight:700;}
+  .date-soon{color:#F59E0B;font-weight:600;}
+  .date-ok{color:var(--body);}
+  .inv{font-size:11px;font-weight:600;padding:3px 8px;border-radius:8px;}
+  .inv-none{color:var(--subtle);}
+  .inv-created{background:#EFF6FF;color:#2563EB;}
+  .inv-sent{background:#FAF5FF;color:#7C3AED;}
+  .inv-paid{background:#ECFDF5;color:#059669;}
+  .inv-overdue{background:#FFF0F8;color:var(--magenta);font-weight:700;}
+  .salesperson{font-size:12px;color:var(--muted);font-weight:500;}
+  .product-count{font-size:12px;color:var(--muted);}
+  .product-count strong{color:var(--navy);font-weight:700;}
+  .company-pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600;}
+  .pill-imprint{background:#E0F5FD;color:var(--cyan);}
+  .pill-insight{background:#FDE8F5;color:var(--magenta);}
+  .subrow td{padding:0;background:#F8FAFF;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+  .subrow-inner{padding:14px 20px 18px 50px;}
+  .subrow-heading{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--subtle);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+  .product-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;}
+  .product-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:13px;}
+  .product-card-name{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:7px;line-height:1.3;}
+  .product-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px;}
+  .ptag{font-size:11px;font-weight:500;padding:2px 7px;border-radius:8px;background:var(--bg);color:var(--body);border:1px solid var(--border);}
+  .deco-list{display:flex;flex-direction:column;gap:4px;}
+  .deco-item{display:flex;align-items:center;gap:7px;padding:4px 8px;background:var(--bg);border-radius:6px;font-size:12px;}
+  .deco-num{font-size:10px;font-weight:700;color:var(--subtle);min-width:18px;}
+  .deco-style{font-weight:700;color:var(--cyan);}
+  .deco-placement{color:var(--muted);font-size:11px;}
+  .deco-screens{margin-left:auto;font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:#E0F5FD;color:var(--cyan);}
+  .deco-done{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;margin-left:4px;}
+  .deco-done.checked{background:#ECFDF5;border-color:#059669;color:#059669;}
+  .order-extras{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);}
+  .order-extras a{color:var(--cyan);text-decoration:none;font-weight:600;}
+  .empty-state{text-align:center;padding:60px 24px;color:var(--subtle);}
+  .empty-state .icon{font-size:28px;margin-bottom:10px;}
+  .empty-state p{font-size:13px;}
+
+  /* ===================== MODAL ===================== */
+  .modal-overlay{position:fixed;inset:0;background:rgba(27,42,74,.45);backdrop-filter:blur(3px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .modal-overlay.open{opacity:1;pointer-events:all;}
+  .modal{background:var(--white);border-radius:16px;width:100%;max-width:680px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(27,42,74,.18);transform:translateY(16px) scale(.98);transition:transform .25s cubic-bezier(.34,1.56,.64,1);}
+  .modal-overlay.open .modal{transform:translateY(0) scale(1);}
+  .modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+  .modal-title{font-size:17px;font-weight:800;color:var(--navy);}
+  .modal-close{width:30px;height:30px;border-radius:50%;border:none;background:var(--bg);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background .15s,color .15s;}
+  .modal-close:hover{background:var(--border);color:var(--navy);}
+  .modal-body{overflow-y:auto;padding:20px 24px;flex:1;}
+  .modal-footer{padding:16px 24px;border-top:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px;}
+
+  /* FORM FIELDS */
+  .form-section{margin-bottom:20px;}
+  .form-section-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--subtle);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .form-section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+  .form-row{display:grid;gap:10px;margin-bottom:10px;}
+  .form-row.cols-2{grid-template-columns:1fr 1fr;}
+  .form-row.cols-3{grid-template-columns:1fr 1fr 1fr;}
+  .form-group{display:flex;flex-direction:column;gap:4px;}
+  .form-label{font-size:11px;font-weight:600;color:var(--navy);letter-spacing:.02em;}
+  .form-label .req{color:var(--magenta);}
+  .form-input,.form-select,.form-textarea{padding:8px 11px;border:1px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;color:var(--navy);background:var(--white);outline:none;transition:border-color .2s,box-shadow .2s;width:100%;}
+  .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,174,239,.1);}
+  .form-input::placeholder,.form-textarea::placeholder{color:var(--subtle);}
+  .form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7280' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer;}
+  .form-textarea{resize:vertical;min-height:60px;line-height:1.5;}
+  .form-hint{font-size:11px;color:var(--subtle);margin-top:2px;}
+
+  /* PRODUCT BLOCK */
+  .products-list{display:flex;flex-direction:column;gap:12px;}
+  .product-block{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;}
+  .product-block-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .product-block-num{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan);}
+  .remove-product{background:none;border:none;color:var(--subtle);cursor:pointer;font-size:13px;padding:2px 6px;border-radius:4px;transition:background .15s,color .15s;}
+  .remove-product:hover{background:var(--border);color:var(--magenta);}
+
+  /* DECO SPOTS */
+  .deco-spots-list{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  .deco-spot-block{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+  .deco-spot-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .deco-spot-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .remove-deco{background:none;border:none;color:var(--subtle);cursor:pointer;font-size:12px;padding:1px 5px;border-radius:4px;transition:background .15s,color .15s;}
+  .remove-deco:hover{background:var(--border);color:var(--magenta);}
+  .add-deco-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--cyan);background:none;border:1px dashed #99D9F5;border-radius:8px;padding:6px 12px;cursor:pointer;margin-top:8px;transition:background .15s;}
+  .add-deco-btn:hover{background:#F0FAFF;}
+  .add-product-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;background:none;border:1.5px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;width:100%;transition:border-color .2s,color .2s,background .2s;}
+  .add-product-btn:hover{border-color:var(--cyan);color:var(--cyan);background:#F0FAFF;}
+
+  /* SUCCESS STATE */
+  .modal-success{display:none;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center;gap:12px;}
+  .modal-success.show{display:flex;}
+  .success-icon{width:56px;height:56px;background:#ECFDF5;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;}
+  .success-title{font-size:18px;font-weight:800;color:var(--navy);}
+  .success-num{font-size:14px;color:var(--cyan);font-weight:700;}
+  .success-sub{font-size:13px;color:var(--muted);}
+
+  /* RESPONSIVE */
+  /* GROUP HEADERS */
+  .group-header-row td{padding:0;background:var(--bg);border-bottom:1px solid var(--border);}
+  .group-header{display:flex;align-items:center;gap:8px;padding:8px 16px 6px;}
+  .group-icon{font-size:13px;}
+  .group-name{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .group-count{font-size:11px;font-weight:600;color:var(--subtle);background:var(--white);border:1px solid var(--border);border-radius:50px;padding:1px 8px;}
+
+  
+  /* SIDE NAV */
+  .side-nav{position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:50;display:flex;flex-direction:column;gap:2px;padding:6px 0;background:var(--white);border:1px solid var(--border);border-left:none;border-radius:0 10px 10px 0;box-shadow:2px 0 12px rgba(27,42,74,.08);}
+  .side-nav-item{display:flex;align-items:center;gap:0;width:32px;height:32px;cursor:pointer;transition:width .2s,background .15s;overflow:hidden;position:relative;border-radius:0 6px 6px 0;}
+  .side-nav-item:hover{width:140px;background:#F0FAFF;}
+  .side-nav-item .sni-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+  .side-nav-item .sni-label{font-size:11px;font-weight:700;color:var(--navy);white-space:nowrap;opacity:0;transition:opacity .15s .05s;letter-spacing:.02em;padding-right:10px;}
+  .side-nav-item:hover .sni-label{opacity:1;}
+  .side-nav-item.active{background:#F0FAFF;}
+  .side-nav-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--cyan);border-radius:0 2px 2px 0;}
+  .side-nav-item.active .sni-icon{color:var(--cyan);}
+  @media(max-width:768px){.side-nav{display:none;}}
+
+  @media(max-width:768px){
+    .header{padding:0 16px;}.filters,.table-wrap{padding-left:16px;padding-right:16px;}
+    .form-row.cols-2,.form-row.cols-3{grid-template-columns:1fr;}
+    .modal{max-height:95vh;border-radius:12px;}
+  }
+</style>
 </head>
 <body>
-<pre>Cannot GET /orders-dashboard.html</pre>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">
+      <img src="data:image/png;base64,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" alt="CCB" style="height:32px;width:auto;display:block;">
+    </div>
+    <div class="nav-div"></div>
+    <span class="page-label">Orders Dashboard</span>
+  </div>
+  <div class="header-right">
+    <span class="last-updated" id="lastUpdated">Loading...</span>
+    <button class="btn btn-ghost" id="refreshBtn" onclick="manualRefresh()">
+      <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11.5 6.5A5 5 0 1 1 6.5 1.5M11.5 1.5v3.5h-3.5"/></svg>
+      Refresh
+    </button>
+    <button class="btn btn-cyan" onclick="openModal()">
+      <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 1.5v11M1.5 6.5h11"/></svg>
+      New Order
+    </button>
+  </div>
+</div>
+
+<div class="alert" id="alertBar">⚠ <span id="alertMsg"></span></div>
+
+<div class="stats-bar">
+  <div class="stat active" onclick="setFilter('all',this)"><div class="stat-label">All Orders</div><div class="stat-value" id="s-all">--</div></div>
+  <div class="stat" onclick="setFilter('New',this)"><div class="stat-label">New</div><div class="stat-value" id="s-new">--</div></div>
+  <div class="stat" onclick="setFilter('In House',this)"><div class="stat-label">In House</div><div class="stat-value" id="s-inhouse">--</div></div>
+  <div class="stat" onclick="setFilter('Products Ordered',this)"><div class="stat-label">Ordered</div><div class="stat-value" id="s-ordered">--</div></div>
+  <div class="stat" onclick="setFilter('Decorated',this)"><div class="stat-label">Decorated</div><div class="stat-value" id="s-decorated">--</div></div>
+  <div class="stat" onclick="setFilter('Ready for Shipping',this)"><div class="stat-label">Ready</div><div class="stat-value" id="s-ready">--</div></div>
+  <div class="stat" onclick="setFilter('Shipped',this)"><div class="stat-label">Shipped</div><div class="stat-value" id="s-shipped">--</div></div>
+</div>
+
+<div class="filters">
+  <span class="filter-label">Filter</span>
+  <div class="search-wrap">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5l3 3"/></svg>
+    <input type="text" class="search-input" id="searchInput" placeholder="Search company, order #, contact..." oninput="applyFilters()">
+  </div>
+  <select class="filter-select" id="salesFilter" onchange="applyFilters()">
+    <option value="">All Sales Reps</option>
+    <option>Chaz Lucius</option><option>Bailey McGraw</option><option>Jess Miller</option>
+    <option>Nick Miller</option><option>George Miller</option><option>Web Order</option>
+  </select>
+  <select class="filter-select" id="imprintFilter" onchange="applyFilters()">
+    <option value="">Imprint + Insight</option>
+    <option>CCB Imprint</option><option>CCB Insight</option>
+  </select>
+  <select class="filter-select" id="invoiceFilter" onchange="applyFilters()">
+    <option value="">All Invoice Status</option>
+    <option>Not Invoiced</option><option>Invoice Created</option>
+    <option>Invoice Sent</option><option>Paid</option><option>Overdue</option>
+  </select>
+  <span class="filter-count" id="filterCount"></span>
+</div>
+
+
+<!-- SIDE NAV -->
+<div class="side-nav" id="sideNav">
+  <div class="side-nav-item active" id="snav-topics" onclick="jumpToGroup('topics')" title="Active Orders">
+    <div class="sni-icon">📋</div><div class="sni-label">Active Orders</div>
+  </div>
+  <div class="side-nav-item" id="snav-events" onclick="jumpToGroup('events')" title="Events">
+    <div class="sni-icon">🎉</div><div class="sni-label">Events</div>
+  </div>
+  <div class="side-nav-item" id="snav-birthdays" onclick="jumpToGroup('birthdays')" title="Birthdays">
+    <div class="sni-icon">🎂</div><div class="sni-label">Birthdays</div>
+  </div>
+  <div class="side-nav-item" id="snav-completed" onclick="jumpToGroup('completed')" title="Completed">
+    <div class="sni-icon">✅</div><div class="sni-label">Completed</div>
+  </div>
+  <div class="side-nav-item" id="snav-pending" onclick="jumpToGroup('pending')" title="Pending / Quotes">
+    <div class="sni-icon">⏳</div><div class="sni-label">Pending</div>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:30px"></th>
+        <th onclick="sortBy('orderNum')" class="sorted" data-col="orderNum">Order # <span class="sort-arrow">↓</span></th>
+        <th onclick="sortBy('name')" data-col="name">Company <span class="sort-arrow">↕</span></th>
+        <th onclick="sortBy('status')" data-col="status">Status <span class="sort-arrow">↕</span></th>
+        <th onclick="sortBy('ihd')" data-col="ihd">In Hands <span class="sort-arrow">↕</span></th>
+        <th>Products</th>
+        <th onclick="sortBy('sales')" data-col="sales">Sales Rep <span class="sort-arrow">↕</span></th>
+        <th onclick="sortBy('invoice')" data-col="invoice">Invoice <span class="sort-arrow">↕</span></th>
+        <th>CCB Co.</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+      <tr><td colspan="9"><div class="empty-state"><div class="icon">⏳</div><p>Loading orders...</p></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===================== NEW ORDER MODAL ===================== -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal">
+
+    <div class="modal-header">
+      <div class="modal-title">New Order</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <!-- FORM -->
+    <div class="modal-body" id="modalForm">
+
+      <!-- ORDER DETAILS -->
+      <div class="form-section">
+        <div class="form-section-title">Order Details</div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label class="form-label">Company Name <span class="req">*</span></label>
+            <input type="text" class="form-input" id="f-company" placeholder="e.g. Higgins Construction">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contact Name <span class="req">*</span></label>
+            <input type="text" class="form-input" id="f-contact" placeholder="First Last">
+          </div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label class="form-label">Email <span class="req">*</span></label>
+            <input type="email" class="form-input" id="f-email" placeholder="email@company.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="tel" class="form-input" id="f-phone" placeholder="(612) 555-0100">
+          </div>
+        </div>
+        <div class="form-row cols-3">
+          <div class="form-group">
+            <label class="form-label">In Hands Date <span class="req">*</span></label>
+            <input type="date" class="form-input" id="f-ihd">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sales Rep</label>
+            <select class="form-select" id="f-sales">
+              <option value="">Select...</option>
+              <option>Chaz Lucius</option><option>Bailey McGraw</option><option>Jess Miller</option>
+              <option>Nick Miller</option><option>George Miller</option><option>Web Order</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">CCB Company <span class="req">*</span></label>
+            <select class="form-select" id="f-imprint">
+              <option value="">Select...</option>
+              <option value="1">CCB Imprint</option>
+              <option value="2">CCB Insight</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label class="form-label">Shipping To</label>
+            <input type="text" class="form-input" id="f-shipto" placeholder="Name or company">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payment Method</label>
+            <input type="text" class="form-input" id="f-payment" placeholder="CC, Gradient Bucks, etc.">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea class="form-textarea" id="f-notes" placeholder="Any special instructions or context..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRODUCTS -->
+      <div class="form-section">
+        <div class="form-section-title">Products</div>
+        <div class="products-list" id="productsList"></div>
+        <button type="button" class="add-product-btn" onclick="addProduct()">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 1.5v11M1.5 6.5h11"/></svg>
+          Add Product
+        </button>
+      </div>
+
+    </div><!-- end modal-body -->
+
+    <!-- SUCCESS STATE -->
+    <div class="modal-success" id="modalSuccess">
+      <div class="success-icon">✓</div>
+      <div class="success-title">Order Created!</div>
+      <div class="success-num" id="successNum"></div>
+      <div class="success-sub">The order has been added to Active Orders in Monday.</div>
+      <button class="btn btn-primary" onclick="closeModal()" style="margin-top:8px">Done</button>
+      <button class="btn btn-ghost" onclick="resetModal()" style="margin-top:4px">Add Another Order</button>
+    </div>
+
+    <div class="modal-footer" id="modalFooter">
+      <div style="font-size:12px;color:var(--subtle)" id="modalStatus"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="submitBtn" onclick="submitOrder()">
+          Create Order
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API = 'https://ccb-api-jorp.onrender.com';
+const MONDAY_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0OTQ0NjE4NywiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMjNUMTU6Mzc6MTkuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.6FPYgwwTj-05GWXHxxq5lSstcJTGfVOqATNhk5FQBic';
+const ORDERS_BOARD = '18407165363';
+const SUBITEMS_BOARD = '18407165552';
+const ACTIVE_GROUP = 'topics';
+
+let all=[], filtered=[], expanded=new Set(), statusFilter='all', sort={col:'orderNum',dir:'desc'};
+const salesMap={1:'Chaz Lucius',2:'Bailey McGraw',3:'Jess Miller',4:'Nick Miller',5:'George Miller',6:'Web Order'};
+const impMap={1:'CCB Imprint',2:'CCB Insight'};
+const decoMap={1:'Embroidery',2:'Screenprint',3:'DTG',4:'DTF',5:'Engrave',6:'Other'};
+const salesIdMap={'Chaz Lucius':1,'Bailey McGraw':2,'Jess Miller':3,'Nick Miller':4,'George Miller':5,'Web Order':6};
+
+function col(o,id){return o.column_values?.find(c=>c.id===id)?.text||'';}
+function colV(o,id){try{return JSON.parse(o.column_values?.find(c=>c.id===id)?.value||'null');}catch{return null;}}
+function sCol(s,id){return s.column_values?.find(c=>c.id===id)?.text||'';}
+function sColV(s,id){try{return JSON.parse(s.column_values?.find(c=>c.id===id)?.value||'null');}catch{return null;}}
+
+function parseOrder(o){
+  const sv=colV(o,'dropdown_mm22w5rr'),iv=colV(o,'dropdown_mm276wtz');
+  return{id:o.id,orderNum:col(o,'pulse_id_mm27vwa5')||o.id,ccbNum:col(o,'text_mm29djkk'),name:o.name,
+    status:col(o,'color_mm27qyta')||'New',sales:sv?.ids?.map(i=>salesMap[i]).filter(Boolean).join(', ')||'',
+    ihd:col(o,'date_mm22wpk2'),contact:col(o,'text_mm221kg3'),invoice:col(o,'color_mm282b4b')||'Not Invoiced',
+    imprint:iv?.ids?.map(i=>impMap[i]).filter(Boolean).join(', ')||'',
+    tracking:colV(o,'link_mm22d8ca')?.url||'',notes:col(o,'long_text_mm225vbf'),
+    shippingTo:col(o,'text_mm26gtxp'),subitems:o.subitems||[],groupId:o.group?.id||'topics'};
+}
+
+function statusBadge(s){
+  const m={'New':'badge-new','In House':'badge-inhouse','Products Ordered':'badge-ordered','Decorated':'badge-decorated',
+    'Ready for Shipping':'badge-ready','Shipped':'badge-shipped','3rd Party Ordered':'badge-3rdparty',
+    '3rd Party Complete':'badge-3rdcomplete','Promo Code':'badge-promo','Delivered':'badge-delivered'};
+  return`<span class="badge ${m[s]||'badge-new'}">${s||'New'}</span>`;
+}
+function invBadge(s){
+  const m={'Not Invoiced':'inv-none','Invoice Created':'inv-created','Invoice Sent':'inv-sent','Paid':'inv-paid','Overdue':'inv-overdue'};
+  return`<span class="inv ${m[s]||'inv-none'}">${s||'—'}</span>`;
+}
+function dateDisplay(d){
+  if(!d)return'<span class="date-val" style="color:var(--subtle)">—</span>';
+  const date=new Date(d),diff=(date-new Date())/86400000;
+  const cls=diff<0?'date-past':diff<=2?'date-urgent':diff<=7?'date-soon':'date-ok';
+  return`<span class="date-val ${cls}">${date.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>`;
+}
+function decoLabel(v){if(!v)return null;const val=typeof v==='string'?JSON.parse(v):v;return val?.ids?.map(i=>decoMap[i]).filter(Boolean).join(', ')||null;}
+
+function buildCard(sub){
+  const name=sub.name||'Product',qty=sCol(sub,'numeric_mm22crjt'),color=sCol(sub,'text_mm2276wz'),
+    size=sCol(sub,'text_mm22yw8s'),sn=sCol(sub,'text_mm22fv7y'),sup=sCol(sub,'text_mm22qdag'),ps=sCol(sub,'color_mm25v786');
+  const tags=[qty?`<span class="ptag">Qty: ${qty}</span>`:'',color?`<span class="ptag">${color}</span>`:'',
+    size?`<span class="ptag">${size}</span>`:'',sn?`<span class="ptag">${sn}</span>`:'',
+    sup?`<span class="ptag">${sup}</span>`:'',ps?`<span class="ptag" style="background:#FFFBEB;color:#D97706">${ps}</span>`:''].filter(Boolean).join('');
+  const decos=[
+    {n:1,sv:sColV(sub,'dropdown_mm2y4w39'),pl:sCol(sub,'text_mm2y6g62'),sc:sCol(sub,'numeric_mm2yn2nb'),dv:sColV(sub,'boolean_mm2y62fz')},
+    {n:2,sv:sColV(sub,'dropdown_mm2yaxxz'),pl:sCol(sub,'text_mm2yge79'),sc:sCol(sub,'numeric_mm2ynqby'),dv:sColV(sub,'boolean_mm2yty7y')},
+    {n:3,sv:sColV(sub,'dropdown_mm2ygyew'),pl:sCol(sub,'text_mm2y1j6j'),sc:sCol(sub,'numeric_mm2y55qh'),dv:sColV(sub,'boolean_mm2y8jm6')},
+  ].filter(d=>decoLabel(d.sv));
+  const decoHTML=decos.length?`<div class="deco-list">${decos.map(d=>{const lbl=decoLabel(d.sv),done=d.dv===true||d.dv==='true';
+    return`<div class="deco-item"><span class="deco-num">D${d.n}</span><span class="deco-style">${lbl}</span>${d.pl?`<span class="deco-placement">${d.pl}</span>`:''}${d.sc?`<span class="deco-screens">${d.sc} screens</span>`:''}<div class="deco-done ${done?'checked':''}">${done?'✓':''}</div></div>`;
+  }).join('')}</div>`:'';
+  return`<div class="product-card"><div class="product-card-name">${name}</div><div class="product-tags">${tags}</div>${decoHTML}</div>`;
+}
+
+function render(){
+  const tb=document.getElementById('tableBody');
+  if(!filtered.length){tb.innerHTML=`<tr><td colspan="9"><div class="empty-state"><div class="icon">🔍</div><p>No orders match your filters.</p></div></td></tr>`;return;}
+
+  // Group definitions - map group IDs to display info
+  const groupDefs=[
+    {ids:['topics'],label:'Active Orders',icon:'📋'},
+    {ids:['group_mm2dtmde'],label:'Events',icon:'🎉'},
+    {ids:['group_mm2wg547','group_mm2cavn'],label:'Birthdays',icon:'🎂'},
+    {ids:['group_mm26j0hj'],label:'Completed Orders',icon:'✅'},
+    {ids:['group_mm2wb7r2'],label:'Pending / Quotes',icon:'⏳'},
+  ];
+
+  // Bucket orders into groups
+  const buckets={};
+  groupDefs.forEach(g=>g.ids.forEach(id=>{buckets[id]=[];}));
+  const ungrouped=[];
+  filtered.forEach(o=>{
+    let placed=false;
+    for(const g of groupDefs){
+      if(g.ids.includes(o.groupId)){buckets[o.groupId].push(o);placed=true;break;}
+    }
+    if(!placed)ungrouped.push(o);
+  });
+
+  const rows=[];
+
+  groupDefs.forEach(g=>{
+    // Collect all orders for this group def
+    const groupOrders=[];
+    g.ids.forEach(id=>{if(buckets[id])groupOrders.push(...buckets[id]);});
+    if(!groupOrders.length)return;
+
+    // Group header row
+    rows.push(`<tr class="group-header-row">
+      <td colspan="9">
+        <div class="group-header">
+          <span class="group-icon">${g.icon}</span>
+          <span class="group-name">${g.label}</span>
+          <span class="group-count">${groupOrders.length}</span>
+        </div>
+      </td>
+    </tr>`);
+
+    // Order rows
+    groupOrders.forEach(o=>{
+      const isEx=expanded.has(o.id);
+      const pill=o.imprint?`<span class="company-pill ${o.imprint==='CCB Imprint'?'pill-imprint':'pill-insight'}">${o.imprint}</span>`:'<span style="color:var(--subtle);font-size:12px">—</span>';
+      rows.push(`<tr class="${isEx?'expanded':''}" onclick="toggleRow('${o.id}')">
+        <td><div class="expand-icon"><svg width="9" height="13" viewBox="0 0 9 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 2l5 4.5L2 11"/></svg></div></td>
+        <td><div class="order-num">${o.ccbNum||o.orderNum}</div></td>
+        <td><div class="company-name">${o.name}</div>${o.contact?`<div class="contact-name">${o.contact}</div>`:''}</td>
+        <td>${statusBadge(o.status)}</td>
+        <td>${dateDisplay(o.ihd)}</td>
+        <td><span class="product-count"><strong>${o.subitems.length}</strong> item${o.subitems.length!==1?'s':''}</span></td>
+        <td><span class="salesperson">${o.sales||'—'}</span></td>
+        <td>${invBadge(o.invoice)}</td>
+        <td>${pill}</td>
+      </tr>`);
+      if(isEx)rows.push(`<tr class="subrow"><td colspan="9"><div class="subrow-inner">
+        <div class="subrow-heading">Products · ${o.subitems.length} item${o.subitems.length!==1?'s':''}</div>
+        <div class="product-cards">${o.subitems.map(buildCard).join('')}</div>
+        ${(o.notes||o.shippingTo||o.tracking)?`<div class="order-extras">${o.shippingTo?`<span>📦 Ships to: ${o.shippingTo}</span>`:''}${o.notes?`<span>📝 ${o.notes}</span>`:''}${o.tracking?`<a href="${o.tracking}" target="_blank">🔗 Track</a>`:''}</div>`:''}
+      </div></td></tr>`);
+    });
+  });
+
+  // Any ungrouped
+  if(ungrouped.length){
+    rows.push(`<tr class="group-header-row"><td colspan="9"><div class="group-header"><span class="group-icon">📌</span><span class="group-name">Other</span><span class="group-count">${ungrouped.length}</span></div></td></tr>`);
+    ungrouped.forEach(o=>{
+      const isEx=expanded.has(o.id);
+      const pill=o.imprint?`<span class="company-pill ${o.imprint==='CCB Imprint'?'pill-imprint':'pill-insight'}">${o.imprint}</span>`:'—';
+      rows.push(`<tr class="${isEx?'expanded':''}" onclick="toggleRow('${o.id}')">
+        <td><div class="expand-icon"><svg width="9" height="13" viewBox="0 0 9 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 2l5 4.5L2 11"/></svg></div></td>
+        <td><div class="order-num">${o.ccbNum||o.orderNum}</div></td>
+        <td><div class="company-name">${o.name}</div>${o.contact?`<div class="contact-name">${o.contact}</div>`:''}</td>
+        <td>${statusBadge(o.status)}</td>
+        <td>${dateDisplay(o.ihd)}</td>
+        <td><span class="product-count"><strong>${o.subitems.length}</strong> item${o.subitems.length!==1?'s':''}</span></td>
+        <td><span class="salesperson">${o.sales||'—'}</span></td>
+        <td>${invBadge(o.invoice)}</td>
+        <td>${pill}</td>
+      </tr>`);
+    });
+  }
+
+  tb.innerHTML=rows.join('');
+  updateSideNavVisibility();
+  document.getElementById('filterCount').textContent=`${filtered.length} of ${all.length} orders`;
+}
+
+function toggleRow(id){expanded.has(id)?expanded.delete(id):expanded.add(id);render();}
+function updateStats(orders){
+  const c={};orders.forEach(o=>{c[o.status]=(c[o.status]||0)+1;});
+  document.getElementById('s-all').textContent=orders.length;
+  document.getElementById('s-new').textContent=c['New']||0;
+  document.getElementById('s-inhouse').textContent=c['In House']||0;
+  document.getElementById('s-ordered').textContent=c['Products Ordered']||0;
+  document.getElementById('s-decorated').textContent=c['Decorated']||0;
+  document.getElementById('s-ready').textContent=c['Ready for Shipping']||0;
+  // Shipped count excludes Delivered
+  document.getElementById('s-shipped').textContent=c['Shipped']||0;
+}
+function applyFilters(){
+  const q=document.getElementById('searchInput').value.toLowerCase(),
+    sa=document.getElementById('salesFilter').value,
+    im=document.getElementById('imprintFilter').value,
+    iv=document.getElementById('invoiceFilter').value;
+  filtered=all.filter(o=>{
+    if(statusFilter!=='all'&&o.status!==statusFilter)return false;
+    if(sa&&o.sales!==sa)return false;
+    if(im&&o.imprint!==im)return false;
+    if(iv&&o.invoice!==iv)return false;
+    if(q&&!`${o.name} ${o.contact} ${o.ccbNum} ${o.orderNum}`.toLowerCase().includes(q))return false;
+    return true;
+  });
+  doSort();render();
+}
+function setFilter(s,el){statusFilter=s;document.querySelectorAll('.stat').forEach(e=>e.classList.remove('active'));el.classList.add('active');applyFilters();}
+function sortBy(c){sort.dir=sort.col===c?(sort.dir==='asc'?'desc':'asc'):'desc';sort.col=c;
+  document.querySelectorAll('thead th').forEach(th=>{th.classList.remove('sorted');const a=th.querySelector('.sort-arrow');if(a)a.textContent='↕';});
+  const th=document.querySelector(`th[data-col="${c}"]`);if(th){th.classList.add('sorted');const a=th.querySelector('.sort-arrow');if(a)a.textContent=sort.dir==='asc'?'↑':'↓';}
+  doSort();render();}
+function doSort(){const m=sort.dir==='asc'?1:-1;filtered.sort((a,b)=>{let va='',vb='';
+  if(sort.col==='orderNum'){va=a.ccbNum||a.orderNum;vb=b.ccbNum||b.orderNum;}
+  else if(sort.col==='name'){va=a.name;vb=b.name;}
+  else if(sort.col==='status'){va=a.status;vb=b.status;}
+  else if(sort.col==='ihd'){va=a.ihd;vb=b.ihd;}
+  else if(sort.col==='sales'){va=a.sales;vb=b.sales;}
+  else if(sort.col==='invoice'){va=a.invoice;vb=b.invoice;}
+  return va<vb?-m:va>vb?m:0;});}
+
+async function load(){
+  try{const res=await fetch(`${API}/api/orders`),data=await res.json();
+    if(!data.orders?.length){showAlert('No orders returned.');return;}
+    all=data.orders.map(parseOrder);
+    if(data.lastUpdated){const t=new Date(data.lastUpdated).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+      document.getElementById('lastUpdated').innerHTML=`Updated <strong>${t}</strong>`;}
+    updateStats(all);applyFilters();hideAlert();
+  }catch(e){showAlert('Could not reach CCB API.');}
+}
+async function manualRefresh(){const btn=document.getElementById('refreshBtn');btn.classList.add('loading');
+  try{await fetch(`${API}/api/refresh`);await load();}catch{showAlert('Refresh failed.');}
+  btn.classList.remove('loading');}
+function showAlert(m){document.getElementById('alertBar').style.display='flex';document.getElementById('alertMsg').textContent=m;}
+function hideAlert(){document.getElementById('alertBar').style.display='none';}
+
+// ===================== MODAL =====================
+let productCount = 0;
+
+function openModal(){
+  resetModal();
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
+  // Set today as order submitted default, set IHD to 2 weeks out
+  const today=new Date();
+  const twoWeeks=new Date(today.getTime()+14*86400000);
+  document.getElementById('f-ihd').value=twoWeeks.toISOString().split('T')[0];
+  // Add one product by default
+  addProduct();
+  setTimeout(()=>document.getElementById('f-company').focus(),300);
+}
+
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+function handleOverlayClick(e){
+  if(e.target===document.getElementById('modalOverlay'))closeModal();
+}
+
+function resetModal(){
+  productCount=0;
+  document.getElementById('productsList').innerHTML='';
+  document.getElementById('modalForm').style.display='';
+  document.getElementById('modalFooter').style.display='';
+  document.getElementById('modalSuccess').classList.remove('show');
+  document.getElementById('modalStatus').textContent='';
+  document.getElementById('submitBtn').classList.remove('loading');
+  document.getElementById('submitBtn').textContent='Create Order';
+  ['f-company','f-contact','f-email','f-phone','f-shipto','f-payment','f-notes'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  ['f-sales','f-imprint'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+}
+
+function addProduct(){
+  productCount++;
+  const id=productCount;
+  const div=document.createElement('div');
+  div.className='product-block';
+  div.id=`product-${id}`;
+  div.innerHTML=`
+    <div class="product-block-header">
+      <div class="product-block-num">Product ${id}</div>
+      ${id>1?`<button type="button" class="remove-product" onclick="removeProduct(${id})">Remove</button>`:''}
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label class="form-label">Product Name <span class="req">*</span></label>
+        <input type="text" class="form-input" id="p${id}-name" placeholder="e.g. Peter Millar Golf Shirt">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Style # / SKU</label>
+        <input type="text" class="form-input" id="p${id}-style" placeholder="e.g. ME0EK01S">
+      </div>
+    </div>
+    <div class="form-row cols-3">
+      <div class="form-group">
+        <label class="form-label">Color</label>
+        <input type="text" class="form-input" id="p${id}-color" placeholder="Navy">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sizes & Quantities</label>
+        <input type="text" class="form-input" id="p${id}-size" placeholder="S/4, M/6, L/3">
+        <div class="form-hint">Format: Size/Qty separated by commas</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Supplier</label>
+        <input type="text" class="form-input" id="p${id}-supplier" placeholder="SanMar, S&S...">
+      </div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label class="form-label">Price / Item ($)</label>
+        <input type="number" step="0.01" class="form-input" id="p${id}-price" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Our Cost / Item ($)</label>
+        <input type="number" step="0.01" class="form-input" id="p${id}-cost" placeholder="0.00">
+      </div>
+    </div>
+    <div class="deco-spots-list" id="p${id}-decos"></div>
+    <button type="button" class="add-deco-btn" onclick="addDeco(${id})">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.5 1v9M1 5.5h9"/></svg>
+      Add Decoration
+    </button>
+  `;
+  document.getElementById('productsList').appendChild(div);
+}
+
+function removeProduct(id){
+  const el=document.getElementById(`product-${id}`);
+  if(el)el.remove();
+}
+
+let decoCounters={};
+function addDeco(productId){
+  if(!decoCounters[productId])decoCounters[productId]=0;
+  decoCounters[productId]++;
+  const dId=decoCounters[productId];
+  if(dId>3){alert('Maximum 3 decoration spots per product.');return;}
+  const container=document.getElementById(`p${productId}-decos`);
+  const div=document.createElement('div');
+  div.className='deco-spot-block';
+  div.id=`p${productId}-deco${dId}`;
+  div.innerHTML=`
+    <div class="deco-spot-header">
+      <div class="deco-spot-label">Deco ${dId}</div>
+      <button type="button" class="remove-deco" onclick="removeDeco(${productId},${dId})">Remove</button>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label class="form-label">Decoration Style</label>
+        <select class="form-select" id="p${productId}-d${dId}-style">
+          <option value="">Select...</option>
+          <option value="1">Embroidery</option><option value="2">Screenprint</option>
+          <option value="3">DTG</option><option value="4">DTF</option>
+          <option value="5">Engrave</option><option value="6">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Placement</label>
+        <input type="text" class="form-input" id="p${productId}-d${dId}-placement" placeholder="Left Chest, Full Back...">
+      </div>
+    </div>
+    <div class="form-row cols-3">
+      <div class="form-group">
+        <label class="form-label">Artwork Description</label>
+        <input type="text" class="form-input" id="p${productId}-d${dId}-desc" placeholder="Logo name or description">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Screen Count</label>
+        <input type="number" class="form-input" id="p${productId}-d${dId}-screens" placeholder="2" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Colors / Thread</label>
+        <input type="text" class="form-input" id="p${productId}-d${dId}-colors" placeholder="White, Navy...">
+      </div>
+    </div>
+  `;
+  container.appendChild(div);
+}
+
+function removeDeco(productId,dId){
+  const el=document.getElementById(`p${productId}-deco${dId}`);
+  if(el)el.remove();
+  decoCounters[productId]--;
+}
+
+function v(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+
+async function mondayMutation(query){
+  const res=await fetch('https://api.monday.com/v2',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':MONDAY_KEY,'API-Version':'2024-01'},
+    body:JSON.stringify({query})
+  });
+  const data=await res.json();
+  if(data.errors)throw new Error(data.errors[0].message);
+  return data.data;
+}
+
+async function submitOrder(){
+  // Validate
+  if(!v('f-company')){alert('Company name is required.');document.getElementById('f-company').focus();return;}
+  if(!v('f-contact')){alert('Contact name is required.');document.getElementById('f-contact').focus();return;}
+  if(!v('f-email')){alert('Email is required.');document.getElementById('f-email').focus();return;}
+  if(!v('f-ihd')){alert('In Hands Date is required.');document.getElementById('f-ihd').focus();return;}
+  if(!v('f-imprint')){alert('Please select CCB Imprint or CCB Insight.');document.getElementById('f-imprint').focus();return;}
+
+  // Check at least one product
+  const productBlocks=document.querySelectorAll('.product-block');
+  if(!productBlocks.length){alert('Please add at least one product.');return;}
+  for(const pb of productBlocks){
+    const pid=pb.id.replace('product-','');
+    if(!v(`p${pid}-name`)){alert('All products need a name.');document.getElementById(`p${pid}-name`).focus();return;}
+  }
+
+  const btn=document.getElementById('submitBtn');
+  btn.classList.add('loading');
+  btn.textContent='Creating...';
+  document.getElementById('modalStatus').textContent='Creating order in Monday...';
+
+  try{
+    // Build parent column values
+    const today=new Date().toISOString().split('T')[0];
+    const ihd=v('f-ihd');
+    const salesName=v('f-sales');
+    const salesId=salesIdMap[salesName];
+    const imprintId=v('f-imprint');
+    const email=v('f-email');
+    const phone=v('f-phone');
+    const shipto=v('f-shipto');
+    const payment=v('f-payment');
+    const notes=v('f-notes');
+    const contact=v('f-contact');
+
+    let colVals={
+      'date4':{date:today},
+      'date_mm22wpk2':{date:ihd},
+      'text_mm221kg3':contact,
+      'email_mm22ap28':{email:email,text:email},
+    };
+    if(phone)colVals['phone_mm22ertc']={phone:phone,countryShortName:'US'};
+    if(shipto)colVals['text_mm26gtxp']=shipto;
+    if(payment)colVals['text_mm22t49y']=payment;
+    if(notes)colVals['long_text_mm225vbf']={text:notes};
+    if(salesId)colVals['dropdown_mm22w5rr']={ids:[salesId]};
+    if(imprintId)colVals['dropdown_mm276wtz']={ids:[parseInt(imprintId)]};
+
+    const colValsStr=JSON.stringify(JSON.stringify(colVals));
+    const companyName=v('f-company').replace(/"/g,'\\"');
+
+    // Create parent order
+    const parentResult=await mondayMutation(`
+      mutation {
+        create_item(
+          board_id: ${ORDERS_BOARD},
+          group_id: "${ACTIVE_GROUP}",
+          item_name: "${companyName}",
+          column_values: ${colValsStr}
+        ) { id name column_values { id text value } }
+      }
+    `);
+
+    const parentId=parentResult.create_item.id;
+    const orderNum=parentResult.create_item.column_values?.find(c=>c.id==='pulse_id_mm27vwa5')?.text||parentId;
+
+    document.getElementById('modalStatus').textContent=`Order ${orderNum} created. Adding products...`;
+
+    // Create subitems
+    const decoStyleCols={1:'dropdown_mm2y4w39',2:'dropdown_mm2yaxxz',3:'dropdown_mm2ygyew'};
+    const decoPlaceCols={1:'text_mm2y6g62',2:'text_mm2yge79',3:'text_mm2y1j6j'};
+    const decoDescCols={1:'text_mm2y3mb9',2:'text_mm2ymf5k',3:'text_mm2yjq0z'};
+    const decoScreenCols={1:'numeric_mm2yn2nb',2:'numeric_mm2ynqby',3:'numeric_mm2y55qh'};
+    const decoColorCols={1:'text_mm2y2y6a',2:'text_mm2y5vn6',3:'text_mm2y8bg8'};
+
+    for(const pb of productBlocks){
+      const pid=pb.id.replace('product-','');
+      const pName=v(`p${pid}-name`).replace(/"/g,'\\"');
+      const pStyle=v(`p${pid}-style`);
+      const pColor=v(`p${pid}-color`);
+      const pSize=v(`p${pid}-size`);
+      const pSupplier=v(`p${pid}-supplier`);
+      const pPrice=v(`p${pid}-price`);
+      const pCost=v(`p${pid}-cost`);
+
+      let subCols={};
+      if(pStyle)subCols['text_mm22fv7y']=pStyle;
+      if(pColor)subCols['text_mm2276wz']=pColor;
+      if(pSize)subCols['text_mm22yw8s']=pSize;
+      if(pSupplier)subCols['text_mm22qdag']=pSupplier;
+      if(pPrice)subCols['numeric_mm2299qw']=parseFloat(pPrice);
+      if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
+
+      // Gather deco spots
+      for(let dId=1;dId<=3;dId++){
+        const styleEl=document.getElementById(`p${pid}-d${dId}-style`);
+        if(!styleEl)continue;
+        const styleVal=styleEl.value;
+        const placement=v(`p${pid}-d${dId}-placement`);
+        const desc=v(`p${pid}-d${dId}-desc`);
+        const screens=v(`p${pid}-d${dId}-screens`);
+        const colors=v(`p${pid}-d${dId}-colors`);
+        if(styleVal)subCols[decoStyleCols[dId]]={ids:[parseInt(styleVal)]};
+        if(placement)subCols[decoPlaceCols[dId]]=placement;
+        if(desc)subCols[decoDescCols[dId]]=desc;
+        if(screens)subCols[decoScreenCols[dId]]=parseFloat(screens);
+        if(colors)subCols[decoColorCols[dId]]=colors;
+      }
+
+      const subColsStr=JSON.stringify(JSON.stringify(subCols));
+      await mondayMutation(`
+        mutation {
+          create_item(
+            board_id: ${SUBITEMS_BOARD},
+            parent_item_id: ${parentId},
+            item_name: "${pName}",
+            column_values: ${subColsStr}
+          ) { id }
+        }
+      `);
+    }
+
+    // Success
+    document.getElementById('modalForm').style.display='none';
+    document.getElementById('modalFooter').style.display='none';
+    document.getElementById('modalSuccess').classList.add('show');
+    document.getElementById('successNum').textContent=orderNum?`Order ${orderNum}`:'';
+
+    // Trigger cache refresh in background
+    fetch(`${API}/api/refresh`).then(()=>load()).catch(()=>{});
+
+  }catch(err){
+    btn.classList.remove('loading');
+    btn.textContent='Create Order';
+    document.getElementById('modalStatus').textContent='';
+    alert('Error creating order: '+err.message);
+  }
+}
+
+
+// SIDE NAV
+function jumpToGroup(key){
+  const row=document.getElementById('group-row-'+key);
+  if(row){row.scrollIntoView({behavior:'smooth',block:'start'});}
+  document.querySelectorAll('.side-nav-item').forEach(el=>el.classList.remove('active'));
+  const btn=document.getElementById('snav-'+key);
+  if(btn)btn.classList.add('active');
+}
+
+// Scroll spy -- update active side nav item based on scroll position
+function updateScrollSpy(){
+  const keys=['topics','events','birthdays','completed','pending'];
+  let activeKey='topics';
+  for(const key of keys){
+    const row=document.getElementById('group-row-'+key);
+    if(row){
+      const rect=row.getBoundingClientRect();
+      if(rect.top<=120)activeKey=key;
+    }
+  }
+  document.querySelectorAll('.side-nav-item').forEach(el=>el.classList.remove('active'));
+  const btn=document.getElementById('snav-'+activeKey);
+  if(btn)btn.classList.add('active');
+}
+
+window.addEventListener('scroll',updateScrollSpy,{passive:true});
+
+// Hide side nav items that have no orders after render
+function updateSideNavVisibility(){
+  const keys=['topics','events','birthdays','completed','pending'];
+  keys.forEach(key=>{
+    const row=document.getElementById('group-row-'+key);
+    const btn=document.getElementById('snav-'+key);
+    if(btn)btn.style.display=row?'':'none';
+  });
+}
+
+load();
+setInterval(load,60000);
+
+// Close on Escape
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+</script>
 </body>
 </html>
