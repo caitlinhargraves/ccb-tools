@@ -495,10 +495,10 @@ function buildOrderCard(order) {
       ${savedSpan}
     </div>
 
-    \${(order.otherCharges||order.otherChargesDetails)?`<div class="other-charges-box">
+    ${(order.otherCharges||order.otherChargesDetails)?`<div class="other-charges-box">
       <div class="other-charges-label">⚡ Other Charges</div>
-      \${order.otherCharges?`<div class="other-charges-amount">$\${parseFloat(order.otherCharges).toFixed(2)}</div>`:''}
-      \${order.otherChargesDetails?`<div class="other-charges-detail">\${order.otherChargesDetails}</div>`:''}
+      ${order.otherCharges?`<div class="other-charges-amount">$${parseFloat(order.otherCharges).toFixed(2)}</div>`:''}
+      ${order.otherChargesDetails?`<div class="other-charges-detail">${order.otherChargesDetails}</div>`:''}
     </div>`:''}
 
     <div class="products-wrap">
