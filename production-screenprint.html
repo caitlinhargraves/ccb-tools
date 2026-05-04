@@ -616,8 +616,16 @@ async function loadData(){
       for(const sub of(item.subitems||[])){
         const sc={};for(const c of sub.column_values)sc[c.id]=c;
         const subStatus=(sc[S_STATUS]?.text||'').toLowerCase();
-        let decoId=0;try{decoId=JSON.parse(sc[S_DECO]?.value||'{}')?.ids?.[0]||0;}catch(e){}
-        if(!STATION_IDS.includes(parseInt(decoId)))continue;
+        // Check old single deco column AND new Deco 1/2/3 columns for this station
+        let matchesStation=false;
+        const decoColsToCheck=[S_DECO,D1_STYLE,D2_STYLE,D3_STYLE];
+        for(const dcol of decoColsToCheck){
+          try{
+            const ids=JSON.parse(sc[dcol]?.value||'{}')?.ids||[];
+            if(ids.some(id=>STATION_IDS.includes(parseInt(id)))){matchesStation=true;break;}
+          }catch(e){}
+        }
+        if(!matchesStation)continue;
         const p=parseProduct(item,sub);
         if(subStatus==='product ordered')allUpcoming.push(p);
         else if(subStatus==='in house')allActive.push(p);
