@@ -554,7 +554,14 @@ function parseProduct(item,sub){
     inHands:cv[O_INHAND]?.text||'',shelf:cv[O_SHELF]?.text||'',
     qty:sc[S_QTY]?.text||'',color:sc[S_COLOR]?.text||'',size:sc[S_SIZE]?.text||'',
     style:sc[S_STYLE]?.text||'',decoStyleId,decoStyleText,decoStyleDisplay,
-    placement:primarySlot?sc[primarySlot.place]?.text||'':sc[S_PLACEMENT]?.text||'',artworkDesc:primarySlot?sc[primarySlot.desc]?.text||'':sc[S_ARTWORK_DESC]?.text||'',screens:primarySlot?sc[primarySlot.screens]?.text||'':'',colors:primarySlot?sc[primarySlot.colors]?.text||'':'',mySlots:mySlots,primarySlot:primarySlot,
+    // Resolve deco slots for this item against this station
+    const _mySlots=typeof getMyDecoSlots==='function'?getMyDecoSlots(sc):[];
+    const _primarySlot=_mySlots.length?_mySlots[0]:null;
+    placement:_primarySlot?sc[_primarySlot.place]?.text||'':sc[S_PLACEMENT]?.text||'',
+    artworkDesc:_primarySlot?sc[_primarySlot.desc]?.text||'':sc[S_ARTWORK_DESC]?.text||'',
+    screens:_primarySlot?sc[_primarySlot.screens]?.text||'':'',
+    colors:_primarySlot?sc[_primarySlot.colors]?.text||'':'',
+    mySlots:_mySlots,primarySlot:_primarySlot,
     prodNotes:sc[S_PROD_NOTES]?.text||'',
     mockupUrl,mockupAssetId,artworkUrl,artworkAssetIds
   };
