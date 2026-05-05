@@ -617,7 +617,7 @@ async function loadData(){
     for(let i=0;i<allSubIds.length;i+=100){
       const batch=allSubIds.slice(i,i+100);
       const newDecoCols=[D1_STYLE,D1_PLACE,D1_DESC,D1_ART,D1_SCREENS,D1_COLORS,D1_DONE,D2_STYLE,D2_PLACE,D2_DESC,D2_ART,D2_SCREENS,D2_COLORS,D2_DONE,D3_STYLE,D3_PLACE,D3_DESC,D3_ART,D3_SCREENS,D3_COLORS,D3_DONE].map(c=>`"${c}"`).join(',');
-      const q2=`{items(ids:[${batch.join(',')}]){id column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_DECO}","${S_PLACEMENT}","${S_ARTWORK_DESC}","${S_PROD_NOTES}","${S_MOCKUP}","${S_ARTWORK}",${newDecoCols}]){id text value}}}`;
+      const q2=`{items(limit:500,ids:[${batch.join(',')}]){id column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_DECO}","${S_PLACEMENT}","${S_ARTWORK_DESC}","${S_PROD_NOTES}","${S_MOCKUP}","${S_ARTWORK}",${newDecoCols}]){id text value}}}`;
       const d2=await mq(q2);
       for(const sub of(d2.items||[]))subColMap[sub.id]=sub.column_values;
     }
