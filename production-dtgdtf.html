@@ -454,31 +454,42 @@ function buildCardView(p,section){
       ${p.prodNotes?`<div class="info-cell wide"><div class="info-lbl">Production Notes</div><div class="info-val muted">${p.prodNotes}</div></div>`:''}
     </div>
 
+    
     <div class="edit-section">
-      <div class="edit-row">
-        <div class="edit-group">
-          <div class="edit-lbl">Colors / Thread</div>
-          <input class="edit-input" id="edit-colors-${p.id}" type="text" 
-            value="${p.colors||''}" placeholder="e.g. White, Navy...">
+      <div class="edit-section-title">Edit Decoration</div>
+      <div class="edit-fields">
+        <div class="edit-field-row">
+          <div class="edit-field">
+            <div class="edit-lbl">Colors / Thread</div>
+            <input class="edit-input" id="edit-colors-${p.id}" type="text"
+              value="${p.colors||''}" placeholder="e.g. White, Navy...">
+          </div>
+          ${(!p.decoStyleDisplay||p.decoStyleDisplay.toLowerCase().includes('screen')||p.decoStyleDisplay.toLowerCase().includes('dtg')||p.decoStyleDisplay.toLowerCase().includes('dtf'))?`
+          <div class="edit-field narrow">
+            <div class="edit-lbl">Screens</div>
+            <input class="edit-input" id="edit-screens-${p.id}" type="number"
+              value="${p.screens||''}" placeholder="0" min="0">
+          </div>`:`<input type="hidden" id="edit-screens-${p.id}" value="">`}
         </div>
-        ${(!p.decoStyleDisplay||p.decoStyleDisplay.toLowerCase().includes('screen')||p.decoStyleDisplay.toLowerCase().includes('dtg')||p.decoStyleDisplay.toLowerCase().includes('dtf'))?`
-        <div class="edit-group" style="max-width:90px">
-          <div class="edit-lbl">Screen Count</div>
-          <input class="edit-input" id="edit-screens-${p.id}" type="number" 
-            value="${p.screens||''}" placeholder="0" min="0">
-        </div>`:'<input type="hidden" id="edit-screens-'+p.id+'" value="">'}
+        <div class="edit-field">
+          <div class="edit-lbl">Production Notes</div>
+          <textarea class="edit-textarea" id="edit-notes-${p.id}"
+            placeholder="Instructions, price increase, special handling...">${p.prodNotes||''}</textarea>
+          ${p.prodNotes&&p.prodNotes.toLowerCase().includes('price')?'<span class="price-note">⚠ Price change noted</span>':''}
+        </div>
       </div>
-      <div class="edit-group">
-        <div class="edit-lbl">Production Notes</div>
-        <textarea class="edit-textarea" id="edit-notes-${p.id}" 
-          placeholder="Special instructions, price increase note, thread colors...">${p.prodNotes||''}</textarea>
-        ${p.prodNotes&&p.prodNotes.toLowerCase().includes('price')?'<div class="price-increase-note">⚠ Price note attached</div>':''}
+      <div class="edit-actions">
+        <button class="edit-save-btn" id="edit-save-${p.id}" onclick="saveDecoFields('${p.id}')">
+          <svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-5"/></svg>
+          Save
+        </button>
+        <span class="edit-saved" id="edit-saved-${p.id}">✓ Saved to Monday</span>
+        <button class="pdf-btn" onclick="downloadProductPDF('${p.id}',event)">
+          <svg viewBox="0 0 14 14"><path d="M8 1H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6M8 1l4 5M8 1v5h4"/><path d="M4 9h6M4 11h4"/></svg>
+          PDF
+        </button>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <button class="edit-save-btn" id="edit-save-${p.id}" onclick="saveDecoFields('${p.id}')">Save</button>
-        <span class="edit-saved" id="edit-saved-${p.id}">✓ Saved</span>
-      </div>
-    </div>
+    </div></div>
     <div class="card-footer">
       <div class="footer-left">
         <span style="font-size:11px;color:var(--text3)">Station:</span>
