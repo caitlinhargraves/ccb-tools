@@ -447,6 +447,8 @@ const SUBITEMS_BOARD = '18407165552';
 const ACTIVE_GROUP = 'topics';
 
 let all=[], filtered=[], expanded=new Set(), statusFilter='all', sort={col:'orderNum',dir:'desc'};
+let editingOrderId=null;
+const collapsedGroups=new Set(['group_mm26j0hj']); // Completed collapsed by default
 const salesMap={1:'Chaz Lucius',2:'Bailey McGraw',3:'Jess Miller',4:'Nick Miller',5:'George Miller',6:'Web Order'};
 const impMap={1:'CCB Imprint',2:'CCB Insight'};
 const decoMap={1:'Embroidery',2:'Screenprint',3:'DTG',4:'DTF',5:'Engrave',6:'Other'};
@@ -681,7 +683,6 @@ let productCount = 0;
 
 function openModal(){
   editingOrderId=null;
-const collapsedGroups=new Set(['group_mm26j0hj']); // Completed collapsed by default
   resetModal();
   document.getElementById('modalTitle').textContent='New Order';
   document.getElementById('submitBtn').textContent='Create Order';
@@ -777,7 +778,6 @@ function handleOverlayClick(e){
 
 function resetModal(){
   editingOrderId=null;
-const collapsedGroups=new Set(['group_mm26j0hj']); // Completed collapsed by default
   productCount=0;
   document.getElementById('productsList').innerHTML='';
   document.getElementById('modalForm').style.display='';
