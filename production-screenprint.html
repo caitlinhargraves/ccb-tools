@@ -597,9 +597,9 @@ async function loadData(){
   window._forceRefresh=false;
   const btn=document.getElementById('refresh-btn');btn.disabled=true;btn.classList.add('spinning');
   try{
-    const q1=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name group{id}column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHELF}","${O_SALES}"]){id text value}subitems{id name}}}}}`;
+    const q1=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:500,query_params:{rules:[{column_id:"group",compare_value:["topics"]}]}){items{id name group{id}column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHELF}","${O_SALES}"]){id text value}subitems{id name}}}}}`;
     const data1=await mq(q1);
-    const rawItems=data1.boards[0].items_page.items.filter(i=>i.group?.id==='topics');
+    const rawItems=data1.boards[0].items_page.items;
     const allSubIds=[];
     for(const item of rawItems)for(const sub of(item.subitems||[]))allSubIds.push(sub.id);
     const subColMap={};
