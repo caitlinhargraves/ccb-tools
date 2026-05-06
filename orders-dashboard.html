@@ -645,7 +645,11 @@ function applyFilters(){
     if(sa&&o.sales!==sa)return false;
     if(im&&o.imprint!==im)return false;
     if(iv&&o.invoice!==iv)return false;
-    if(q&&!`${o.name} ${o.contact} ${o.ccbNum} ${o.orderNum}`.toLowerCase().includes(q))return false;
+    if(q){
+      const _hay=`${o.name} ${o.contact} ${o.ccbNum} ${o.orderNum}`.toLowerCase();
+      const _subHay=(o.subitems||[]).map(s=>s.name||'').join(' ').toLowerCase();
+      if(!_hay.includes(q)&&!_subHay.includes(q))return false;
+    }
     return true;
   });
   doSort();render();
@@ -847,6 +851,16 @@ function addProduct(){
         <input type="number" step="0.01" class="form-input" id="p${id}-cost" placeholder="0.00">
       </div>
     </div>
+    <div class="form-row cols-2" style="margin-top:4px">
+      <div class="form-group">
+        <label class="form-label">Mockup Image <span class="form-hint-inline">(jpg, png, gif)</span></label>
+        <input type="file" class="form-file-input" id="p${id}-mockup" accept="image/*">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Artwork File <span class="form-hint-inline">(any format)</span></label>
+        <input type="file" class="form-file-input" id="p${id}-artwork" accept="*/*">
+      </div>
+    </div>
     <div class="deco-spots-list" id="p${id}-decos"></div>
     <button type="button" class="add-deco-btn" onclick="addDeco(${id})">
       <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.5 1v9M1 5.5h9"/></svg>
@@ -873,7 +887,7 @@ function addDeco(productId){
   div.id=`p${productId}-deco${dId}`;
   div.innerHTML=`
     <div class="deco-spot-header">
-      <div class="deco-spot-label">Deco ${dId}</div>
+      <div class="deco-spot-label">Decoration ${dId}</div>
       <button type="button" class="remove-deco" onclick="removeDeco(${productId},${dId})">Remove</button>
     </div>
     <div class="form-row cols-2">
@@ -1109,18 +1123,19 @@ async function submitOrder(){
         const desc=v(`p${pid}-d${dId}-desc`);
         const screens=v(`p${pid}-d${dId}-screens`);
         const colors=v(`p${pid}-d${dId}-colors`);
+        const prodNotes=v(`p${pid}-d${dId}-prodnotes`);
         if(styleVal)subCols[decoStyleCols[dId]]={ids:[parseInt(styleVal)]};
         if(placement)subCols[decoPlaceCols[dId]]=placement;
         if(desc)subCols[decoDescCols[dId]]=desc;
         if(screens)subCols[decoScreenCols[dId]]=parseFloat(screens);
         if(colors)subCols[decoColorCols[dId]]=colors;
+        if(prodNotes)subCols['long_text_mm27e9c4']={text:prodNotes};
       }
 
       const subColsStr=JSON.stringify(JSON.stringify(subCols));
       await mondayMutation(`
         mutation {
-          create_item(
-            board_id: ${SUBITEMS_BOARD},
+          create_subitem(
             parent_item_id: ${parentId},
             item_name: "${pName}",
             column_values: ${subColsStr}
