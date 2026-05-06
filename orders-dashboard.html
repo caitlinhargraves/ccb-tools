@@ -245,7 +245,8 @@
       <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11.5 6.5A5 5 0 1 1 6.5 1.5M11.5 1.5v3.5h-3.5"/></svg>
       Refresh
     </button>
-    <button class="btn btn-cyan" onclick="openModal()">
+    <button id="archiveBtn" class="btn btn-ghost" onclick="bulkArchiveCompleted()" style="display:none">🗂 Archive Old</button>
+      <button class="btn btn-cyan" onclick="openModal()">
       <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 1.5v11M1.5 6.5h11"/></svg>
       New Order
     </button>
@@ -669,7 +670,7 @@ async function load(){
     all=data.orders.map(parseOrder);
     if(data.lastUpdated){const t=new Date(data.lastUpdated).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
       document.getElementById('lastUpdated').innerHTML=`Updated <strong>${t}</strong>`;}
-    updateStats(all);applyFilters();hideAlert();
+    updateStats(all);applyFilters();hideAlert();updateArchiveBtn();
   }catch(e){showAlert('Could not reach CCB API.');}
 }
 async function manualRefresh(){const btn=document.getElementById('refreshBtn');btn.classList.add('loading');
@@ -1188,6 +1189,46 @@ setInterval(load,60000);
 
 // Close on Escape
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+async function bulkArchiveCompleted() {
+  const btn = document.getElementById('archiveBtn');
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
+  
+  const eligible = (all||[]).filter(o =>
+    o.groupId === 'topics' &&
+    ['Shipped','Delivered'].includes(o.status) &&
+    o.ihd && new Date(o.ihd) < cutoff
+  );
+  
+  if (!eligible.length) {
+    alert('No eligible orders.\nLooking for: Shipped or Delivered orders in Active with in-hands date 30+ days ago.');
+    return;
+  }
+  
+  if (!confirm(`Archive ${eligible.length} order${eligible.length!==1?'s':''} to Completed?\n\n${eligible.slice(0,8).map(o=>o.ccbNum+' - '+o.name).join('\n')}${eligible.length>8?'\n...and '+(eligible.length-8)+' more':''}\n\nMoves them to Completed group in Monday.`)) return;
+  
+  btn.textContent='Archiving...'; btn.disabled=true;
+  let moved=0;
+  for (const o of eligible) {
+    try { await mondayMutation(`mutation{move_item_to_group(item_id:${o.id},group_id:"group_mm26j0hj"){id}}`); moved++; }
+    catch(e) { console.error('archive failed',o.ccbNum,e); }
+    await new Promise(r=>setTimeout(r,200));
+  }
+  showAlert(`✓ Archived ${moved} order${moved!==1?'s':''} to Completed.`);
+  setTimeout(()=>{load();},1500);
+  btn.textContent='🗂 Archive Old'; btn.disabled=false;
+}
+
+function updateArchiveBtn() {
+  const btn=document.getElementById('archiveBtn');
+  if(!btn)return;
+  const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-30);
+  const n=(all||[]).filter(o=>o.groupId==='topics'&&['Shipped','Delivered'].includes(o.status)&&o.ihd&&new Date(o.ihd)<cutoff).length;
+  btn.style.display=n?'inline-flex':'none';
+  btn.title=n+' order'+(n!==1?'s':'')+' eligible';
+}
+
 </script>
 </body>
 </html>
