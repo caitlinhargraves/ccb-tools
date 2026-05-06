@@ -50,6 +50,24 @@ async function sendEmail(subject, html, attachments) {
 let cache = { orders: [], lastUpdated: null, isLoading: false };
 
 // Serve static files
+// Basic Auth middleware -- protects entire site
+app.use((req, res, next) => {
+  const user = process.env.BASIC_AUTH_USER;
+  const pass = process.env.BASIC_AUTH_PASS;
+
+  // Skip auth if env vars not set (dev mode)
+  if (!user || !pass) return next();
+
+  const authHeader = req.headers['authorization'] || '';
+  const b64 = authHeader.startsWith('Basic ') ? authHeader.slice(6) : '';
+  const [u, p] = Buffer.from(b64, 'base64').toString().split(':');
+
+  if (u === user && p === pass) return next();
+
+  res.set('WWW-Authenticate', 'Basic realm="CCB Tools"');
+  res.status(401).send('Authentication required');
+});
+
 app.use(express.static(path.join(__dirname)));
 app.use(express.json({ limit: '5mb' }));
 app.use((req, res, next) => {
