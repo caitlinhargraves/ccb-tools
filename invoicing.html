@@ -140,6 +140,11 @@ tbody tr:hover td { background: var(--surface2); }
   thead th:nth-child(6), tbody td:nth-child(6) { display: none; }
 }
 .search-wrap{padding:16px 20px 0;max-width:1200px;margin:0 auto}.search-input{width:100%;padding:9px 14px 9px 36px;font-size:13px;font-family:'Inter',sans-serif;border:1px solid var(--border);border-radius:50px;background:var(--surface);color:var(--text);outline:none;transition:border-color .15s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239b9890' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center}.search-input:focus{border-color:var(--border2)}.search-input::placeholder{color:var(--text3)}
+
+  .ihd-overdue{color:#DC2626!important;font-weight:700;}
+  .ihd-soon{color:#D97706!important;font-weight:600;}
+  .overdue-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:5px;background:#FEF2F2;color:#DC2626;font-size:10px;font-weight:700;border:1px solid #FCA5A5;}
+  .due-soon-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:5px;background:#FFFBEB;color:#D97706;font-size:10px;font-weight:700;border:1px solid #FCD34D;}
 </style>
 </head>
 <body>
@@ -818,6 +823,18 @@ function applySearch() {
 }
 
 loadOrders();
+
+function ihdChip(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr), today = new Date();
+  today.setHours(0,0,0,0);
+  const diff = Math.ceil((d - today) / 86400000);
+  const lbl = d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  if (diff < 0) return `<span class="overdue-chip">⚠ Overdue ${lbl}</span>`;
+  if (diff <= 3) return `<span class="due-soon-chip">Due ${lbl}</span>`;
+  return `<span style="font-size:12px;color:#6B7280">${lbl}</span>`;
+}
+
 </script>
 </body>
 </html>
