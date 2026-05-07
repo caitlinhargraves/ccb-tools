@@ -166,6 +166,8 @@
   .form-input::placeholder,.form-textarea::placeholder{color:var(--subtle);}
   .form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7280' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer;}
   .form-textarea{resize:vertical;min-height:60px;line-height:1.5;}
+  .draft-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;background:#FFF9F0;color:#D97706;border:1px solid #FCD34D;border-radius:50px;padding:2px 10px;font-weight:600;}
+  .draft-row{display:flex;gap:8px;align-items:center;padding:10px 20px;background:var(--bg);border-top:1px solid var(--border);font-size:12px;color:var(--muted);}
   .form-hint{font-size:11px;color:var(--subtle);margin-top:2px;}
 
   /* PRODUCT BLOCK */
@@ -431,6 +433,7 @@
       <div style="font-size:12px;color:var(--subtle)" id="modalStatus"></div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-ghost" id="draftBtn" onclick="saveDraft()" style="color:#D97706;border-color:#FCD34D">💾 Draft</button>
         <button class="btn btn-primary" id="submitBtn" onclick="submitOrder()">
           Create Order
         </button>
@@ -851,16 +854,6 @@ function addProduct(){
         <input type="number" step="0.01" class="form-input" id="p${id}-cost" placeholder="0.00">
       </div>
     </div>
-    <div class="form-row cols-2" style="margin-top:4px">
-      <div class="form-group">
-        <label class="form-label">Mockup Image <span class="form-hint-inline">(jpg, png, gif)</span></label>
-        <input type="file" class="form-file-input" id="p${id}-mockup" accept="image/*">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Artwork File <span class="form-hint-inline">(any format)</span></label>
-        <input type="file" class="form-file-input" id="p${id}-artwork" accept="*/*">
-      </div>
-    </div>
     <div class="deco-spots-list" id="p${id}-decos"></div>
     <button type="button" class="add-deco-btn" onclick="addDeco(${id})">
       <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.5 1v9M1 5.5h9"/></svg>
@@ -919,8 +912,47 @@ function addDeco(productId){
         <input type="text" class="form-input" id="p${productId}-d${dId}-colors" placeholder="White, Navy...">
       </div>
     </div>
-  `;
+    <div class="form-group" style="margin-top:4px">
+      <label class="form-label">Production Notes</label>
+      <input type="text" class="form-input" id="p${productId}-d${dId}-prodnotes" placeholder="Special instructions, price note, thread details...">
+    </div>
+    <div class="form-row cols-2" style="margin-top:6px">
+      <div class="form-group">
+        <label class="form-label">Mockups <span style="font-size:10px;color:var(--muted);font-weight:400">(up to 4 images)</span></label>
+        <input type="file" class="form-file-input" id="p${productId}-d${dId}-mockups" accept="image/*" multiple>
+        <div class="mockup-preview" id="p${productId}-d${dId}-mockup-preview"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Artwork File <span style="font-size:10px;color:var(--muted);font-weight:400">(any format)</span></label>
+        <input type="file" class="form-file-input" id="p${productId}-d${dId}-artwork" accept="*/*">
+        <div id="p${productId}-d${dId}-artwork-name" style="font-size:11px;color:var(--muted);margin-top:3px"></div>
+      </div>
+    </div>
+  \`;
   container.appendChild(div);
+  // Mockup preview thumbnails
+  const _mi = document.getElementById('p'+productId+'-d'+dId+'-mockups');
+  if(_mi) _mi.addEventListener('change', function(){
+    const _pv = document.getElementById('p'+productId+'-d'+dId+'-mockup-preview');
+    if(!_pv) return;
+    _pv.innerHTML = '';
+    Array.from(this.files).slice(0,4).forEach(function(f){
+      const rd = new FileReader();
+      rd.onload = function(e){
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.style.cssText = 'width:52px;height:52px;object-fit:cover;border-radius:6px;border:1px solid var(--border);margin:2px 2px 0 0';
+        _pv.appendChild(img);
+      };
+      rd.readAsDataURL(f);
+    });
+  });
+  // Artwork filename display
+  const _ai = document.getElementById('p'+productId+'-d'+dId+'-artwork');
+  if(_ai) _ai.addEventListener('change', function(){
+    const _an = document.getElementById('p'+productId+'-d'+dId+'-artwork-name');
+    if(_an && this.files[0]) _an.textContent = '📎 '+this.files[0].name;
+  });
 }
 
 function removeDeco(productId,dId){
@@ -1000,6 +1032,7 @@ async function saveOrderEdits(){
     document.getElementById('modalForm').style.display='none';
     document.getElementById('modalFooter').style.display='none';
     document.getElementById('modalSuccess').classList.add('show');
+    clearDraft();
     document.getElementById('successNum').textContent=o?.ccbNum?`Order ${o.ccbNum}`:'';
     document.querySelector('#modalSuccess .success-title').textContent='Changes Saved!';
     document.querySelector('#modalSuccess .success-sub').textContent='The order has been updated in Monday.';
@@ -1123,12 +1156,14 @@ async function submitOrder(){
         const desc=v(`p${pid}-d${dId}-desc`);
         const screens=v(`p${pid}-d${dId}-screens`);
         const colors=v(`p${pid}-d${dId}-colors`);
+        const pNotes=v(`p${pid}-d${dId}-prodnotes`);
         const prodNotes=v(`p${pid}-d${dId}-prodnotes`);
         if(styleVal)subCols[decoStyleCols[dId]]={ids:[parseInt(styleVal)]};
         if(placement)subCols[decoPlaceCols[dId]]=placement;
         if(desc)subCols[decoDescCols[dId]]=desc;
         if(screens)subCols[decoScreenCols[dId]]=parseFloat(screens);
         if(colors)subCols[decoColorCols[dId]]=colors;
+        if(pNotes)subCols['long_text_mm27e9c4']={text:pNotes};
         if(prodNotes)subCols['long_text_mm27e9c4']={text:prodNotes};
       }
 
@@ -1148,6 +1183,7 @@ async function submitOrder(){
     document.getElementById('modalForm').style.display='none';
     document.getElementById('modalFooter').style.display='none';
     document.getElementById('modalSuccess').classList.add('show');
+    clearDraft();
     document.getElementById('successNum').textContent=orderNum?`Order ${orderNum}`:'';
 
     // Trigger cache refresh in background
@@ -1242,6 +1278,111 @@ function updateArchiveBtn() {
   const n=(all||[]).filter(o=>o.groupId==='topics'&&['Shipped','Delivered'].includes(o.status)&&o.ihd&&new Date(o.ihd)<cutoff).length;
   btn.style.display=n?'inline-flex':'none';
   btn.title=n+' order'+(n!==1?'s':'')+' eligible';
+}
+
+
+// ============================================================
+// DRAFT SYSTEM
+// ============================================================
+const DRAFT_KEY = 'ccb_order_draft';
+
+function saveDraft() {
+  try {
+    const draft = collectFormData();
+    draft._savedAt = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    showAlert('Draft saved -- will be here when you come back.', 'success');
+    // Show draft indicator in modal title
+    const title = document.getElementById('modalTitle');
+    if (title && !title.querySelector('.draft-badge')) {
+      const badge = document.createElement('span');
+      badge.className = 'draft-badge';
+      badge.innerHTML = '💾 Draft saved ' + draft._savedAt;
+      badge.style.marginLeft = '8px';
+      badge.style.fontSize = '11px';
+      title.appendChild(badge);
+    }
+  } catch(e) {
+    showAlert('Could not save draft: ' + e.message, 'error');
+  }
+}
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return false;
+    const draft = JSON.parse(raw);
+    return draft;
+  } catch(e) { return false; }
+}
+
+function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY);
+}
+
+function restoreDraft(draft) {
+  if (!draft) return;
+  // Restore order-level fields
+  const fields = ['f-company','f-contact','f-email','f-phone','f-ihd','f-shipto','f-notes'];
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && draft[id] !== undefined) el.value = draft[id];
+  });
+  if (draft['f-sales']) { const el = document.getElementById('f-sales'); if(el) el.value = draft['f-sales']; }
+  if (draft['f-imprint']) { const el = document.getElementById('f-imprint'); if(el) el.value = draft['f-imprint']; }
+  if (draft['f-status']) { const el = document.getElementById('f-status'); if(el) el.value = draft['f-status']; }
+  // Restore products (text fields only, not files)
+  if (draft.products) {
+    // Remove existing products and re-add
+    document.getElementById('productsList').innerHTML = '';
+    productCount = 0;
+    draft.products.forEach(p => {
+      addProduct();
+      const pid = productCount;
+      ['name','style','color','size','supplier','price','cost'].forEach(f => {
+        const el = document.getElementById(`p${pid}-${f}`);
+        if (el && p[f]) el.value = p[f];
+      });
+    });
+  }
+  showAlert(`Draft restored from ${draft._savedAt}`, 'success');
+}
+
+function collectFormData() {
+  const data = {};
+  ['f-company','f-contact','f-email','f-phone','f-ihd','f-shipto','f-notes','f-sales','f-imprint','f-status'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value;
+  });
+  // Collect product text fields
+  data.products = [];
+  document.querySelectorAll('.product-block').forEach(block => {
+    const pid = block.id.replace('product-','');
+    const p = {};
+    ['name','style','color','size','supplier','price','cost'].forEach(f => {
+      const el = document.getElementById(`p${pid}-${f}`);
+      if (el) p[f] = el.value;
+    });
+    data.products.push(p);
+  });
+  return data;
+}
+
+// Check for draft on modal open
+function checkForDraft() {
+  const draft = loadDraft();
+  if (!draft) return;
+  const title = document.getElementById('modalTitle');
+  if (title) {
+    // Add restore banner
+    const banner = document.createElement('div');
+    banner.className = 'draft-row';
+    banner.innerHTML = `<span>💾 You have a saved draft from ${draft._savedAt}</span>
+      <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="restoreDraft(loadDraft());this.parentElement.remove()">Restore Draft</button>
+      <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;color:#DC2626" onclick="clearDraft();this.parentElement.remove()">Discard</button>`;
+    const modalBody = document.getElementById('modalForm');
+    if (modalBody) modalBody.insertBefore(banner, modalBody.firstChild);
+  }
 }
 
 </script>
