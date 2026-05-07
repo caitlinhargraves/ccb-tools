@@ -271,14 +271,41 @@ async function sendLowStockAlert(alerts) {
 }
 
 // ============================================================
-// In-memory inventory store (persists while server is alive)
-// For production, swap with a SQLite file or Render disk mount
+// File-based inventory store -- persists across sleep cycles
+// Stored at /tmp/ccb_inventory.json on Render
 // ============================================================
-let inventoryStore = {
-  categories: ['Gift Boxes', 'Birthday Gifts', 'Office Supplies', 'Production Supplies', 'Thread'],
-  items: [],
-  threadColors: []
-};
+const INVENTORY_FILE = process.env.INVENTORY_FILE || '/tmp/ccb_inventory.json';
+const fs = require('fs');
+
+function loadInventoryFromDisk() {
+  try {
+    if (fs.existsSync(INVENTORY_FILE)) {
+      const raw = fs.readFileSync(INVENTORY_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      console.log(`Inventory loaded from disk: ${(parsed.items||[]).length} items, ${(parsed.threadColors||[]).length} thread colors`);
+      return parsed;
+    }
+  } catch(e) {
+    console.error('Failed to load inventory from disk:', e.message);
+  }
+  return {
+    categories: ['Production Supplies', 'Ink', 'Embroidery', 'Office Supplies', 'Birthday Gifts', 'Standard Gift Boxes', 'Thread'],
+    items: [],
+    threadColors: []
+  };
+}
+
+function saveInventoryToDisk(data) {
+  try {
+    fs.writeFileSync(INVENTORY_FILE, JSON.stringify(data, null, 2), 'utf8');
+    return true;
+  } catch(e) {
+    console.error('Failed to save inventory to disk:', e.message);
+    return false;
+  }
+}
+
+let inventoryStore = loadInventoryFromDisk();
 
 // ============================================================
 // API endpoints
@@ -295,6 +322,8 @@ app.get('/api/refresh', async (req, res) => {
 
 // Inventory endpoints
 app.get('/api/inventory', (req, res) => {
+  // Reload from disk on each request to ensure freshness
+  inventoryStore = loadInventoryFromDisk();
   res.json(inventoryStore);
 });
 
@@ -303,6 +332,9 @@ app.post('/api/inventory', (req, res) => {
   if (categories) inventoryStore.categories = categories;
   if (items) inventoryStore.items = items;
   if (threadColors) inventoryStore.threadColors = threadColors;
+  // Save to disk immediately
+  const saved = saveInventoryToDisk(inventoryStore);
+  if (!saved) console.error('Warning: inventory save to disk failed');
 
   // Check for low stock and batch for 8am alert
   const lowItems = (inventoryStore.items || []).filter(item => {
