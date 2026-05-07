@@ -100,7 +100,8 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 .deco-select{font-size:12px;font-family:'Inter',sans-serif;padding:5px 8px;border:1px solid var(--border2);border-radius:50px;background:var(--surface);color:var(--text);cursor:pointer}
 .deco-select:focus{outline:none;border-color:var(--text)}
 .deco-badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:4px;white-space:nowrap}
-.decorated-btn{font-size:13px;font-family:'Inter',sans-serif;font-weight:500;padding:8px 20px;background:var(--deco-btn);color:white;border:none;border-radius:50px;cursor:pointer;transition:opacity .15s;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.inline-dec-btn{font-size:11px!important;padding:5px 12px!important;}
+  .decorated-btn{font-size:13px;font-family:'Inter',sans-serif;font-weight:500;padding:8px 20px;background:#16a34a;color:white;border:none;border-radius:50px;cursor:pointer;transition:opacity .15s;white-space:nowrap;display:flex;align-items:center;gap:6px}
 .decorated-btn:hover{opacity:.85}
 .decorated-btn:disabled{opacity:.4;cursor:not-allowed}
 .decorated-btn svg{width:14px;height:14px;stroke:white;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
@@ -153,7 +154,7 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 .modal-download-btn{font-size:11px;padding:4px 10px;background:var(--text);color:white;border:none;border-radius:4px;cursor:pointer;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;flex-shrink:0}
 .modal-download-btn:hover{opacity:.85}
 .modal-download-btn svg{width:11px;height:11px;stroke:white;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.modal-decorated-btn{width:100%;margin-top:14px;padding:12px;font-size:14px;font-family:'Inter',sans-serif;font-weight:500;background:var(--deco-btn);color:white;border:none;border-radius:50px;cursor:pointer;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.modal-decorated-btn{width:100%;margin-top:14px;padding:12px;font-size:14px;font-family:'Inter',sans-serif;font-weight:500;background:#16a34a;color:white;border:none;border-radius:50px;cursor:pointer;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:8px}
 .modal-decorated-btn:hover{opacity:.85}
 .modal-decorated-btn:disabled{opacity:.4;cursor:not-allowed}
 .modal-decorated-btn svg{width:16px;height:16px;stroke:white;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
@@ -486,7 +487,10 @@ function buildCardView(p,section){
   return `<div class="product-card" id="card-${p.id}">
     <div class="card-header">
       <div>
-        <div class="card-name">${p.name}</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="card-name">${p.name}</div>
+          ${section==='active'?`<button class="decorated-btn inline-dec-btn" id="dec-btn-${p.id}" onclick="event.stopPropagation();markDecorated('${p.id}','${p.orderId}',this)"><svg viewBox="0 0 10 8"><polyline points="1 4 4 7 9 1"/></svg>Mark Decorated</button>`:''}
+        </div>
         <div class="card-meta">
           <span class="chip" style="font-family:'Inter',monospace">${p.ccbNum}</span>
           <span class="chip">${p.orderName}</span>
@@ -553,7 +557,7 @@ function buildCardView(p,section){
         ${decoSel}
         <button class="media-btn" onclick="openProductModal('${p.id}','${section}')">Details</button>
       </div>
-      ${section==='active'?`<button class="decorated-btn" id="dec-btn-${p.id}" onclick="markDecorated('${p.id}','${p.orderId}',this)"><svg viewBox="0 0 10 8"><polyline points="1 4 4 7 9 1"/></svg>Mark Decorated</button>`:''}
+
     </div>
   </div>`;
 }
