@@ -50,13 +50,16 @@ async function sendEmail(subject, html, attachments) {
 let cache = { orders: [], lastUpdated: null, isLoading: false };
 
 // Serve static files
-// Basic Auth middleware -- protects entire site
+// Basic Auth middleware -- protects HTML pages but not API endpoints
 app.use((req, res, next) => {
   const user = process.env.BASIC_AUTH_USER;
   const pass = process.env.BASIC_AUTH_PASS;
 
   // Skip auth if env vars not set (dev mode)
   if (!user || !pass) return next();
+
+  // Always allow API endpoints -- they're called by the pages themselves
+  if (req.path.startsWith('/api/')) return next();
 
   const authHeader = req.headers['authorization'] || '';
   const b64 = authHeader.startsWith('Basic ') ? authHeader.slice(6) : '';
