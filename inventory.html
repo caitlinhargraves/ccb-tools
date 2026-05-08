@@ -634,9 +634,9 @@ async function submitItem() {
     if(supplier) colValues[COL.supplier] = supplier;
     if(cost) colValues[COL.cost] = parseFloat(cost);
     if(location) colValues[COL.location] = location;
-    if(restock) colValues[COL.restock] = JSON.stringify({date: restock});
-    if(notes) colValues[COL.notes] = JSON.stringify({text: notes});
-    if(status) colValues[COL.status] = JSON.stringify({label: status});
+    if(restock) colValues[COL.restock] = {date: restock};
+    if(notes) colValues[COL.notes] = {text: notes};
+    if(status) colValues[COL.status] = {label: status};
 
     const colValStr = JSON.stringify(colValues);
     const result = await mq(`mutation{create_item(board_id:${INV_BOARD},group_id:"${groupId}",item_name:"${name.replace(/"/g,'\\"')}",column_values:${JSON.stringify(colValStr)}){id name group{id}column_values(ids:["${COL.qty}","${COL.reorder}","${COL.unit}","${COL.supplier}","${COL.location}","${COL.cost}","${COL.restock}","${COL.notes}","${COL.status}","${COL.updated}"]){id text value}}}}`);
