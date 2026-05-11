@@ -66,6 +66,10 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 .box-name{font-weight:600;}
 .fill-bar{height:5px;background:var(--border2);border-radius:3px;overflow:hidden;margin-top:3px;}
 .fill-fill{height:100%;border-radius:3px;transition:width .3s;}
+.color-menu{position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;box-shadow:0 4px 20px rgba(27,42,74,.15);z-index:500;display:flex;flex-wrap:wrap;gap:5px;width:168px;}
+.color-swatch-btn{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:all .12s;flex-shrink:0;}
+.color-swatch-btn:hover{transform:scale(1.2);}
+.color-swatch-btn.selected{border-color:var(--navy)!important;box-shadow:0 0 0 2px rgba(27,42,74,.2);}
 .inv-table{width:100%;border-collapse:collapse;font-size:11px;}
 .inv-table th{padding:6px 10px;text-align:left;background:var(--surface2);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);border-bottom:1px solid var(--border2);}
 .inv-table td{padding:6px 10px;border-bottom:1px solid var(--border2);vertical-align:middle;}
@@ -174,13 +178,19 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
         <div class="fg"><label class="flbl">Status</label><select class="fsel" id="f-status"><option value="Stocked">Stocked</option><option value="Low">Low</option><option value="Out">Out</option></select></div>
       </div>
       <div class="fg" id="f-color-group" style="display:none">
-        <label class="flbl">Color Tag <span style="font-size:10px;color:var(--text3);font-weight:400">(for Ink & Embroidery items)</span></label>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
-          <input type="color" id="f-color" value="#cccccc" style="width:40px;height:32px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;padding:2px;">
-          <span id="f-color-label" style="font-size:12px;color:var(--text2)">Click to pick a color</span>
-          <button type="button" onclick="document.getElementById('f-color').value='#cccccc';document.getElementById('f-color-label').textContent='No color';document.getElementById('f-color-preview').style.background='transparent'" 
-            style="font-size:10px;color:var(--text3);background:none;border:none;cursor:pointer;padding:0">✕ Clear</button>
+        <label class="flbl">Color Tag <span style="font-size:10px;color:var(--text3);font-weight:400">(Ink &amp; Embroidery)</span></label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center">
+          <button type="button" onclick="selectModalColor('#EF4444','Red',this)" data-color="#EF4444" style="width:24px;height:24px;border-radius:50%;background:#EF4444;border:2px solid transparent;cursor:pointer;transition:all .15s;flex-shrink:0;" title="Red"></button><button type="button" onclick="selectModalColor('#F97316','Orange',this)" data-color="#F97316" style="width:24px;height:24px;border-radius:50%;background:#F97316;border:2px solid transparent;cursor:pointer;transition:all .15s;flex-shrink:0;" title="Orange"></button><button type="button" onclick="selectModalColor('#EAB308','Yellow',this)" data-color="#EAB308" style="width:24px;height:24px;border-radius:50%;background:#EAB308;border:2px solid transparent;cursor:pointer;transition:all .15s;flex-shrink:0;" title="Yellow"></button><button type="button" onclick="selectModalColor('#22C55E','Green',this)" data-color="#22C55E" style="width:24px;height:24px;border-radius:50%;background:#22C55E;border:2px solid transparent;cursor:pointer;transition:all .15s;flex-shrink:0;" title="Green"></button><button type="button" onclick="selectModalColor('#3B82F6','Blue',this)" data-color="#3B82F6" style="width:24px;height:24px;border-radius:50%;background:#3B82F6;border:2px solid transparent;cursor:pointer;transition:all .15s;flex-shrink:0;" title="Blue"></button><button type="button" onclick="selectModalColor('#A855F7','Purple',this)" data-color="#A855F7" style="width:24px;height:24px;border-radius:50%;background:#A855F7;border:2px solid transparent;cursor:pointer;transition:all .15s;flex-shrink:0;" title="Purple"></button><button type="button" onclick="selectModalColor('#EC4899','Pink',this)" data-color="#EC4899" style="width:24px;height:24px;border-radius:50%;background:#EC4899;border:2px solid transparent;cursor:pointer;transition:all .15s;flex-shrink:0;" title="Pink"></button><button type="button" onclick="selectModalColor('#9CA3AF','Grey',this)" data-color="#9CA3AF" style="width:24px;height:24px;border-radius:50%;background:#9CA3AF;border:2px solid transparent;cursor:pointer;transition:all .15s;flex-shrink:0;" title="Grey"></button><button type="button" onclick="selectModalColor('#F9FAFB','White',this)" data-color="#F9FAFB" style="width:24px;height:24px;border-radius:50%;background:#F9FAFB;border:2px solid transparent;cursor:pointer;transition:all .15s;flex-shrink:0;" title="White"></button><button type="button" onclick="selectModalColor('#1F2937','Black',this)" data-color="#1F2937" style="width:24px;height:24px;border-radius:50%;background:#1F2937;border:2px solid transparent;cursor:pointer;transition:all .15s;flex-shrink:0;" title="Black"></button><button type="button" onclick="selectModalColor('#D1D5DB','Other',this)" data-color="#D1D5DB" style="width:24px;height:24px;border-radius:50%;background:#D1D5DB;border:2px solid transparent;cursor:pointer;transition:all .15s;flex-shrink:0;" title="Other"></button>
+          <button type="button" onclick="selectModalColor('','',this)" data-color=""
+            style="padding:2px 8px;border-radius:50px;border:1.5px solid var(--border);background:transparent;font-size:10px;color:var(--text2);cursor:pointer;font-family:'Inter',sans-serif">
+            ✕ None
+          </button>
         </div>
+        <div id="f-color-selected" style="font-size:11px;color:var(--text2);margin-top:5px;display:flex;align-items:center;gap:5px">
+          <span id="f-color-swatch" style="width:10px;height:10px;border-radius:50%;background:transparent;border:1px solid var(--border);display:inline-block"></span>
+          <span id="f-color-label">No color selected</span>
+        </div>
+        <input type="hidden" id="f-color" value="">
       </div>
       <div class="fg-row">
         <div class="fg"><label class="flbl">Supplier</label><input type="text" class="finp" id="f-supplier" placeholder="e.g. Ryonet"></div>
@@ -468,14 +478,10 @@ function renderRight() {
       return `<tr id="row-${item.id}">
         <td>
           <div style="display:flex;align-items:center;gap:6px">
-            <div id="swatch-${item.id}" onclick="openColorPicker('${item.id}')" title="Click to set color"
-              style="width:14px;height:14px;border-radius:50%;flex-shrink:0;cursor:pointer;border:1.5px solid var(--border);background:${colorHex||'transparent'};transition:transform .12s"
+            <div id="swatch-${item.id}" onclick="openColorMenu('${item.id}',this)" title="Click to set color"
+              style="width:14px;height:14px;border-radius:50%;flex-shrink:0;cursor:pointer;border:1.5px solid ${colorHex?'transparent':'var(--border)'};background:${colorHex||'transparent'};transition:transform .12s;position:relative"
               onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
             </div>
-            <input type="color" id="cpicker-${item.id}" value="${colorHex||'#cccccc'}"
-              style="position:absolute;opacity:0;pointer-events:none;width:0;height:0"
-              oninput="updateSwatchPreview('${item.id}',this.value)"
-              onchange="saveColor('${item.id}',this.value)">
           </div>
           <div class="editable" onclick="startEdit('${item.id}','name',this,'${item.name.replace(/'/g,"&#39;")}')">
             ${item.name}
@@ -719,31 +725,70 @@ document.addEventListener('keydown',e=>{
 
 loadAll();
 
-// Update color label when color picker changes in modal
-document.addEventListener('DOMContentLoaded', function() {
-  const fColor = document.getElementById('f-color');
-  const fLabel = document.getElementById('f-color-label');
-  if(fColor && fLabel) {
-    fColor.addEventListener('input', function() {
-      fLabel.textContent = this.value.toUpperCase();
-    });
-  }
-});
+// ---- COLOR PRESETS ----
+const COLOR_PRESETS = [
+  {name:'Red',hex:'#EF4444'},{name:'Orange',hex:'#F97316'},{name:'Yellow',hex:'#EAB308'},
+  {name:'Green',hex:'#22C55E'},{name:'Blue',hex:'#3B82F6'},{name:'Purple',hex:'#A855F7'},
+  {name:'Pink',hex:'#EC4899'},{name:'Grey',hex:'#9CA3AF'},{name:'White',hex:'#F9FAFB'},
+  {name:'Black',hex:'#1F2937'},{name:'Other',hex:'#D1D5DB'}
+];
 
-function openColorPicker(itemId) {
-  const picker = document.getElementById('cpicker-'+itemId);
-  if(picker) picker.click();
+let activeColorMenu = null;
+
+function openColorMenu(itemId, swatchEl) {
+  // Close existing menu
+  if(activeColorMenu) { activeColorMenu.remove(); activeColorMenu=null; }
+
+  const menu = document.createElement('div');
+  menu.className = 'color-menu';
+  menu.id = 'color-menu-'+itemId;
+
+  const item = invItems.find(i=>i.id===itemId);
+  const currentColor = colVal(item, COL.color);
+
+  // None button
+  const noneBtn = document.createElement('button');
+  noneBtn.style.cssText='width:22px;height:22px;border-radius:50%;border:1.5px dashed var(--border);background:transparent;cursor:pointer;font-size:9px;color:var(--text3);display:flex;align-items:center;justify-content:center;';
+  noneBtn.title='No color';
+  noneBtn.textContent='✕';
+  noneBtn.onclick=(e)=>{e.stopPropagation();saveColor(itemId,'');menu.remove();activeColorMenu=null;};
+  menu.appendChild(noneBtn);
+
+  COLOR_PRESETS.forEach(({name,hex})=>{
+    const btn = document.createElement('button');
+    btn.className='color-swatch-btn'+(currentColor===hex?' selected':'');
+    btn.style.cssText=`background:${hex};border:2px solid ${currentColor===hex?'var(--navy)':'transparent'};`;
+    btn.title=name;
+    btn.onclick=(e)=>{e.stopPropagation();saveColor(itemId,hex,name);menu.remove();activeColorMenu=null;};
+    menu.appendChild(btn);
+  });
+
+  // Position near the swatch
+  const rect = swatchEl.getBoundingClientRect();
+  menu.style.top=(rect.bottom+6)+'px';
+  menu.style.left=Math.min(rect.left, window.innerWidth-180)+'px';
+  document.body.appendChild(menu);
+  activeColorMenu = menu;
+
+  // Close on outside click
+  setTimeout(()=>document.addEventListener('click',()=>{if(activeColorMenu){activeColorMenu.remove();activeColorMenu=null;}},{once:true}),10);
 }
 
-function updateSwatchPreview(itemId, hex) {
-  const swatch = document.getElementById('swatch-'+itemId);
-  if(swatch) swatch.style.background = hex;
+function selectModalColor(hex, name, btn) {
+  document.getElementById('f-color').value = hex;
+  const swatch = document.getElementById('f-color-swatch');
+  const label = document.getElementById('f-color-label');
+  if(swatch) swatch.style.background = hex||'transparent';
+  if(label) label.textContent = name||'No color selected';
+  // Update button states
+  document.querySelectorAll('#f-color-group button[data-color]').forEach(b=>{
+    b.style.border = b.dataset.color===hex ? '2px solid var(--navy)' : '2px solid transparent';
+  });
 }
 
-async function saveColor(itemId, hex) {
+async function saveColor(itemId, hex, name) {
   try {
-    // Monday color_picker expects a hex string value
-    const colValStr = JSON.stringify(JSON.stringify({color: hex}));
+    const colValStr = JSON.stringify(JSON.stringify(hex ? {color: hex} : {}));
     await mq(`mutation{change_column_value(board_id:${INV_BOARD},item_id:${itemId},column_id:"${COL.color}",value:${colValStr}){id}}`);
     // Update local cache
     const item = invItems.find(i=>i.id===itemId);
@@ -752,7 +797,13 @@ async function saveColor(itemId, hex) {
       if(cv) cv.text = hex;
       else item.column_values.push({id:COL.color, text:hex, value:JSON.stringify({color:hex})});
     }
-    showToast('✓ Color saved');
+    // Update swatch in DOM
+    const swatch = document.getElementById('swatch-'+itemId);
+    if(swatch) {
+      swatch.style.background = hex||'transparent';
+      swatch.style.borderColor = hex?'transparent':'var(--border)';
+    }
+    showToast('✓ '+(name||'Color')+' saved');
   } catch(e) {
     showToast('Color save failed: '+e.message);
   }
