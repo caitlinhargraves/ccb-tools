@@ -760,14 +760,95 @@ function openEditModal(orderId){
   const addAnotherBtn=document.querySelector('#modalSuccess .btn-ghost');
   if(addAnotherBtn)addAnotherBtn.style.display='none';
 
-  // Hide products section in edit mode (editing products is complex -- direct to Monday)
+  // Load products section in edit mode with full editing capability
   const productsSection=document.querySelector('#modalForm .form-section:last-of-type');
   if(productsSection){
-    productsSection.innerHTML=`<div class="form-section-title">Products</div>
-    <div style="padding:12px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--muted);border:1px solid var(--border2)">
-      <strong style="color:var(--navy)">${o.subitems.length} product${o.subitems.length!==1?'s':''}</strong> on this order.
-      To add or remove products, <a href="https://ccbimprint.monday.com" target="_blank" style="color:var(--cyan)">open in Monday</a>.
-    </div>`;
+    productsSection.innerHTML=`<div class="form-section-title">Products</div><div id="productsList"></div>
+    <button type="button" class="btn btn-ghost" style="margin-top:8px;width:100%;justify-content:center;gap:6px;font-size:13px" onclick="addProduct()">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.5 1v9M1 5.5h9"/></svg>
+      Add Another Product
+    </button>`;
+    // Populate existing subitems as editable product blocks
+    const decoStyleMap={1:'dropdown_mm2y4w39',2:'dropdown_mm2yaxxz',3:'dropdown_mm2ygyew'};
+    const decoPlaceMap={1:'text_mm2y6g62',2:'text_mm2yge79',3:'text_mm2y1j6j'};
+    const decoDescMap={1:'text_mm2y3mb9',2:'text_mm2ymf5k',3:'text_mm2yjq0z'};
+    const decoScreenMap={1:'numeric_mm2yn2nb',2:'numeric_mm2ynqby',3:'numeric_mm2y55qh'};
+    const decoColorMap={1:'text_mm2y2y6a',2:'text_mm2y5vn6',3:'text_mm2y8bg8'};
+    (o.subitems||[]).forEach(sub=>{
+      productCount++;
+      const pid=productCount;
+      const div=document.createElement('div');
+      div.className='product-block';
+      div.id=`product-${pid}`;
+      div.dataset.subitemId=sub.id; // track existing subitem ID
+      div.innerHTML=`
+        <div class="product-block-header">
+          <div class="product-block-num">${sCol(sub,'text_mm22fv7y')||sub.name||'Product'}</div>
+          <button type="button" class="remove-product" onclick="confirmRemoveProduct(${pid})">Remove</button>
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label class="form-label">Product Name <span class="req">*</span></label>
+            <input type="text" class="form-input" id="p${pid}-name" value="${(sub.name||'').replace(/"/g,'&quot;')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Style # / SKU</label>
+            <input type="text" class="form-input" id="p${pid}-style" value="${sCol(sub,'text_mm22fv7y').replace(/"/g,'&quot;')}">
+          </div>
+        </div>
+        <div class="form-row cols-3">
+          <div class="form-group">
+            <label class="form-label">Color</label>
+            <input type="text" class="form-input" id="p${pid}-color" value="${sCol(sub,'text_mm2276wz').replace(/"/g,'&quot;')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sizes & Quantities</label>
+            <input type="text" class="form-input" id="p${pid}-size" value="${sCol(sub,'text_mm22yw8s').replace(/"/g,'&quot;')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Supplier</label>
+            <input type="text" class="form-input" id="p${pid}-supplier" value="${sCol(sub,'text_mm22qdag').replace(/"/g,'&quot;')}">
+          </div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label class="form-label">Price / Item ($)</label>
+            <input type="number" step="0.01" class="form-input" id="p${pid}-price" value="${sCol(sub,'numeric_mm2299qw')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Our Cost / Item ($)</label>
+            <input type="number" step="0.01" class="form-input" id="p${pid}-cost" value="${sCol(sub,'numeric_mm266zz9')}">
+          </div>
+        </div>
+        <div class="deco-spots-list" id="p${pid}-decos"></div>
+        <button type="button" class="add-deco-btn" onclick="addDeco(${pid})">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.5 1v9M1 5.5h9"/></svg>
+          Add Decoration
+        </button>
+      `;
+      document.getElementById('productsList').appendChild(div);
+      // Pre-populate existing deco spots
+      [1,2,3].forEach(dId=>{
+        const styleVal=sColV(sub,decoStyleMap[dId]);
+        const styleId=styleVal?.ids?.[0]||styleVal?.id||null;
+        const placement=sCol(sub,decoPlaceMap[dId]);
+        const desc=sCol(sub,decoDescMap[dId]);
+        const screens=sCol(sub,decoScreenMap[dId]);
+        const colors=sCol(sub,decoColorMap[dId]);
+        if(!styleId&&!placement&&!desc)return; // skip empty deco spots
+        addDeco(pid);
+        const dEl=document.getElementById(`p${pid}-d${dId}-style`);
+        if(dEl&&styleId)dEl.value=String(styleId);
+        const pEl=document.getElementById(`p${pid}-d${dId}-placement`);
+        if(pEl)pEl.value=placement;
+        const descEl=document.getElementById(`p${pid}-d${dId}-desc`);
+        if(descEl)descEl.value=desc;
+        const scEl=document.getElementById(`p${pid}-d${dId}-screens`);
+        if(scEl)scEl.value=screens;
+        const cEl=document.getElementById(`p${pid}-d${dId}-colors`);
+        if(cEl)cEl.value=colors;
+      });
+    });
   }
 
   document.getElementById('modalOverlay').classList.add('open');
@@ -787,6 +868,7 @@ function handleOverlayClick(e){
 function resetModal(){
   editingOrderId=null;
   productCount=0;
+  pendingSubitemDeletes=[];
   document.getElementById('productsList').innerHTML='';
   document.getElementById('modalForm').style.display='';
   document.getElementById('modalFooter').style.display='';
@@ -866,6 +948,18 @@ function addProduct(){
 function removeProduct(id){
   const el=document.getElementById(`product-${id}`);
   if(el)el.remove();
+}
+
+// Track subitem IDs that need to be deleted on save
+let pendingSubitemDeletes=[];
+
+function confirmRemoveProduct(id){
+  const el=document.getElementById(`product-${id}`);
+  const subitemId=el?.dataset?.subitemId;
+  const name=el?.querySelector('.product-block-num')?.textContent||'this product';
+  if(!confirm(`Remove "${name}" from this order? This will delete it from Monday when you save.`))return;
+  if(subitemId)pendingSubitemDeletes.push(subitemId);
+  el.remove();
 }
 
 let decoCounters={};
@@ -1024,6 +1118,82 @@ async function saveOrderEdits(){
       await Promise.all(subitemIds.map(sid=>
         mondayMutation(`mutation{change_multiple_column_values(board_id:${SUBITEMS_BOARD},item_id:${sid},column_values:${subColVals}){id}}`)
       ));
+    }
+
+    // Save product edits -- update existing subitems, create new ones, delete removed ones
+    const decoStyleCols={1:'dropdown_mm2y4w39',2:'dropdown_mm2yaxxz',3:'dropdown_mm2ygyew'};
+    const decoPlaceCols={1:'text_mm2y6g62',2:'text_mm2yge79',3:'text_mm2y1j6j'};
+    const decoDescCols={1:'text_mm2y3mb9',2:'text_mm2ymf5k',3:'text_mm2yjq0z'};
+    const decoScreenCols={1:'numeric_mm2yn2nb',2:'numeric_mm2ynqby',3:'numeric_mm2y55qh'};
+    const decoColorCols={1:'text_mm2y2y6a',2:'text_mm2y5vn6',3:'text_mm2y8bg8'};
+
+    // Delete removed subitems
+    if(pendingSubitemDeletes.length){
+      document.getElementById('modalStatus').textContent='Removing products...';
+      await Promise.all(pendingSubitemDeletes.map(sid=>
+        mondayMutation(`mutation{delete_item(item_id:${sid}){id}}`)
+      ));
+      pendingSubitemDeletes=[];
+    }
+
+    // Update or create subitems from current product blocks
+    const productBlocks=document.querySelectorAll('.product-block');
+    let pIdx=0;
+    for(const pb of productBlocks){
+      pIdx++;
+      const pid=pb.id.replace('product-','');
+      const existingSubitemId=pb.dataset?.subitemId||null;
+      const pName=(document.getElementById(`p${pid}-name`)?.value||'').trim().replace(/"/g,'\\"');
+      const pStyle=(document.getElementById(`p${pid}-style`)?.value||'').trim();
+      const pColor=(document.getElementById(`p${pid}-color`)?.value||'').trim();
+      const pSize=(document.getElementById(`p${pid}-size`)?.value||'').trim();
+      const pSupplier=(document.getElementById(`p${pid}-supplier`)?.value||'').trim();
+      const pPrice=document.getElementById(`p${pid}-price`)?.value;
+      const pCost=document.getElementById(`p${pid}-cost`)?.value;
+
+      if(!pName)continue;
+
+      let subCols={};
+      if(pStyle)subCols['text_mm22fv7y']=pStyle;
+      if(pColor)subCols['text_mm2276wz']=pColor;
+      if(pSize)subCols['text_mm22yw8s']=pSize;
+      if(pSupplier)subCols['text_mm22qdag']=pSupplier;
+      if(pPrice)subCols['numeric_mm2299qw']=parseFloat(pPrice);
+      if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
+      if(status==='In House'||status==='Pre-Decorated')subCols['color_mm2dd6d5']={label:status};
+
+      for(let dId=1;dId<=3;dId++){
+        const styleEl=document.getElementById(`p${pid}-d${dId}-style`);
+        if(!styleEl)continue;
+        const styleVal=styleEl.value;
+        const placement=(document.getElementById(`p${pid}-d${dId}-placement`)?.value||'').trim();
+        const desc=(document.getElementById(`p${pid}-d${dId}-desc`)?.value||'').trim();
+        const screens=document.getElementById(`p${pid}-d${dId}-screens`)?.value;
+        const colors=(document.getElementById(`p${pid}-d${dId}-colors`)?.value||'').trim();
+        const prodNotes=(document.getElementById(`p${pid}-d${dId}-prodnotes`)?.value||'').trim();
+        if(styleVal)subCols[decoStyleCols[dId]]={ids:[parseInt(styleVal)]};
+        if(placement)subCols[decoPlaceCols[dId]]=placement;
+        if(desc)subCols[decoDescCols[dId]]=desc;
+        if(screens)subCols[decoScreenCols[dId]]=parseFloat(screens);
+        if(colors)subCols[decoColorCols[dId]]=colors;
+        if(prodNotes)subCols['long_text_mm27e9c4']={text:prodNotes};
+      }
+
+      const subColsStr=JSON.stringify(JSON.stringify(subCols));
+      if(existingSubitemId){
+        // Update existing subitem
+        document.getElementById('modalStatus').textContent=`Saving product ${pIdx}...`;
+        if(pName){
+          await mondayMutation(`mutation{change_item_name(board_id:${SUBITEMS_BOARD},item_id:${existingSubitemId},value:"${pName}"){id}}`);
+        }
+        if(Object.keys(subCols).length){
+          await mondayMutation(`mutation{change_multiple_column_values(board_id:${SUBITEMS_BOARD},item_id:${existingSubitemId},column_values:${subColsStr}){id}}`);
+        }
+      } else {
+        // Create new subitem
+        document.getElementById('modalStatus').textContent=`Adding product ${pIdx}...`;
+        await mondayMutation(`mutation{create_subitem(parent_item_id:${editingOrderId},item_name:"${pName}",column_values:${subColsStr}){id}}`);
+      }
     }
 
     // Update in-memory cache so table reflects changes immediately
