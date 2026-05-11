@@ -156,7 +156,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
     <div class="modal-body">
       <div class="fg"><label class="flbl">Item Name *</label><input type="text" class="finp" id="f-name" placeholder="e.g. White Plastisol Ink"></div>
       <div class="fg"><label class="flbl">Category *</label>
-        <select class="fsel" id="f-cat">
+        <select class="fsel" id="f-cat" onchange="const cg=document.getElementById('f-color-group');if(cg)cg.style.display=['group_title','group_mm34egxk'].includes(this.value)?'flex':'none'">
           <option value="topics">Production Supplies</option>
           <option value="group_title">Ink</option>
           <option value="group_mm34egxk">Embroidery</option>
@@ -172,6 +172,15 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
       <div class="fg-row">
         <div class="fg"><label class="flbl">Unit</label><select class="fsel" id="f-unit"><option>each</option><option>box</option><option>pack</option><option>roll</option><option>case</option><option>bag</option><option>lb</option><option>sheet</option><option>quart</option><option>gallon</option></select></div>
         <div class="fg"><label class="flbl">Status</label><select class="fsel" id="f-status"><option value="Stocked">Stocked</option><option value="Low">Low</option><option value="Out">Out</option></select></div>
+      </div>
+      <div class="fg" id="f-color-group" style="display:none">
+        <label class="flbl">Color Tag <span style="font-size:10px;color:var(--text3);font-weight:400">(for Ink & Embroidery items)</span></label>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+          <input type="color" id="f-color" value="#cccccc" style="width:40px;height:32px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;padding:2px;">
+          <span id="f-color-label" style="font-size:12px;color:var(--text2)">Click to pick a color</span>
+          <button type="button" onclick="document.getElementById('f-color').value='#cccccc';document.getElementById('f-color-label').textContent='No color';document.getElementById('f-color-preview').style.background='transparent'" 
+            style="font-size:10px;color:var(--text3);background:none;border:none;cursor:pointer;padding:0">✕ Clear</button>
+        </div>
       </div>
       <div class="fg-row">
         <div class="fg"><label class="flbl">Supplier</label><input type="text" class="finp" id="f-supplier" placeholder="e.g. Ryonet"></div>
@@ -628,7 +637,12 @@ function openAddModal(groupId) {
   document.getElementById('item-modal-title').textContent = 'Add Item';
   ['f-name','f-qty','f-reorder','f-supplier','f-cost','f-location','f-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('f-restock').value='';
+  document.getElementById('f-color').value = '#cccccc';
   if(groupId) document.getElementById('f-cat').value = groupId;
+  // Show color picker for Ink and Embroidery groups
+  const colorGroups = ['group_title', 'group_mm34egxk']; // Ink, Embroidery
+  const colorGroup = document.getElementById('f-color-group');
+  if(colorGroup) colorGroup.style.display = colorGroups.includes(groupId) ? 'flex' : 'none';
   document.getElementById('item-modal').classList.add('open');
   document.body.style.overflow='hidden';
   setTimeout(()=>document.getElementById('f-name').focus(),250);
@@ -667,6 +681,9 @@ async function submitItem() {
     if(restock) colValues[COL.restock] = {date: restock};
     if(notes) colValues[COL.notes] = {text: notes};
     if(status) colValues[COL.status] = {label: status};
+    const colorVal = document.getElementById('f-color')?.value;
+    const colorGroup = document.getElementById('f-color-group');
+    if(colorVal && colorGroup?.style.display !== 'none' && colorVal !== '#cccccc') colValues[COL.color] = colorVal;
 
     const colValStr = JSON.stringify(colValues);
     const result = await mq(`mutation{create_item(board_id:${INV_BOARD},group_id:"${groupId}",item_name:"${name.replace(/"/g,'\\"')}",column_values:${JSON.stringify(colValStr)}){id name group{id}column_values(ids:["${COL.qty}","${COL.reorder}","${COL.unit}","${COL.supplier}","${COL.location}","${COL.cost}","${COL.restock}","${COL.notes}","${COL.status}","${COL.color}","${COL.updated}"]){id text value}}}}`);
@@ -701,6 +718,17 @@ document.addEventListener('keydown',e=>{
 (function(){let cd=300;setInterval(()=>{cd--;if(cd<=0){cd=300;loadAll();}},1000);})();
 
 loadAll();
+
+// Update color label when color picker changes in modal
+document.addEventListener('DOMContentLoaded', function() {
+  const fColor = document.getElementById('f-color');
+  const fLabel = document.getElementById('f-color-label');
+  if(fColor && fLabel) {
+    fColor.addEventListener('input', function() {
+      fLabel.textContent = this.value.toUpperCase();
+    });
+  }
+});
 
 function openColorPicker(itemId) {
   const picker = document.getElementById('cpicker-'+itemId);
