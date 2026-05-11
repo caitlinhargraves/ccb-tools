@@ -497,6 +497,7 @@ function renderRight() {
     html += `<div class="section-card">
       <div class="section-hdr ${coll?'collapsed':''}" onclick="toggleSec('${sid}')">
         <span class="section-icon">${icons[catName]||'📦'}</span>
+        ${colorDots[catName]||''}
         <span class="section-title">${catName}</span>
         <span class="section-count">${catItems.length}</span>
         ${lowCount?`<span class="badge badge-low" style="margin-left:4px">⚠ ${lowCount} low</span>`:''}
