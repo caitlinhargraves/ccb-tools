@@ -227,7 +227,7 @@ const COL = {
   restock:  'date_mm34a4xt',
   notes:    'long_text_mm34psc8',
   status:   'color_mm34wxqg',
-  color:    'color_picker_mm38vg0d',
+  color:    'color_mm38s13w',
   updated:  'pulse_updated_mm346r7s',
 };
 
@@ -457,8 +457,8 @@ function renderRight() {
     let sortedItems = [...filtered];
     if(colorSortEnabled[catName]) {
       sortedItems.sort((a, b) => {
-        const ca = colVal(a,COL.color)||'#zzzzzz'; // untagged sorts last
-        const cb = colVal(b,COL.color)||'#zzzzzz';
+        const ca = COLOR_HEX_MAP[colVal(a,COL.color)]||'#zzzzzz';
+        const cb = COLOR_HEX_MAP[colVal(b,COL.color)]||'#zzzzzz';
         // Convert hex to HSL hue for rainbow sort
         const hueA = hexToHue(ca);
         const hueB = hexToHue(cb);
@@ -474,7 +474,8 @@ function renderRight() {
       const supplier = colVal(item,COL.supplier);
       const updated = colVal(item,COL.updated);
       const statusTxt = colVal(item,COL.status);
-      const colorHex = colVal(item,COL.color)||'';
+      const colorLabel = colVal(item,COL.color)||'';
+      const colorHex = COLOR_HEX_MAP[colorLabel]||'';
       return `<tr id="row-${item.id}">
         <td>
           <div style="display:flex;align-items:center;gap:6px">
@@ -689,8 +690,8 @@ async function submitItem() {
     if(status) colValues[COL.status] = {label: status};
     const colorVal = document.getElementById('f-color')?.value;
     const colorGroup = document.getElementById('f-color-group');
-    const colorToSet = (colorVal && colorGroup?.style.display !== 'none' && colorVal !== '#cccccc') ? colorVal : null;
-    // Don't include color_picker in create_item -- Monday API doesn't support it
+    const colorToSet = (colorVal && colorGroup?.style.display !== 'none') ? colorVal : null;
+    // Color is saved as a status label after creation
 
     const colValStr = JSON.stringify(colValues);
     const result = await mq(`mutation{create_item(board_id:${INV_BOARD},group_id:"${groupId}",item_name:"${name.replace(/"/g,'\\"')}",column_values:${JSON.stringify(colValStr)}){id name group{id}}}`);
@@ -698,7 +699,7 @@ async function submitItem() {
     // Set color picker in a separate call (API limitation)
     if(colorToSet && result.create_item?.id) {
       try {
-        const colorColVal = JSON.stringify(JSON.stringify({color: colorToSet}));
+        const colorColVal = JSON.stringify(JSON.stringify({label: colorToSet}));
         await mq(`mutation{change_column_value(board_id:${INV_BOARD},item_id:${result.create_item.id},column_id:"${COL.color}",value:${colorColVal}){id}}`);
         // reload will pick up color from Monday
       } catch(colorErr) { console.warn('Color save failed:', colorErr.message); }
@@ -736,6 +737,12 @@ document.addEventListener('keydown',e=>{
 loadAll();
 
 // ---- COLOR PRESETS ----
+
+const COLOR_HEX_MAP = {
+  'Red':'#EF4444','Orange':'#F97316','Yellow':'#EAB308','Green':'#22C55E',
+  'Blue':'#3B82F6','Purple':'#A855F7','Pink':'#EC4899','Grey':'#9CA3AF',
+  'White':'#F9FAFB','Black':'#1F2937','Other':'#D1D5DB'
+};
 const COLOR_PRESETS = [
   {name:'Red',hex:'#EF4444'},{name:'Orange',hex:'#F97316'},{name:'Yellow',hex:'#EAB308'},
   {name:'Green',hex:'#22C55E'},{name:'Blue',hex:'#3B82F6'},{name:'Purple',hex:'#A855F7'},
@@ -769,7 +776,7 @@ function openColorMenu(itemId, swatchEl) {
     btn.className='color-swatch-btn'+(currentColor===hex?' selected':'');
     btn.style.cssText=`background:${hex};border:2px solid ${currentColor===hex?'var(--navy)':'transparent'};`;
     btn.title=name;
-    btn.onclick=(e)=>{e.stopPropagation();saveColor(itemId,hex,name);menu.remove();activeColorMenu=null;};
+    btn.onclick=(e)=>{e.stopPropagation();saveColor(itemId,name,name);menu.remove();activeColorMenu=null;};
     menu.appendChild(btn);
   });
 
@@ -785,7 +792,7 @@ function openColorMenu(itemId, swatchEl) {
 }
 
 function selectModalColor(hex, name, btn) {
-  document.getElementById('f-color').value = hex;
+  document.getElementById('f-color').value = name;
   const swatch = document.getElementById('f-color-swatch');
   const label = document.getElementById('f-color-label');
   if(swatch) swatch.style.background = hex||'transparent';
@@ -810,8 +817,9 @@ async function saveColor(itemId, hex, name) {
     // Update swatch in DOM
     const swatch = document.getElementById('swatch-'+itemId);
     if(swatch) {
-      swatch.style.background = hex||'transparent';
-      swatch.style.borderColor = hex?'transparent':'var(--border)';
+      const swatchHex = COLOR_HEX_MAP[hex]||hex||'transparent';
+      swatch.style.background = swatchHex;
+      swatch.style.borderColor = swatchHex!=='transparent'?'transparent':'var(--border)';
     }
     showToast('✓ '+(name||'Color')+' saved');
   } catch(e) {
