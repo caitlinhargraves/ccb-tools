@@ -689,7 +689,7 @@ async function submitItem() {
     if(status) colValues[COL.status] = {label: status};
     const colorVal = document.getElementById('f-color')?.value;
     const colorGroup = document.getElementById('f-color-group');
-    if(colorVal && colorGroup?.style.display !== 'none' && colorVal !== '#cccccc') colValues[COL.color] = colorVal;
+    if(colorVal && colorGroup?.style.display !== 'none' && colorVal !== '#cccccc') colValues[COL.color] = {color: colorVal};
 
     const colValStr = JSON.stringify(colValues);
     const result = await mq(`mutation{create_item(board_id:${INV_BOARD},group_id:"${groupId}",item_name:"${name.replace(/"/g,'\\"')}",column_values:${JSON.stringify(colValStr)}){id name group{id}column_values(ids:["${COL.qty}","${COL.reorder}","${COL.unit}","${COL.supplier}","${COL.location}","${COL.cost}","${COL.restock}","${COL.notes}","${COL.status}","${COL.color}","${COL.updated}"]){id text value}}}}`);
