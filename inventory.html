@@ -418,6 +418,10 @@ function renderCustomGiftBoxes() {
 function renderRight() {
   let html = '';
   const icons = {'Production Supplies':'⚙️','Ink':'🖨','Embroidery':'🧵','Office Supplies':'📎','Birthday Gifts':'🎂','Standard Gift Boxes':'🎁'};
+    const colorDots = {
+      'Ink': '<span style="width:9px;height:9px;border-radius:50%;background:#00AEEF;display:inline-block;flex-shrink:0;margin-left:2px;box-shadow:0 0 0 2px rgba(0,174,239,.2)"></span>',
+      'Embroidery': '<span style="width:9px;height:9px;border-radius:50%;background:#F5D53B;display:inline-block;flex-shrink:0;margin-left:2px;box-shadow:0 0 0 2px rgba(245,213,59,.25)"></span>'
+    };
 
   RIGHT_ORDER.forEach(catName => {
     const groupId = GROUPS[catName];
