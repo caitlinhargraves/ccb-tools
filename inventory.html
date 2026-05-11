@@ -522,6 +522,9 @@ function renderRight() {
         <span class="section-title">${catName}</span>
         <span class="section-count">${catItems.length}</span>
         ${lowCount?`<span class="badge badge-low" style="margin-left:4px">⚠ ${lowCount} low</span>`:''}
+        ${COLOR_SORT_CATS.includes(catName)?`<button onclick="event.stopPropagation();toggleColorSort('${catName}')"
+          style="margin-left:6px;padding:3px 10px;border-radius:50px;font-size:10px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;border:1.5px solid ${colorSortEnabled[catName]?'var(--cyan)':'var(--border)'};background:${colorSortEnabled[catName]?'#E0F5FD':'transparent'};color:${colorSortEnabled[catName]?'var(--cyan)':'var(--text2)'}">
+          🎨 Color sort</button>`:''}
         <span class="section-chevron">▾</span>
       </div>
       <div class="section-body ${coll?'hidden':''}">
