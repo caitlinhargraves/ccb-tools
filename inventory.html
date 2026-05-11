@@ -208,6 +208,7 @@ const COL = {
   restock:  'date_mm34a4xt',
   notes:    'long_text_mm34psc8',
   status:   'color_mm34wxqg',
+  color:    'color_picker_mm38vg0d',
   updated:  'pulse_updated_mm346r7s',
 };
 
@@ -278,7 +279,7 @@ async function loadAll() {
 async function loadInventory() {
   const q = `{boards(ids:[${INV_BOARD}]){items_page(limit:500){items{
     id name group{id}
-    column_values(ids:["${COL.qty}","${COL.reorder}","${COL.unit}","${COL.supplier}","${COL.location}","${COL.cost}","${COL.restock}","${COL.notes}","${COL.status}","${COL.updated}"]){id text value}
+    column_values(ids:["${COL.qty}","${COL.reorder}","${COL.unit}","${COL.supplier}","${COL.location}","${COL.cost}","${COL.restock}","${COL.notes}","${COL.status}","${COL.color}","${COL.updated}"]){id text value}
   }}}}`;
   const d = await mq(q);
   return d.boards[0].items_page.items || [];
@@ -443,8 +444,19 @@ function renderRight() {
       const supplier = colVal(item,COL.supplier);
       const updated = colVal(item,COL.updated);
       const statusTxt = colVal(item,COL.status);
+      const colorHex = colVal(item,COL.color)||'';
       return `<tr id="row-${item.id}">
         <td>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div id="swatch-${item.id}" onclick="openColorPicker('${item.id}')" title="Click to set color"
+              style="width:14px;height:14px;border-radius:50%;flex-shrink:0;cursor:pointer;border:1.5px solid var(--border);background:${colorHex||'transparent'};transition:transform .12s"
+              onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
+            </div>
+            <input type="color" id="cpicker-${item.id}" value="${colorHex||'#cccccc'}"
+              style="position:absolute;opacity:0;pointer-events:none;width:0;height:0"
+              oninput="updateSwatchPreview('${item.id}',this.value)"
+              onchange="saveColor('${item.id}',this.value)">
+          </div>
           <div class="editable" onclick="startEdit('${item.id}','name',this,'${item.name.replace(/'/g,"&#39;")}')">
             ${item.name}
           </div>
@@ -644,7 +656,7 @@ async function submitItem() {
     if(status) colValues[COL.status] = {label: status};
 
     const colValStr = JSON.stringify(colValues);
-    const result = await mq(`mutation{create_item(board_id:${INV_BOARD},group_id:"${groupId}",item_name:"${name.replace(/"/g,'\\"')}",column_values:${JSON.stringify(colValStr)}){id name group{id}column_values(ids:["${COL.qty}","${COL.reorder}","${COL.unit}","${COL.supplier}","${COL.location}","${COL.cost}","${COL.restock}","${COL.notes}","${COL.status}","${COL.updated}"]){id text value}}}}`);
+    const result = await mq(`mutation{create_item(board_id:${INV_BOARD},group_id:"${groupId}",item_name:"${name.replace(/"/g,'\\"')}",column_values:${JSON.stringify(colValStr)}){id name group{id}column_values(ids:["${COL.qty}","${COL.reorder}","${COL.unit}","${COL.supplier}","${COL.location}","${COL.cost}","${COL.restock}","${COL.notes}","${COL.status}","${COL.color}","${COL.updated}"]){id text value}}}}`);
 
     invItems.push(result.create_item);
     closeItemModal();
@@ -676,6 +688,35 @@ document.addEventListener('keydown',e=>{
 (function(){let cd=300;setInterval(()=>{cd--;if(cd<=0){cd=300;loadAll();}},1000);})();
 
 loadAll();
+
+function openColorPicker(itemId) {
+  const picker = document.getElementById('cpicker-'+itemId);
+  if(picker) picker.click();
+}
+
+function updateSwatchPreview(itemId, hex) {
+  const swatch = document.getElementById('swatch-'+itemId);
+  if(swatch) swatch.style.background = hex;
+}
+
+async function saveColor(itemId, hex) {
+  try {
+    // Monday color_picker expects a hex string value
+    const colValStr = JSON.stringify(JSON.stringify({color: hex}));
+    await mq(`mutation{change_column_value(board_id:${INV_BOARD},item_id:${itemId},column_id:"${COL.color}",value:${colValStr}){id}}`);
+    // Update local cache
+    const item = invItems.find(i=>i.id===itemId);
+    if(item) {
+      const cv = item.column_values.find(c=>c.id===COL.color);
+      if(cv) cv.text = hex;
+      else item.column_values.push({id:COL.color, text:hex, value:JSON.stringify({color:hex})});
+    }
+    showToast('✓ Color saved');
+  } catch(e) {
+    showToast('Color save failed: '+e.message);
+  }
+}
+
 </script>
 </body>
 </html>
