@@ -693,22 +693,21 @@ async function submitItem() {
     // Don't include color_picker in create_item -- Monday API doesn't support it
 
     const colValStr = JSON.stringify(colValues);
-    const result = await mq(`mutation{create_item(board_id:${INV_BOARD},group_id:"${groupId}",item_name:"${name.replace(/"/g,'\\"')}",column_values:${JSON.stringify(colValStr)}){id name group{id}column_values(ids:["${COL.qty}","${COL.reorder}","${COL.unit}","${COL.supplier}","${COL.location}","${COL.cost}","${COL.restock}","${COL.notes}","${COL.status}","${COL.updated}"]){id text value}}}}`);
+    const result = await mq(`mutation{create_item(board_id:${INV_BOARD},group_id:"${groupId}",item_name:"${name.replace(/"/g,'\\"')}",column_values:${JSON.stringify(colValStr)}){id name group{id}}}`);
 
     // Set color picker in a separate call (API limitation)
     if(colorToSet && result.create_item?.id) {
       try {
         const colorColVal = JSON.stringify(JSON.stringify({color: colorToSet}));
         await mq(`mutation{change_column_value(board_id:${INV_BOARD},item_id:${result.create_item.id},column_id:"${COL.color}",value:${colorColVal}){id}}`);
-        result.create_item.column_values = result.create_item.column_values || [];
-        result.create_item.column_values.push({id:COL.color, text:colorToSet, value:JSON.stringify({color:colorToSet})});
+        // reload will pick up color from Monday
       } catch(colorErr) { console.warn('Color save failed:', colorErr.message); }
     }
 
-    invItems.push(result.create_item);
+    // Reload fresh data from Monday so new item shows with all columns
     closeItemModal();
-    renderAll();
     showToast('✓ '+name+' added to Monday');
+    await loadInventory().then(items => { invItems = items; renderAll(); });
   } catch(e) {
     showToast('Failed: '+e.message);
     console.error(e);
