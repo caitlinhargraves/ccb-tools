@@ -1016,6 +1016,16 @@ async function saveOrderEdits(){
       await mondayMutation(`mutation{change_multiple_column_values(board_id:${ORDERS_BOARD},item_id:${editingOrderId},column_values:${cv}){id}}`);
     }
 
+    // If status changed to In House or Pre-Decorated, sync subitem Product Type
+    if((status==='In House'||status==='Pre-Decorated') && status!==o?.status){
+      document.getElementById('modalStatus').textContent='Updating product types...';
+      const subitemIds=(o?.subitems||[]).map(s=>s.id).filter(Boolean);
+      const subColVals=JSON.stringify(JSON.stringify({'color_mm2dd6d5':{label:status}}));
+      await Promise.all(subitemIds.map(sid=>
+        mondayMutation(`mutation{change_multiple_column_values(board_id:${SUBITEMS_BOARD},item_id:${sid},column_values:${subColVals}){id}}`)
+      ));
+    }
+
     // Update in-memory cache so table reflects changes immediately
     if(o){
       if(company)o.name=company;
@@ -1081,6 +1091,7 @@ async function submitOrder(){
     const ihd=v('f-ihd');
     const salesName=v('f-sales');
     const salesId=salesIdMap[salesName];
+    const createStatus=v('f-status');
     const imprintId=v('f-imprint');
     const email=v('f-email');
     const phone=v('f-phone');
@@ -1101,6 +1112,7 @@ async function submitOrder(){
     if(notes)colVals['long_text_mm225vbf']={text:notes};
     if(salesId)colVals['dropdown_mm22w5rr']={ids:[salesId]};
     if(imprintId)colVals['dropdown_mm276wtz']={ids:[parseInt(imprintId)]};
+    if(createStatus&&createStatus!=='New')colVals['color_mm27qyta']={label:createStatus};
 
     const colValsStr=JSON.stringify(JSON.stringify(colVals));
     const companyName=v('f-company').replace(/"/g,'\\"');
@@ -1146,6 +1158,7 @@ async function submitOrder(){
       if(pSupplier)subCols['text_mm22qdag']=pSupplier;
       if(pPrice)subCols['numeric_mm2299qw']=parseFloat(pPrice);
       if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
+      if(createStatus==='In House'||createStatus==='Pre-Decorated')subCols['color_mm2dd6d5']={label:createStatus};
 
       // Gather deco spots
       for(let dId=1;dId<=3;dId++){
