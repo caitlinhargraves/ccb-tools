@@ -685,7 +685,7 @@ async function submitItem() {
     if(cost) colValues[COL.cost] = parseFloat(cost);
     if(location) colValues[COL.location] = location;
     if(restock) colValues[COL.restock] = {date: restock};
-    if(notes) colValues[COL.notes] = {text: notes};
+    if(notes) colValues[COL.notes] = {text: notes.replace(/\\/g,'\\\\').replace(/"/g,'\\"')};
     if(status) colValues[COL.status] = {label: status};
     const colorVal = document.getElementById('f-color')?.value;
     const colorGroup = document.getElementById('f-color-group');
