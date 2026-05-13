@@ -309,6 +309,9 @@ function renderTickets(){
           <svg viewBox="0 0 13 13"><path d="M9 2l2 2-6 6H3V8l6-6z"/></svg>Edit
         </button>
         <button class="action-btn" onclick="cycleStatus('${t.id}')">Change Status</button>
+        <button class="action-btn" onclick="deleteTicket('${t.id}','${t.name.replace(/'/g,"\'")}','${t.mondayId||''}')" style="color:var(--red,#DC2626);border-color:var(--red-border,#FCA5A5)">
+          <svg viewBox="0 0 13 13"><path d="M2 3h9M5 3V2h3v1M4 3l.5 7.5h4L9 3"/></svg>Delete
+        </button>
       </div>
     </div>
   `).join('');
@@ -337,6 +340,20 @@ function openModal(id){
 function closeModal(){document.getElementById('modal-overlay').classList.remove('open');document.body.style.overflow='';editingId=null;}
 function handleOverlayClick(e){if(e.target===document.getElementById('modal-overlay'))closeModal();}
 function editTicket(id){openModal(id);}
+
+async function deleteTicket(id, name, mondayId) {
+  if(!confirm(`Delete "${name}"?\n\nThis will permanently remove it from Monday.`)) return;
+  try {
+    if(mondayId) {
+      await mq(`mutation{delete_item(item_id:${mondayId}){id}}`);
+    }
+    allTickets = allTickets.filter(t => t.id !== id);
+    renderTickets();
+    showToast(`✓ "${name}" deleted`);
+  } catch(e) {
+    showToast('Delete failed: ' + e.message);
+  }
+}
 
 async function createTicket(){
   const company=document.getElementById('f-company').value.trim();
