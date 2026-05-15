@@ -785,7 +785,9 @@ function openEditModal(orderId){
       const pName=sub.name||'';
       const pStyle=sCol(sub,'text_mm22fv7y');
       const pColor=sCol(sub,'text_mm2276wz');
-      const pSize=sCol(sub,'text_mm22yw8s');
+      const pSizeRaw=sCol(sub,'text_mm22yw8s');
+      const pQty=sCol(sub,'numeric_mm22crjt');
+      const pSize=pSizeRaw||pQty;
       const pSupplier=sCol(sub,'text_mm22qdag');
       const pPrice=sCol(sub,'numeric_mm2299qw');
       const pCost=sCol(sub,'numeric_mm266zz9');
@@ -1133,6 +1135,8 @@ async function saveOrderEdits(){
       if(pStyle)subCols['text_mm22fv7y']=pStyle;
       if(pColor)subCols['text_mm2276wz']=pColor;
       if(pSize)subCols['text_mm22yw8s']=pSize;
+      const pSizeNum=parseFloat(pSize);
+      if(pSize&&!isNaN(pSizeNum)&&!pSize.includes('/')&&!pSize.includes(','))subCols['numeric_mm22crjt']=pSizeNum;
       if(pSupplier)subCols['text_mm22qdag']=pSupplier;
       if(pPrice)subCols['numeric_mm2299qw']=parseFloat(pPrice);
       if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
