@@ -685,11 +685,11 @@ async function commitPoEntry(subId,orderId,explicitDate=null){
     // Update in-memory objects so fields persist without wiping inputs on reload
     const allBuckets=[allToBeOrdered,allOrdered,allThirdParty,allPromoCodes];
     for(const bucket of allBuckets){
-      const prod=bucket.find(p=>p.id===subId);
-      if(prod){if(supplier)prod.supplier=supplier;if(poNum)prod.poNum=poNum;if(tracking)prod.tracking=tracking;prod.poDate=today;prod.statusIndex=statusIndex;break;}
+      const prod=bucket.find(p=>String(p.id)===String(subId));
+      if(prod){if(supplier)prod.supplier=supplier;if(poNum)prod.poNum=poNum;if(tracking)prod.tracking=tracking;prod.poDate=explicitDate||today;prod.statusIndex=statusIndex;break;}
     }
     // Move from To Be Ordered to Ordered now that it has a PO date
-    const tboIdx=allToBeOrdered.findIndex(p=>p.id===subId);
+    const tboIdx=allToBeOrdered.findIndex(p=>String(p.id)===String(subId));
     if(tboIdx!==-1){
       const [moved]=allToBeOrdered.splice(tboIdx,1);
       allOrdered.push(moved);
