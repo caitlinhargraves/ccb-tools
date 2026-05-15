@@ -766,14 +766,104 @@ function openEditModal(orderId){
   const addAnotherBtn=document.querySelector('#modalSuccess .btn-ghost');
   if(addAnotherBtn)addAnotherBtn.style.display='none';
 
-  // Hide products section in edit mode (editing products is complex -- direct to Monday)
+  // Populate products section in edit mode with editable fields
   const productsSection=document.querySelector('#modalForm .form-section:last-of-type');
   if(productsSection){
-    productsSection.innerHTML=`<div class="form-section-title">Products</div>
-    <div style="padding:12px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--muted);border:1px solid var(--border2)">
-      <strong style="color:var(--navy)">${o.subitems.length} product${o.subitems.length!==1?'s':''}</strong> on this order.
-      To add or remove products, <a href="https://ccbimprint.monday.com" target="_blank" style="color:var(--cyan)">open in Monday</a>.
-    </div>`;
+    productsSection.innerHTML=`<div class="form-section-title">Products</div><div id="productsList"></div>
+    <button type="button" class="add-product-btn" onclick="addProduct()" style="margin-top:8px">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.5 1v9M1 5.5h9"/></svg>
+      Add Product
+    </button>`;
+    // Populate existing subitems as editable blocks
+    (o.subitems||[]).forEach(sub=>{
+      productCount++;
+      const id=productCount;
+      const div=document.createElement('div');
+      div.className='product-block';
+      div.id=`product-${id}`;
+      div.dataset.subitemId=sub.id;
+      const pName=sub.name||'';
+      const pStyle=sCol(sub,'text_mm22fv7y');
+      const pColor=sCol(sub,'text_mm2276wz');
+      const pSize=sCol(sub,'text_mm22yw8s');
+      const pSupplier=sCol(sub,'text_mm22qdag');
+      const pPrice=sCol(sub,'numeric_mm2299qw');
+      const pCost=sCol(sub,'numeric_mm266zz9');
+      div.innerHTML=`
+        <div class="product-block-header">
+          <div class="product-block-num">Product ${id}</div>
+          ${id>1?`<button type="button" class="remove-product" onclick="removeProduct(${id})">Remove</button>`:''}
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label class="form-label">Product Name <span class="req">*</span></label>
+            <input type="text" class="form-input" id="p${id}-name" placeholder="e.g. Peter Millar Golf Shirt" value="${pName.replace(/"/g,'&quot;')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Style # / SKU</label>
+            <input type="text" class="form-input" id="p${id}-style" placeholder="e.g. ME0EK01S" value="${pStyle.replace(/"/g,'&quot;')}">
+          </div>
+        </div>
+        <div class="form-row cols-3">
+          <div class="form-group">
+            <label class="form-label">Color</label>
+            <input type="text" class="form-input" id="p${id}-color" placeholder="Navy" value="${pColor.replace(/"/g,'&quot;')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sizes & Quantities</label>
+            <input type="text" class="form-input" id="p${id}-size" placeholder="S/4, M/6, L/3" value="${pSize.replace(/"/g,'&quot;')}">
+            <div class="form-hint">Format: Size/Qty separated by commas</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Supplier</label>
+            <input type="text" class="form-input" id="p${id}-supplier" placeholder="SanMar, S&S..." value="${pSupplier.replace(/"/g,'&quot;')}">
+          </div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label class="form-label">Price / Item ($)</label>
+            <input type="number" step="0.01" class="form-input" id="p${id}-price" placeholder="0.00" value="${pPrice}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Our Cost / Item ($)</label>
+            <input type="number" step="0.01" class="form-input" id="p${id}-cost" placeholder="0.00" value="${pCost}">
+          </div>
+        </div>
+        <div class="deco-spots-list" id="p${id}-decos"></div>
+        <button type="button" class="add-deco-btn" onclick="addDeco(${id})">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.5 1v9M1 5.5h9"/></svg>
+          Add Decoration
+        </button>
+      `;
+      document.getElementById('productsList').appendChild(div);
+      // Populate existing deco spots
+      const decoStyleCols={1:'dropdown_mm2y4w39',2:'dropdown_mm2yaxxz',3:'dropdown_mm2ygyew'};
+      const decoPlaceCols={1:'text_mm2y6g62',2:'text_mm2yge79',3:'text_mm2y1j6j'};
+      const decoDescCols={1:'text_mm2y3mb9',2:'text_mm2ymf5k',3:'text_mm2yjq0z'};
+      const decoScreenCols={1:'numeric_mm2yn2nb',2:'numeric_mm2ynqby',3:'numeric_mm2y55qh'};
+      const decoColorCols={1:'text_mm2y2y6a',2:'text_mm2y5vn6',3:'text_mm2y8bg8'};
+      for(let dId=1;dId<=3;dId++){
+        const sv=sColV(sub,decoStyleCols[dId]);
+        const styleId=sv?.ids?.[0]||null;
+        const pl=sCol(sub,decoPlaceCols[dId]);
+        const desc=sCol(sub,decoDescCols[dId]);
+        const sc=sCol(sub,decoScreenCols[dId]);
+        const dc=sCol(sub,decoColorCols[dId]);
+        if(!styleId&&!pl&&!desc)continue;
+        addDeco(id);
+        const curDId=decoCounters[id];
+        const styleEl=document.getElementById(`p${id}-d${curDId}-style`);
+        if(styleEl&&styleId)styleEl.value=String(styleId);
+        const plEl=document.getElementById(`p${id}-d${curDId}-placement`);
+        if(plEl)plEl.value=pl;
+        const descEl=document.getElementById(`p${id}-d${curDId}-desc`);
+        if(descEl)descEl.value=desc;
+        const scEl=document.getElementById(`p${id}-d${curDId}-screens`);
+        if(scEl)scEl.value=sc;
+        const dcEl=document.getElementById(`p${id}-d${curDId}-colors`);
+        if(dcEl)dcEl.value=dc;
+      }
+    });
   }
 
   document.getElementById('modalOverlay').classList.add('open');
@@ -1020,6 +1110,55 @@ async function saveOrderEdits(){
     if(Object.keys(colVals).length>0){
       const cv=JSON.stringify(JSON.stringify(colVals));
       await mondayMutation(`mutation{change_multiple_column_values(board_id:${ORDERS_BOARD},item_id:${editingOrderId},column_values:${cv}){id}}`);
+    }
+
+    // Save product edits
+    const decoStyleColsE={1:'dropdown_mm2y4w39',2:'dropdown_mm2yaxxz',3:'dropdown_mm2ygyew'};
+    const decoPlaceColsE={1:'text_mm2y6g62',2:'text_mm2yge79',3:'text_mm2y1j6j'};
+    const decoDescColsE={1:'text_mm2y3mb9',2:'text_mm2ymf5k',3:'text_mm2yjq0z'};
+    const decoScreenColsE={1:'numeric_mm2yn2nb',2:'numeric_mm2ynqby',3:'numeric_mm2y55qh'};
+    const decoColorColsE={1:'text_mm2y2y6a',2:'text_mm2y5vn6',3:'text_mm2y8bg8'};
+    const productBlocksE=document.querySelectorAll('.product-block');
+    for(const pb of productBlocksE){
+      const pid=pb.id.replace('product-','');
+      const subitemId=pb.dataset.subitemId||null;
+      const pName=v(`p${pid}-name`);
+      const pStyle=v(`p${pid}-style`);
+      const pColor=v(`p${pid}-color`);
+      const pSize=v(`p${pid}-size`);
+      const pSupplier=v(`p${pid}-supplier`);
+      const pPrice=v(`p${pid}-price`);
+      const pCost=v(`p${pid}-cost`);
+      let subCols={};
+      if(pStyle)subCols['text_mm22fv7y']=pStyle;
+      if(pColor)subCols['text_mm2276wz']=pColor;
+      if(pSize)subCols['text_mm22yw8s']=pSize;
+      if(pSupplier)subCols['text_mm22qdag']=pSupplier;
+      if(pPrice)subCols['numeric_mm2299qw']=parseFloat(pPrice);
+      if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
+      for(let dId=1;dId<=3;dId++){
+        const styleEl=document.getElementById(`p${pid}-d${dId}-style`);
+        if(!styleEl)continue;
+        const styleVal=styleEl.value;
+        const placement=v(`p${pid}-d${dId}-placement`);
+        const desc=v(`p${pid}-d${dId}-desc`);
+        const screens=v(`p${pid}-d${dId}-screens`);
+        const colors=v(`p${pid}-d${dId}-colors`);
+        const pNotes=v(`p${pid}-d${dId}-prodnotes`);
+        if(styleVal)subCols[decoStyleColsE[dId]]={ids:[parseInt(styleVal)]};
+        if(placement)subCols[decoPlaceColsE[dId]]=placement;
+        if(desc)subCols[decoDescColsE[dId]]=desc;
+        if(screens)subCols[decoScreenColsE[dId]]=parseFloat(screens);
+        if(colors)subCols[decoColorColsE[dId]]=colors;
+        if(pNotes)subCols['long_text_mm27e9c4']={text:pNotes};
+      }
+      if(subitemId){
+        if(pName){await mondayMutation(`mutation{change_item_name(board_id:${SUBITEMS_BOARD},item_id:${subitemId},value:\"${pName.replace(/"/g,'\\"')}\"){id}}`);}
+        if(Object.keys(subCols).length>0){const sc=JSON.stringify(JSON.stringify(subCols));await mondayMutation(`mutation{change_multiple_column_values(board_id:${SUBITEMS_BOARD},item_id:${subitemId},column_values:${sc}){id}}`);}
+      } else if(pName){
+        const subColsStr=JSON.stringify(JSON.stringify(subCols));
+        await mondayMutation(`mutation{create_subitem(parent_item_id:${editingOrderId},item_name:\"${pName.replace(/"/g,'\\"')}\",column_values:${subColsStr}){id}}`);
+      }
     }
 
     // Update in-memory cache so table reflects changes immediately
