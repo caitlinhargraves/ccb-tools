@@ -394,7 +394,7 @@ async function loadData(){
         } else if(subType.includes('3rd')){
           if(!subStatus.includes('3rd party complete')&&subStatus!=='')allThirdParty.push(product);
           else if(!subStatus)allThirdParty.push(product);
-        } else if(subType.includes('in house')||subType.includes('pre')){
+        } else if(subType.includes('in house')||subType.includes('pre')||subType===''){
           const isBlank=statusIndex===5||subStatus==='';
           const isProductOrdered=subStatus==='product ordered'||statusIndex===1;
           if(!poDate||isBlank)allToBeOrdered.push(product);
