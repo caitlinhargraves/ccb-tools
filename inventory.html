@@ -293,18 +293,13 @@ async function loadAll() {
     giftBoxes = boxesData;
     document.getElementById('col-left').innerHTML = '';
     document.getElementById('col-right').innerHTML = '';
-    // Collapse all sections by default on first load (user can expand as needed)
+    // Collapse all sections by default on first load
     if(collapsed.size === 0) {
-      // Collect all section IDs from categories + fixed sections
-      const allSids = ['inhouse-orders','gift-boxes',...(invData.map(i=>i.group?.id).filter(Boolean))];
-      // We'll collect them after first render instead
-      renderAll();
-      // After first render, collapse everything
-      document.querySelectorAll('[id^="sec-"]').forEach(el => collapsed.add(el.id.replace('sec-','')));
-      renderAll();
-    } else {
-      renderAll();
+      collapsed.add('inhouse');
+      collapsed.add('custboxes');
+      invData.forEach(i => { if(i.group?.id) collapsed.add('cat-'+i.group.id); });
     }
+    renderAll();
   } catch(e) {
     document.getElementById('col-left').innerHTML = `<div class="empty-state">⚠ Error: ${e.message}</div>`;
     console.error(e);
