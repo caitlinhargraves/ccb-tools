@@ -186,7 +186,6 @@
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const API_KEY='eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0OTQ0NjE4NywiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMjNUMTU6Mzc6MTkuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.6FPYgwwTj-05GWXHxxq5lSstcJTGfVOqATNhk5FQBic';
 const ORDERS_BOARD='18407165363';
 const PENDING_GROUP='group_mm2wb7r2';
 const ACTIVE_GROUP='topics';
@@ -197,9 +196,7 @@ const SALES_ID={'Chaz Lucius':1,'Bailey McGraw':2,'Jess Miller':3,'Nick Miller':
 let allTickets=[],filtered=[],statusFilter='all';
 
 async function mq(query){
-  const res=await fetch('https://api.monday.com/v2',{method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':API_KEY,'API-Version':'2024-01'},
-    body:JSON.stringify({query})});
+  const res=await fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});
   const data=await res.json();
   if(data.errors)throw new Error(data.errors[0].message);
   return data.data;
@@ -236,7 +233,7 @@ async function loadTickets(){
       const cv={};for(const c of item.column_values)cv[c.id]=c;
       const salesV=cv[O_SALES]?.value?(()=>{try{return JSON.parse(cv[O_SALES].value);}catch{return null;}})():null;
       const meta=parseTicketMeta(cv[O_NOTES]?.text||'');
-      return{id:item.id,name:item.name,ccb:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',
+      return{id:item.id,mondayId:item.id,name:item.name,ccb:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',
         email:cv[O_EMAIL]?.text||'',sales:salesV?.ids?.map(i=>SALES_MAP[i]).filter(Boolean).join(', ')||'',
         followupDate:meta.followup||cv[O_INHAND]?.text||'',...meta};
     });
@@ -305,8 +302,8 @@ function renderTickets(){
       ${t.interest?`<div class="ticket-interest"><strong>Interest:</strong> ${t.interest}</div>`:''}
       ${t.notes?`<div class="ticket-notes">${t.notes}</div>`:''}
       <div class="ticket-actions">
-        <button class="action-btn promote" onclick="promoteToActive('${t.id}','${t.name.replace(/'/g,"\'")}')">
-          <svg viewBox="0 0 13 13"><path d="M6.5 10V2M3 5.5l3.5-3.5L10 5.5"/></svg>Promote to Active
+        <button class="action-btn promote" onclick="convertToOrder('${t.id}')">
+          <svg viewBox="0 0 13 13"><path d="M6.5 10V2M3 5.5l3.5-3.5L10 5.5"/></svg>Convert to Order
         </button>
         <button class="action-btn" onclick="editTicket('${t.id}')">
           <svg viewBox="0 0 13 13"><path d="M9 2l2 2-6 6H3V8l6-6z"/></svg>Edit
@@ -392,13 +389,27 @@ async function createTicket(){
   btn.classList.remove('loading');btn.textContent=editingId?'Save':'Create Ticket';
 }
 
-async function promoteToActive(id,name){
-  if(!confirm(`Promote "${name}" to Active Orders?`))return;
-  showToast('Promoting...');
-  try{
-    await mq(`mutation{move_item_to_group(item_id:${id},group_id:"${ACTIVE_GROUP}"){id}}`);
-    showToast('Moved to Active Orders!');setTimeout(loadTickets,800);
-  }catch(err){showToast('Error: '+err.message);setTimeout(()=>document.getElementById('toast').classList.remove('show'),3000);}
+function convertToOrder(id){
+  const t=allTickets.find(x=>x.id===id);
+  if(!t)return;
+  // Move item to Active group in Monday, then open orders dashboard pre-filled
+  if(!confirm(`Convert "${t.name}" to an Active Order?\n\nThis will move it to Active Orders in Monday and open the order form pre-filled with the lead's info.`))return;
+  showToast('Moving to Active Orders...');
+  mq(`mutation{move_item_to_group(item_id:${id},group_id:"${ACTIVE_GROUP}"){id}}`)
+    .then(()=>{
+      hideToast(300);
+      // Build query string to pre-fill orders-dashboard new order form
+      const params=new URLSearchParams({
+        prefill:'1',
+        company:t.name||'',
+        contact:t.contact||'',
+        email:t.email||'',
+        sales:t.sales||'',
+        notes:t.notes||''
+      });
+      window.location.href='/orders-dashboard.html?'+params.toString();
+    })
+    .catch(err=>{showToast('Error: '+err.message);setTimeout(hideToast,3000);});
 }
 
 async function cycleStatus(id){

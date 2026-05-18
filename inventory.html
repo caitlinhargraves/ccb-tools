@@ -215,7 +215,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 <div class="toast" id="toast"></div>
 
 <script>
-const MONDAY_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0OTQ0NjE4NywiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMjNUMTU6Mzc6MTkuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.6FPYgwwTj-05GWXHxxq5lSstcJTGfVOqATNhk5FQBic';
+
 const INV_BOARD = 18412170163;
 const API = 'https://ccb-api-jorp.onrender.com';
 
@@ -257,16 +257,16 @@ const ORDERS_BOARD=18407165363, GIFT_BOXES_BOARD=18409662777;
 let invItems = [];
 let orders = [];
 let giftBoxes = [];
-let collapsed = new Set();
+let collapsed = new Set(); // populated after render to collapse all by default
 let searchQ = '';
 
 // ============================================================
 // MONDAY API
 // ============================================================
 async function mq(query) {
-  const r = await fetch('https://api.monday.com/v2', {
+  const r = await fetch('/api/monday', {
     method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':MONDAY_KEY,'API-Version':'2024-01'},
+    headers:{'Content-Type':'application/json'},
     body: JSON.stringify({query})
   });
   const d = await r.json();
@@ -293,7 +293,18 @@ async function loadAll() {
     giftBoxes = boxesData;
     document.getElementById('col-left').innerHTML = '';
     document.getElementById('col-right').innerHTML = '';
-    renderAll();
+    // Collapse all sections by default on first load (user can expand as needed)
+    if(collapsed.size === 0) {
+      // Collect all section IDs from categories + fixed sections
+      const allSids = ['inhouse-orders','gift-boxes',...(invData.map(i=>i.group?.id).filter(Boolean))];
+      // We'll collect them after first render instead
+      renderAll();
+      // After first render, collapse everything
+      document.querySelectorAll('[id^="sec-"]').forEach(el => collapsed.add(el.id.replace('sec-','')));
+      renderAll();
+    } else {
+      renderAll();
+    }
   } catch(e) {
     document.getElementById('col-left').innerHTML = `<div class="empty-state">⚠ Error: ${e.message}</div>`;
     console.error(e);
@@ -481,6 +492,16 @@ function renderRight() {
       const colorHex = COLOR_HEX_MAP[colorLabel]||'';
       return `<tr id="row-${item.id}">
         <td>
+          <div class="editable" onclick="startEdit('${item.id}','location',this,'${location.replace(/'/g,"&#39;")}')">
+            ${location||'<span style="color:var(--text3)">—</span>'}
+          </div>
+          <div class="edit-wrap" id="ew-${item.id}-location">
+            <input class="edit-inp" id="ei-${item.id}-location" value="${location.replace(/"/g,'&quot;')}">
+            <button class="save-edit" onclick="saveField('${item.id}','location')">✓</button>
+            <button class="cancel-edit" onclick="cancelEdit('${item.id}','location')">✕</button>
+          </div>
+        </td>
+        <td>
           <div style="display:flex;align-items:center;gap:6px">
             <div id="swatch-${item.id}" onclick="openColorMenu('${item.id}',this)" title="Click to set color"
               style="width:14px;height:14px;border-radius:50%;flex-shrink:0;cursor:pointer;border:1.5px solid ${colorHex?'transparent':'var(--border)'};background:${colorHex||'transparent'};transition:transform .12s;position:relative"
@@ -508,16 +529,6 @@ function renderRight() {
           <span class="badge ${isOut?'badge-out':isLow?'badge-low':'badge-ok'}" id="badge-${item.id}">
             ${isOut?'Out':isLow?'Low':'OK'}
           </span>
-        </td>
-        <td>
-          <div class="editable" onclick="startEdit('${item.id}','location',this,'${location.replace(/'/g,"&#39;")}')">
-            ${location||'<span style="color:var(--text3)">—</span>'}
-          </div>
-          <div class="edit-wrap" id="ew-${item.id}-location">
-            <input class="edit-inp" id="ei-${item.id}-location" value="${location.replace(/"/g,'&quot;')}">
-            <button class="save-edit" onclick="saveField('${item.id}','location')">✓</button>
-            <button class="cancel-edit" onclick="cancelEdit('${item.id}','location')">✕</button>
-          </div>
         </td>
         <td>
           <div class="editable" onclick="startEdit('${item.id}','supplier',this,'${supplier.replace(/'/g,"&#39;")}')">
@@ -549,7 +560,7 @@ function renderRight() {
       </div>
       <div class="section-body ${coll?'hidden':''}">
         <table class="inv-table">
-          <thead><tr>${['Item','Qty','Status','Location','Supplier','Reorder At',''].map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+          <thead><tr>${['Location','Item','Qty','Status','Supplier','Reorder At',''].map(h=>`<th>${h}</th>`).join('')}</tr></thead>
           <tbody>${rows||`<tr><td colspan="7" class="empty-state">No items yet — add one below</td></tr>`}</tbody>
         </table>
         <div class="add-row">

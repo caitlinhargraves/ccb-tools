@@ -224,7 +224,6 @@ main{max-width:1200px;margin:0 auto;padding:20px}
 <div class="toast" id="toast"><div class="toast-spinner" id="toast-spinner"></div><span id="toast-msg"></span></div>
 
 <script>
-const API_KEY='eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0OTQ0NjE4NywiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMjNUMTU6Mzc6MTkuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.6FPYgwwTj-05GWXHxxq5lSstcJTGfVOqATNhk5FQBic';
 const ORDERS_BOARD='18407165363';
 const SUBS_BOARD='18407165552';
 
@@ -259,7 +258,8 @@ let allToBeOrdered=[], allOrdered=[], allThirdParty=[], allPromoCodes=[];
 let toBeOrdered=[], ordered=[], thirdParty=[], promoCodes=[];
 
 async function mq(q){
-  const r=await fetch('https://api.monday.com/v2',{method:'POST',headers:{'Content-Type':'application/json','Authorization':API_KEY,'API-Version':'2024-01'},body:JSON.stringify({query:q})});
+  const r=await fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json',
+},body:JSON.stringify({query:q})});
   const d=await r.json();
   if(d.errors)throw new Error(d.errors[0].message);
   return d.data;

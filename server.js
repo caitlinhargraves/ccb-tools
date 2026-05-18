@@ -3,9 +3,12 @@ const cron = require('node-cron');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const fetch = require('node-fetch');
+const multer = require('multer');
+const FormData = require('form-data');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 const MONDAY_API_KEY = process.env.MONDAY_API_KEY || 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0OTQ0NjE4NywiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMjNUMTU6Mzc6MTkuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.6FPYgwwTj-05GWXHxxq5lSstcJTGfVOqATNhk5FQBic';
 const ORDERS_BOARD_ID = '18407165363';
 const CCB_EMAIL = 'info@ccbimprint.com';
@@ -72,10 +75,10 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static(path.join(__dirname)));
-app.use(express.json({ limit: '5mb' }));
+app.use(express.json({ limit: '50mb' }));
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
@@ -377,6 +380,98 @@ app.get('/api/gift-boxes', async (req, res) => {
     res.json({ boxes: d.data?.boards[0]?.items_page?.items || [] });
   } catch (err) {
     res.json({ boxes: [], error: err.message });
+  }
+});
+
+// ============================================================
+// Monday API proxy -- all HTML files call this instead of
+// hitting Monday directly, so the API key lives only here
+// ============================================================
+app.post('/api/monday', async (req, res) => {
+  try {
+    const { query } = req.body;
+    if (!query) return res.status(400).json({ error: 'Missing query' });
+    const r = await fetch('https://api.monday.com/v2', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': MONDAY_API_KEY,
+        'API-Version': '2024-01'
+      },
+      body: JSON.stringify({ query })
+    });
+    const data = await r.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// File upload relay -- browser sends file here, we relay to
+// Monday's file API (can't do this from browser due to CORS)
+// POST /api/upload-file  multipart: file, itemId, columnId
+// ============================================================
+app.post('/api/upload-file', upload.single('file'), async (req, res) => {
+  try {
+    const { itemId, columnId } = req.body;
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
+    if (!itemId || !columnId) return res.status(400).json({ error: 'itemId and columnId required' });
+
+    const form = new FormData();
+    const query = `mutation add_file($file: File!) { add_file_to_column(item_id: ${itemId}, column_id: "${columnId}", file: $file) { id } }`;
+    form.append('query', query);
+    form.append('variables[file]', req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: req.file.mimetype,
+      knownLength: req.file.size
+    });
+
+    const r = await fetch('https://api.monday.com/v2/file', {
+      method: 'POST',
+      headers: {
+        'Authorization': MONDAY_API_KEY,
+        'API-Version': '2024-01',
+        ...form.getHeaders()
+      },
+      body: form
+    });
+    const data = await r.json();
+    if (data.errors) return res.status(400).json({ error: data.errors[0].message, details: data.errors });
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('File upload error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// CCB Order Number generator
+// Reads all existing CCB-##### numbers and returns next one
+// ============================================================
+app.get('/api/next-order-number', async (req, res) => {
+  try {
+    const query = `{boards(ids:[${ORDERS_BOARD_ID}]){items_page(limit:500){items{column_values(ids:["text_mm29djkk"]){id text}}}}}`;
+    const r = await fetch('https://api.monday.com/v2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': MONDAY_API_KEY, 'API-Version': '2024-01' },
+      body: JSON.stringify({ query })
+    });
+    const data = await r.json();
+    const items = data.data?.boards[0]?.items_page?.items || [];
+    let max = 116; // start from CCB-00117
+    for (const item of items) {
+      const txt = item.column_values?.find(c => c.id === 'text_mm29djkk')?.text || '';
+      const match = txt.match(/CCB-(\d+)/);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (n > max) max = n;
+      }
+    }
+    const next = `CCB-${String(max + 1).padStart(5, '0')}`;
+    res.json({ orderNumber: next });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

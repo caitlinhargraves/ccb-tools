@@ -245,6 +245,9 @@
     <span class="page-label">Orders Dashboard</span>
   </div>
   <div class="header-right">
+    <a href="/" class="btn btn-ghost" title="Home" style="padding:8px 12px">
+      <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 6.5L6.5 1.5l5 5"/><path d="M3 5v6.5h2.5V8h2v3.5H10V5"/></svg>
+    </a>
     <span class="last-updated" id="lastUpdated">Loading...</span>
     <button class="btn btn-ghost" id="refreshBtn" onclick="manualRefresh()">
       <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11.5 6.5A5 5 0 1 1 6.5 1.5M11.5 1.5v3.5h-3.5"/></svg>
@@ -394,12 +397,32 @@
         </div>
         <div class="form-row cols-2">
           <div class="form-group">
-            <label class="form-label">Shipping To</label>
+            <label class="form-label">Shipping To (Name / Company)</label>
             <input type="text" class="form-input" id="f-shipto" placeholder="Name or company">
           </div>
           <div class="form-group">
             <label class="form-label">Payment Method</label>
             <input type="text" class="form-input" id="f-payment" placeholder="CC, Gradient Bucks, etc.">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Street Address</label>
+            <input type="text" class="form-input" id="f-addr-street" placeholder="123 Main St">
+          </div>
+        </div>
+        <div class="form-row cols-3">
+          <div class="form-group">
+            <label class="form-label">City</label>
+            <input type="text" class="form-input" id="f-addr-city" placeholder="Minneapolis">
+          </div>
+          <div class="form-group">
+            <label class="form-label">State</label>
+            <input type="text" class="form-input" id="f-addr-state" placeholder="MN" maxlength="2" style="text-transform:uppercase">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Zip</label>
+            <input type="text" class="form-input" id="f-addr-zip" placeholder="55401" maxlength="10">
           </div>
         </div>
         <div class="form-row">
@@ -434,7 +457,11 @@
 
     <div class="modal-footer" id="modalFooter">
       <div style="font-size:12px;color:var(--subtle)" id="modalStatus"></div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;margin-right:4px">
+          <input type="checkbox" id="f-pipeline" style="width:14px;height:14px;accent-color:var(--cyan)">
+          Add to Pipeline instead
+        </label>
         <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
         <button class="btn btn-ghost" id="draftBtn" onclick="saveDraft()" style="color:#D97706;border-color:#FCD34D">💾 Draft</button>
         <button class="btn btn-primary" id="submitBtn" onclick="submitOrder()">
@@ -447,15 +474,24 @@
 </div>
 
 <script>
-const API = 'https://ccb-api-jorp.onrender.com';
-const MONDAY_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0OTQ0NjE4NywiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMjNUMTU6Mzc6MTkuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.6FPYgwwTj-05GWXHxxq5lSstcJTGfVOqATNhk5FQBic';
+const API = '';  // same-origin -- served from Render
 const ORDERS_BOARD = '18407165363';
 const SUBITEMS_BOARD = '18407165552';
 const ACTIVE_GROUP = 'topics';
+const PENDING_GROUP = 'group_mm2wb7r2';
+
+// All Monday calls go through the server proxy -- API key never in browser
+async function mondayMutation(query){
+  const res=await fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});
+  const data=await res.json();
+  if(data.errors)throw new Error(data.errors[0].message);
+  return data.data;
+}
 
 let all=[], filtered=[], expanded=new Set(), statusFilter='all', sort={col:'orderNum',dir:'desc'};
 let editingOrderId=null;
-const collapsedGroups=new Set(['group_mm26j0hj']); // Completed collapsed by default
+// Collapse all groups except Active Orders by default
+const collapsedGroups=new Set(['group_mm26j0hj','group_mm2dtmde','group_mm2wg547','group_mm2wb7r2','group_mm2cavn']);
 const salesMap={1:'Chaz Lucius',2:'Bailey McGraw',3:'Jess Miller',4:'Nick Miller',5:'George Miller',6:'Web Order'};
 const impMap={1:'CCB Imprint',2:'CCB Insight'};
 const decoMap={1:'Embroidery',2:'Screenprint',3:'DTG',4:'DTF',5:'Engrave',6:'Other'};
@@ -473,7 +509,7 @@ function parseOrder(o){
     ihd:col(o,'date_mm22wpk2'),contact:col(o,'text_mm221kg3'),invoice:col(o,'color_mm282b4b')||'Not Invoiced',
     imprint:iv?.ids?.map(i=>impMap[i]).filter(Boolean).join(', ')||'',
     tracking:colV(o,'link_mm22d8ca')?.url||'',notes:col(o,'long_text_mm225vbf'),
-    shippingTo:col(o,'text_mm26gtxp'),email:colV(o,'email_mm22ap28')?.email||'',phone:col(o,'phone_mm22ertc'),subitems:o.subitems||[],groupId:o.group?.id||'topics'};
+    shippingTo:col(o,'text_mm26gtxp'),address:col(o,'location_mm2682nc'),email:colV(o,'email_mm22ap28')?.email||'',phone:col(o,'phone_mm22ertc'),subitems:o.subitems||[],groupId:o.group?.id||'topics'};
 }
 
 function statusBadge(s){
@@ -718,6 +754,10 @@ function openEditModal(orderId){
   document.getElementById('modalTitle').textContent='Edit Order';
   document.getElementById('submitBtn').textContent='Save Changes';
 
+  // Hide pipeline checkbox in edit mode
+  const pipelineRow=document.getElementById('f-pipeline')?.closest('label');
+  if(pipelineRow)pipelineRow.style.display='none';
+
   // Pre-fill fields from cached order data
   document.getElementById('f-company').value=o.name||'';
   document.getElementById('f-contact').value=o.contact||'';
@@ -726,6 +766,20 @@ function openEditModal(orderId){
   document.getElementById('f-ihd').value=o.ihd||'';
   document.getElementById('f-shipto').value=o.shippingTo||'';
   document.getElementById('f-notes').value=o.notes||'';
+
+  // Pre-fill address fields if available
+  if(o.address){
+    // Try to parse "Street, City, ST, Zip" format
+    const parts=o.address.split(',').map(s=>s.trim());
+    if(parts.length>=1)document.getElementById('f-addr-street').value=parts[0]||'';
+    if(parts.length>=2)document.getElementById('f-addr-city').value=parts[1]||'';
+    if(parts.length>=3){
+      const stateZip=parts[2].trim().split(' ');
+      document.getElementById('f-addr-state').value=stateZip[0]||'';
+      if(stateZip[1])document.getElementById('f-addr-zip').value=stateZip[1]||'';
+    }
+    if(parts.length>=4)document.getElementById('f-addr-zip').value=parts[3]||'';
+  }
 
   // Sales rep dropdown
   const salesEl=document.getElementById('f-sales');
@@ -741,7 +795,6 @@ function openEditModal(orderId){
   // Status field -- add one if not present
   let statusField=document.getElementById('f-status');
   if(!statusField){
-    // Inject status field into the form after notes
     const notesGroup=document.getElementById('f-notes')?.closest('.form-row')||document.getElementById('f-notes')?.closest('.form-group');
     if(notesGroup){
       const statusDiv=document.createElement('div');
@@ -892,12 +945,17 @@ function resetModal(){
   document.getElementById('modalStatus').textContent='';
   document.getElementById('submitBtn').classList.remove('loading');
   document.getElementById('submitBtn').textContent='Create Order';
-  ['f-company','f-contact','f-email','f-phone','f-shipto','f-payment','f-notes'].forEach(id=>{
+  ['f-company','f-contact','f-email','f-phone','f-shipto','f-payment','f-notes',
+   'f-addr-street','f-addr-city','f-addr-state','f-addr-zip'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   ['f-sales','f-imprint'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
+  const pipelineCb=document.getElementById('f-pipeline');
+  if(pipelineCb){pipelineCb.checked=false;}
+  const pipelineRow=pipelineCb?.closest('label');
+  if(pipelineRow)pipelineRow.style.display='';
   // Remove injected status field if present
   const sf=document.getElementById('f-status');
   if(sf)sf.closest('.form-row')?.remove();
@@ -1060,18 +1118,6 @@ function removeDeco(productId,dId){
 }
 
 function v(id){const el=document.getElementById(id);return el?el.value.trim():'';}
-
-async function mondayMutation(query){
-  const res=await fetch('https://api.monday.com/v2',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':MONDAY_KEY,'API-Version':'2024-01'},
-    body:JSON.stringify({query})
-  });
-  const data=await res.json();
-  if(data.errors)throw new Error(data.errors[0].message);
-  return data.data;
-}
-
 async function saveOrderEdits(){
   const btn=document.getElementById('submitBtn');
   btn.classList.add('loading');
@@ -1108,6 +1154,15 @@ async function saveOrderEdits(){
     if(salesId)colVals['dropdown_mm22w5rr']={ids:[salesId]};
     if(imprintId)colVals['dropdown_mm276wtz']={ids:[parseInt(imprintId)]};
     if(status)colVals['color_mm27qyta']={label:status};
+    // Address fields
+    const addrStreet=v('f-addr-street');
+    const addrCity=v('f-addr-city');
+    const addrState=v('f-addr-state').toUpperCase();
+    const addrZip=v('f-addr-zip');
+    if(addrStreet||addrCity||addrState||addrZip){
+      const addrParts=[addrStreet,[addrCity,addrState].filter(Boolean).join(', '),addrZip].filter(Boolean);
+      colVals['location_mm2682nc']={address:addrParts.join(', '),lat:null,lng:null};
+    }
 
     if(Object.keys(colVals).length>0){
       const cv=JSON.stringify(JSON.stringify(colVals));
@@ -1120,6 +1175,7 @@ async function saveOrderEdits(){
     const decoDescColsE={1:'text_mm2y3mb9',2:'text_mm2ymf5k',3:'text_mm2yjq0z'};
     const decoScreenColsE={1:'numeric_mm2yn2nb',2:'numeric_mm2ynqby',3:'numeric_mm2y55qh'};
     const decoColorColsE={1:'text_mm2y2y6a',2:'text_mm2y5vn6',3:'text_mm2y8bg8'};
+    const artFileColsE={1:'file_mm2y1yem',2:'file_mm2ya55c',3:'file_mm2yjme2'};
     const productBlocksE=document.querySelectorAll('.product-block');
     for(const pb of productBlocksE){
       const pid=pb.id.replace('product-','');
@@ -1140,6 +1196,7 @@ async function saveOrderEdits(){
       if(pSupplier)subCols['text_mm22qdag']=pSupplier;
       if(pPrice)subCols['numeric_mm2299qw']=parseFloat(pPrice);
       if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
+      const artworkFilesE={};
       for(let dId=1;dId<=3;dId++){
         const styleEl=document.getElementById(`p${pid}-d${dId}-style`);
         if(!styleEl)continue;
@@ -1155,13 +1212,29 @@ async function saveOrderEdits(){
         if(screens)subCols[decoScreenColsE[dId]]=parseFloat(screens);
         if(colors)subCols[decoColorColsE[dId]]=colors;
         if(pNotes)subCols['long_text_mm27e9c4']={text:pNotes};
+        const artInput=document.getElementById(`p${pid}-d${dId}-artwork`);
+        if(artInput?.files?.[0])artworkFilesE[dId]=artInput.files[0];
       }
+      let resolvedSubId=subitemId;
       if(subitemId){
         if(pName){await mondayMutation(`mutation{change_item_name(board_id:${SUBITEMS_BOARD},item_id:${subitemId},value:\"${pName.replace(/"/g,'\\"')}\"){id}}`);}
         if(Object.keys(subCols).length>0){const sc=JSON.stringify(JSON.stringify(subCols));await mondayMutation(`mutation{change_multiple_column_values(board_id:${SUBITEMS_BOARD},item_id:${subitemId},column_values:${sc}){id}}`);}
       } else if(pName){
         const subColsStr=JSON.stringify(JSON.stringify(subCols));
-        await mondayMutation(`mutation{create_subitem(parent_item_id:${editingOrderId},item_name:\"${pName.replace(/"/g,'\\"')}\",column_values:${subColsStr}){id}}`);
+        const newSub=await mondayMutation(`mutation{create_subitem(parent_item_id:${editingOrderId},item_name:\"${pName.replace(/"/g,'\\"')}\",column_values:${subColsStr}){id}}`);
+        resolvedSubId=newSub?.create_subitem?.id;
+      }
+      // Upload artwork files for new or existing subitems
+      if(resolvedSubId&&Object.keys(artworkFilesE).length){
+        for(const [dId,file] of Object.entries(artworkFilesE)){
+          try{
+            const fd=new FormData();
+            fd.append('file',file,file.name);
+            fd.append('itemId',resolvedSubId);
+            fd.append('columnId',artFileColsE[dId]);
+            await fetch('/api/upload-file',{method:'POST',body:fd});
+          }catch(e){console.warn('Artwork upload failed:',e);}
+        }
       }
     }
 
@@ -1204,27 +1277,37 @@ async function submitOrder(){
     return;
   }
 
-  // Validate (create mode only)
+  const toPipeline = document.getElementById('f-pipeline')?.checked;
+
+  // Validate
   if(!v('f-company')){alert('Company name is required.');document.getElementById('f-company').focus();return;}
   if(!v('f-contact')){alert('Contact name is required.');document.getElementById('f-contact').focus();return;}
   if(!v('f-email')){alert('Email is required.');document.getElementById('f-email').focus();return;}
-  if(!v('f-ihd')){alert('In Hands Date is required.');document.getElementById('f-ihd').focus();return;}
-  if(!v('f-imprint')){alert('Please select CCB Imprint or CCB Insight.');document.getElementById('f-imprint').focus();return;}
-
-  // Check at least one product
-  const productBlocks=document.querySelectorAll('.product-block');
-  if(!productBlocks.length){alert('Please add at least one product.');return;}
-  for(const pb of productBlocks){
-    const pid=pb.id.replace('product-','');
-    if(!v(`p${pid}-name`)){alert('All products need a name.');document.getElementById(`p${pid}-name`).focus();return;}
+  if(!toPipeline){
+    if(!v('f-ihd')){alert('In Hands Date is required.');document.getElementById('f-ihd').focus();return;}
+    if(!v('f-imprint')){alert('Please select CCB Imprint or CCB Insight.');document.getElementById('f-imprint').focus();return;}
+    const productBlocks=document.querySelectorAll('.product-block');
+    if(!productBlocks.length){alert('Please add at least one product.');return;}
+    for(const pb of productBlocks){
+      const pid=pb.id.replace('product-','');
+      if(!v(`p${pid}-name`)){alert('All products need a name.');document.getElementById(`p${pid}-name`).focus();return;}
+    }
   }
 
   const btn=document.getElementById('submitBtn');
   btn.classList.add('loading');
-  btn.textContent='Creating...';
-  document.getElementById('modalStatus').textContent='Creating order in Monday...';
+  btn.textContent=toPipeline?'Adding to Pipeline...':'Creating...';
+  document.getElementById('modalStatus').textContent=toPipeline?'Adding to Pipeline in Monday...':'Creating order in Monday...';
 
   try{
+    // Auto-assign CCB Order Number
+    let ccbOrderNum='';
+    try{
+      const nr=await fetch('/api/next-order-number');
+      const nd=await nr.json();
+      ccbOrderNum=nd.orderNumber||'';
+    }catch(e){console.warn('Could not get order number:',e);}
+
     // Build parent column values
     const today=new Date().toISOString().split('T')[0];
     const ihd=v('f-ihd');
@@ -1234,23 +1317,35 @@ async function submitOrder(){
     const email=v('f-email');
     const phone=v('f-phone');
     const shipto=v('f-shipto');
+    const addrStreet=v('f-addr-street');
+    const addrCity=v('f-addr-city');
+    const addrState=v('f-addr-state').toUpperCase();
+    const addrZip=v('f-addr-zip');
     const payment=v('f-payment');
     const notes=v('f-notes');
     const contact=v('f-contact');
 
     let colVals={
       'date4':{date:today},
-      'date_mm22wpk2':{date:ihd},
       'text_mm221kg3':contact,
       'email_mm22ap28':{email:email,text:email},
     };
+    if(ihd)colVals['date_mm22wpk2']={date:ihd};
+    if(ccbOrderNum)colVals['text_mm29djkk']=ccbOrderNum;
     if(phone)colVals['phone_mm22ertc']={phone:phone,countryShortName:'US'};
     if(shipto)colVals['text_mm26gtxp']=shipto;
     if(payment)colVals['text_mm22t49y']=payment;
     if(notes)colVals['long_text_mm225vbf']={text:notes};
     if(salesId)colVals['dropdown_mm22w5rr']={ids:[salesId]};
     if(imprintId)colVals['dropdown_mm276wtz']={ids:[parseInt(imprintId)]};
+    // Full shipping address to location column
+    if(addrStreet||addrCity||addrState||addrZip){
+      const addrParts=[addrStreet,[addrCity,addrState].filter(Boolean).join(', '),addrZip].filter(Boolean);
+      const fullAddr=addrParts.join(', ');
+      colVals['location_mm2682nc']={address:fullAddr,lat:null,lng:null};
+    }
 
+    const targetGroup=toPipeline?PENDING_GROUP:ACTIVE_GROUP;
     const colValsStr=JSON.stringify(JSON.stringify(colVals));
     const companyName=v('f-company').replace(/"/g,'\\"');
 
@@ -1259,7 +1354,7 @@ async function submitOrder(){
       mutation {
         create_item(
           board_id: ${ORDERS_BOARD},
-          group_id: "${ACTIVE_GROUP}",
+          group_id: "${targetGroup}",
           item_name: "${companyName}",
           column_values: ${colValsStr}
         ) { id name column_values { id text value } }
@@ -1267,65 +1362,86 @@ async function submitOrder(){
     `);
 
     const parentId=parentResult.create_item.id;
-    const orderNum=parentResult.create_item.column_values?.find(c=>c.id==='pulse_id_mm27vwa5')?.text||parentId;
+    const orderNum=ccbOrderNum||parentResult.create_item.column_values?.find(c=>c.id==='pulse_id_mm27vwa5')?.text||parentId;
 
-    document.getElementById('modalStatus').textContent=`Order ${orderNum} created. Adding products...`;
+    if(!toPipeline){
+      document.getElementById('modalStatus').textContent=`Order ${orderNum} created. Adding products...`;
 
-    // Create subitems
-    const decoStyleCols={1:'dropdown_mm2y4w39',2:'dropdown_mm2yaxxz',3:'dropdown_mm2ygyew'};
-    const decoPlaceCols={1:'text_mm2y6g62',2:'text_mm2yge79',3:'text_mm2y1j6j'};
-    const decoDescCols={1:'text_mm2y3mb9',2:'text_mm2ymf5k',3:'text_mm2yjq0z'};
-    const decoScreenCols={1:'numeric_mm2yn2nb',2:'numeric_mm2ynqby',3:'numeric_mm2y55qh'};
-    const decoColorCols={1:'text_mm2y2y6a',2:'text_mm2y5vn6',3:'text_mm2y8bg8'};
+      // Create subitems
+      const decoStyleCols={1:'dropdown_mm2y4w39',2:'dropdown_mm2yaxxz',3:'dropdown_mm2ygyew'};
+      const decoPlaceCols={1:'text_mm2y6g62',2:'text_mm2yge79',3:'text_mm2y1j6j'};
+      const decoDescCols={1:'text_mm2y3mb9',2:'text_mm2ymf5k',3:'text_mm2yjq0z'};
+      const decoScreenCols={1:'numeric_mm2yn2nb',2:'numeric_mm2ynqby',3:'numeric_mm2y55qh'};
+      const decoColorCols={1:'text_mm2y2y6a',2:'text_mm2y5vn6',3:'text_mm2y8bg8'};
+      const artFileCols={1:'file_mm2y1yem',2:'file_mm2ya55c',3:'file_mm2yjme2'};
 
-    for(const pb of productBlocks){
-      const pid=pb.id.replace('product-','');
-      const pName=v(`p${pid}-name`).replace(/"/g,'\\"');
-      const pStyle=v(`p${pid}-style`);
-      const pColor=v(`p${pid}-color`);
-      const pSize=v(`p${pid}-size`);
-      const pSupplier=v(`p${pid}-supplier`);
-      const pPrice=v(`p${pid}-price`);
-      const pCost=v(`p${pid}-cost`);
+      const productBlocks=document.querySelectorAll('.product-block');
+      for(const pb of productBlocks){
+        const pid=pb.id.replace('product-','');
+        const pName=v(`p${pid}-name`).replace(/"/g,'\\"');
+        const pStyle=v(`p${pid}-style`);
+        const pColor=v(`p${pid}-color`);
+        const pSize=v(`p${pid}-size`);
+        const pSupplier=v(`p${pid}-supplier`);
+        const pPrice=v(`p${pid}-price`);
+        const pCost=v(`p${pid}-cost`);
 
-      let subCols={};
-      if(pStyle)subCols['text_mm22fv7y']=pStyle;
-      if(pColor)subCols['text_mm2276wz']=pColor;
-      if(pSize)subCols['text_mm22yw8s']=pSize;
-      if(pSupplier)subCols['text_mm22qdag']=pSupplier;
-      if(pPrice)subCols['numeric_mm2299qw']=parseFloat(pPrice);
-      if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
+        let subCols={};
+        if(pStyle)subCols['text_mm22fv7y']=pStyle;
+        if(pColor)subCols['text_mm2276wz']=pColor;
+        if(pSize)subCols['text_mm22yw8s']=pSize;
+        if(pSupplier)subCols['text_mm22qdag']=pSupplier;
+        if(pPrice)subCols['numeric_mm2299qw']=parseFloat(pPrice);
+        if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
 
-      // Gather deco spots
-      for(let dId=1;dId<=3;dId++){
-        const styleEl=document.getElementById(`p${pid}-d${dId}-style`);
-        if(!styleEl)continue;
-        const styleVal=styleEl.value;
-        const placement=v(`p${pid}-d${dId}-placement`);
-        const desc=v(`p${pid}-d${dId}-desc`);
-        const screens=v(`p${pid}-d${dId}-screens`);
-        const colors=v(`p${pid}-d${dId}-colors`);
-        const pNotes=v(`p${pid}-d${dId}-prodnotes`);
-        const prodNotes=v(`p${pid}-d${dId}-prodnotes`);
-        if(styleVal)subCols[decoStyleCols[dId]]={ids:[parseInt(styleVal)]};
-        if(placement)subCols[decoPlaceCols[dId]]=placement;
-        if(desc)subCols[decoDescCols[dId]]=desc;
-        if(screens)subCols[decoScreenCols[dId]]=parseFloat(screens);
-        if(colors)subCols[decoColorCols[dId]]=colors;
-        if(pNotes)subCols['long_text_mm27e9c4']={text:pNotes};
-        if(prodNotes)subCols['long_text_mm27e9c4']={text:prodNotes};
-      }
-
-      const subColsStr=JSON.stringify(JSON.stringify(subCols));
-      await mondayMutation(`
-        mutation {
-          create_subitem(
-            parent_item_id: ${parentId},
-            item_name: "${pName}",
-            column_values: ${subColsStr}
-          ) { id }
+        // Gather deco spots
+        const artworkFiles={};
+        for(let dId=1;dId<=3;dId++){
+          const styleEl=document.getElementById(`p${pid}-d${dId}-style`);
+          if(!styleEl)continue;
+          const styleVal=styleEl.value;
+          const placement=v(`p${pid}-d${dId}-placement`);
+          const desc=v(`p${pid}-d${dId}-desc`);
+          const screens=v(`p${pid}-d${dId}-screens`);
+          const colors=v(`p${pid}-d${dId}-colors`);
+          const prodNotes=v(`p${pid}-d${dId}-prodnotes`);
+          if(styleVal)subCols[decoStyleCols[dId]]={ids:[parseInt(styleVal)]};
+          if(placement)subCols[decoPlaceCols[dId]]=placement;
+          if(desc)subCols[decoDescCols[dId]]=desc;
+          if(screens)subCols[decoScreenCols[dId]]=parseFloat(screens);
+          if(colors)subCols[decoColorCols[dId]]=colors;
+          if(prodNotes)subCols['long_text_mm27e9c4']={text:prodNotes};
+          // Collect artwork files to upload after subitem is created
+          const artInput=document.getElementById(`p${pid}-d${dId}-artwork`);
+          if(artInput?.files?.[0])artworkFiles[dId]=artInput.files[0];
         }
-      `);
+
+        const subColsStr=JSON.stringify(JSON.stringify(subCols));
+        const subResult=await mondayMutation(`
+          mutation {
+            create_subitem(
+              parent_item_id: ${parentId},
+              item_name: "${pName}",
+              column_values: ${subColsStr}
+            ) { id }
+          }
+        `);
+
+        const subId=subResult.create_subitem?.id;
+        // Upload artwork files via server relay
+        if(subId&&Object.keys(artworkFiles).length){
+          document.getElementById('modalStatus').textContent=`Uploading artwork for ${pName}...`;
+          for(const [dId,file] of Object.entries(artworkFiles)){
+            try{
+              const fd=new FormData();
+              fd.append('file',file,file.name);
+              fd.append('itemId',subId);
+              fd.append('columnId',artFileCols[dId]);
+              await fetch('/api/upload-file',{method:'POST',body:fd});
+            }catch(e){console.warn('Artwork upload failed:',e);}
+          }
+        }
+      }
     }
 
     // Success
@@ -1334,9 +1450,14 @@ async function submitOrder(){
     document.getElementById('modalSuccess').classList.add('show');
     clearDraft();
     document.getElementById('successNum').textContent=orderNum?`Order ${orderNum}`:'';
+    document.querySelector('#modalSuccess .success-title').textContent=toPipeline?'Added to Pipeline!':'Order Created!';
+    document.querySelector('#modalSuccess .success-sub').textContent=toPipeline
+      ?'The lead has been added to the Pipeline in Monday.'
+      :'The order has been added to Active Orders in Monday.';
 
     // Trigger cache refresh in background
-    fetch(`${API}/api/refresh`).then(()=>load()).catch(()=>{});
+    fetch('/api/refresh').then(()=>load()).catch(()=>{});
+
 
   }catch(err){
     btn.classList.remove('loading');
@@ -1386,6 +1507,24 @@ function updateSideNavVisibility(){
 
 load();
 setInterval(load,60000);
+
+// Pre-fill new order form if navigated from Pipeline (convert to order flow)
+(function checkPrefill(){
+  const p=new URLSearchParams(window.location.search);
+  if(p.get('prefill')==='1'){
+    // Wait for DOM then open modal pre-filled
+    setTimeout(()=>{
+      openModal();
+      if(p.get('company'))document.getElementById('f-company').value=p.get('company');
+      if(p.get('contact'))document.getElementById('f-contact').value=p.get('contact');
+      if(p.get('email'))document.getElementById('f-email').value=p.get('email');
+      if(p.get('notes'))document.getElementById('f-notes').value=p.get('notes');
+      if(p.get('sales')){const sel=document.getElementById('f-sales');if(sel)sel.value=p.get('sales');}
+      // Clean URL
+      window.history.replaceState({},'',window.location.pathname);
+    },600);
+  }
+})();
 
 // Close on Escape
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
