@@ -1231,7 +1231,6 @@ async function saveOrderEdits(){
   btn.classList.add('loading');
   btn.textContent='Saving...';
   document.getElementById('modalStatus').textContent='Saving to Monday...';
-
   try{
     const company=v('f-company');
     const contact=v('f-contact');
@@ -1244,11 +1243,62 @@ async function saveOrderEdits(){
     const salesId=salesIdMap[salesName];
     const imprintId=v('f-imprint');
     const status=v('f-status');
-
-    // Rename item if company name changed
     const o=all.find(x=>x.id===editingOrderId);
+
+    // Rename parent item if company name changed
     if(company&&company!==o?.name){
-      const _cn=escGql(company);await mondayMutation(`mutation{change_item_name(board_id:${ORDERS_BOARD},item_id:${editingOrderId},value:"${_cn}"){id}}`);
+      await mondayMutation(`mutation{change_item_name(board_id:${ORDERS_BOARD},item_id:${editingOrderId},value:"${escGql(company)}"){id}}`);
+    }
+
+    // Build and send column values
+    const colVals={};
+    if(contact)colVals['text_mm221kg3']=contact;
+    if(email)colVals['email_mm22ap28']={email:email,text:email};
+    if(phone)colVals['phone_mm22ertc']={phone:phone,countryShortName:'US'};
+    if(ihd)colVals['date_mm22wpk2']={date:ihd};
+    if(shipto)colVals['text_mm26gtxp']=shipto;
+    if(notes)colVals['long_text_mm225vbf']={text:notes};
+    if(salesId)colVals['dropdown_mm22w5rr']={ids:[salesId]};
+    if(imprintId)colVals['dropdown_mm276wtz']={ids:[parseInt(imprintId)]};
+    if(status)colVals['color_mm27qyta']={label:status};
+    const addrStreet=v('f-addr-street');
+    const addrCity=v('f-addr-city');
+    const addrState=v('f-addr-state').toUpperCase();
+    const addrZip=v('f-addr-zip');
+    if(addrStreet||addrCity||addrState||addrZip){
+      const addrParts=[addrStreet,[addrCity,addrState].filter(Boolean).join(', '),addrZip].filter(Boolean);
+      colVals['location_mm2682nc']={address:addrParts.join(', '),lat:null,lng:null};
+    }
+    const cv=JSON.stringify(JSON.stringify(colVals));
+    await mondayMutation(`mutation{change_multiple_column_values(board_id:${ORDERS_BOARD},item_id:${editingOrderId},column_values:${cv}){id}}`);
+
+    // Save product edits
+    const decoStyleColsE={1:'dropdown_mm2y4w39',2:'dropdown_mm2yaxxz',3:'dropdown_mm2ygyew'};
+    const decoPlaceColsE={1:'text_mm2y6g62',2:'text_mm2yge79',3:'text_mm2y1j6j'};
+    const decoDescColsE={1:'text_mm2y3mb9',2:'text_mm2ymf5k',3:'text_mm2yjq0z'};
+    const decoScreenColsE={1:'numeric_mm2yn2nb',2:'numeric_mm2ynqby',3:'numeric_mm2y55qh'};
+    const decoColorColsE={1:'text_mm2y2y6a',2:'text_mm2y5vn6',3:'text_mm2y8bg8'};
+    const artFileColsE={1:'file_mm2y1yem',2:'file_mm2ya55c',3:'file_mm2yjme2'};
+    const productBlocksE=document.querySelectorAll('.product-block');
+    for(const pb of productBlocksE){
+      const pid=pb.id.replace('product-','');
+      const subitemId=pb.dataset.subitemId||null;
+      const pName=v(`p${pid}-name`);
+      const pStyle=v(`p${pid}-style`);
+      const pColor=v(`p${pid}-color`);
+      const pSize=v(`p${pid}-size`);
+      const pSupplier=v(`p${pid}-supplier`);
+      const pPrice=v(`p${pid}-price`);
+      const pCost=v(`p${pid}-cost`);
+      const pQtyDirect=v(`p${pid}-qty`);
+      let subCols={};
+      if(pStyle)subCols['text_mm22fv7y']=pStyle;
+      if(pColor)subCols['text_mm2276wz']=pColor;
+      if(pSize)subCols['text_mm22yw8s']=pSize;
+      if(pQtyDirect){
+        subCols['numeric_mm22crjt']=parseFloat(pQtyDirect);
+      } else if(pSize&&pSize.includes('/')){
+        let total=0;pSize.split(',').forEach(part=>{const m=part.trim().match(/\/(\d+)/);if(m)total+=parseInt(m[1]);});
         if(total>0)subCols['numeric_mm22crjt']=total;
       } else if(pSize&&!isNaN(parseFloat(pSize))&&!pSize.includes(',')){ subCols['numeric_mm22crjt']=parseFloat(pSize); }
       if(pSupplier)subCols['text_mm22qdag']=pSupplier;
@@ -1275,14 +1325,13 @@ async function saveOrderEdits(){
       }
       let resolvedSubId=subitemId;
       if(subitemId){
-        if(pName){if(pName){await mondayMutation(`mutation{change_item_name(board_id:${SUBITEMS_BOARD},item_id:${subitemId},value:"${escGql(pName)}"){id}}`);}        if(Object.keys(subCols).length>0){const sc=JSON.stringify(JSON.stringify(subCols));await mondayMutation(`mutation{change_multiple_column_values(board_id:${SUBITEMS_BOARD},item_id:${subitemId},column_values:${sc}){id}}`);}  
-        if(Object.keys(subCols).length>0){const sc=JSON.stringify(JSON.stringify(subCols));await mondayMutation(`mutation{change_multiple_column_values(board_id:${SUBITEMS_BOARD},item_id:${subitemId},column_values:${sc}){id}}`);}
+        if(pName){ await mondayMutation(`mutation{change_item_name(board_id:${SUBITEMS_BOARD},item_id:${subitemId},value:"${escGql(pName)}"){id}}`); }
+        if(Object.keys(subCols).length>0){ const sc=JSON.stringify(JSON.stringify(subCols)); await mondayMutation(`mutation{change_multiple_column_values(board_id:${SUBITEMS_BOARD},item_id:${subitemId},column_values:${sc}){id}}`); }
       } else if(pName){
         const subColsStr=JSON.stringify(JSON.stringify(subCols));
-                const newSub=await mondayMutation(`mutation{create_subitem(parent_item_id:${editingOrderId},item_name:"${escGql(pName)}",column_values:${subColsStr}){id}}`);
+        const newSub=await mondayMutation(`mutation{create_subitem(parent_item_id:${editingOrderId},item_name:"${escGql(pName)}",column_values:${subColsStr}){id}}`);
         resolvedSubId=newSub?.create_subitem?.id;
       }
-      // Upload artwork files for new or existing subitems
       if(resolvedSubId&&Object.keys(artworkFilesE).length){
         for(const [dId,file] of Object.entries(artworkFilesE)){
           try{
@@ -1296,7 +1345,7 @@ async function saveOrderEdits(){
       }
     }
 
-    // Update in-memory cache so table reflects changes immediately
+    // Update in-memory cache
     if(o){
       if(company)o.name=company;
       if(contact)o.contact=contact;
@@ -1316,8 +1365,6 @@ async function saveOrderEdits(){
     document.getElementById('successNum').textContent=o?.ccbNum?`Order ${o.ccbNum}`:'';
     document.querySelector('#modalSuccess .success-title').textContent='Changes Saved!';
     document.querySelector('#modalSuccess .success-sub').textContent='The order has been updated in Monday.';
-
-    // Refresh cache in background
     fetch(`${API}/api/refresh`).then(()=>load()).catch(()=>{});
 
   }catch(err){
@@ -1327,6 +1374,7 @@ async function saveOrderEdits(){
     alert('Error saving: '+err.message);
   }
 }
+
 
 async function submitOrder(){
   // EDIT MODE
