@@ -591,9 +591,15 @@ function buildProductCard(p,section){
         <span class="po-lbl">Tracking Link</span>
         <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="url" placeholder="https://..." value="${p.tracking}" id="track-${p.id}" oninput="scheduleAutoSave('${p.id}','${p.orderId}')">
       </div>
-      <div class="po-row">
-        <span class="po-lbl">Our Cost / Item</span>
-        <input class="po-input cost-input" style="width:100%" onclick="event.stopPropagation()" type="number" placeholder="0.00" step="0.01" value="${p.cost}" id="cost-${p.id}" onblur="saveCost('${p.id}',this.value)">
+      <div class="po-row-inline">
+        <div class="po-row" style="flex:1">
+          <span class="po-lbl">Our Cost / Item</span>
+          <input class="po-input cost-input" style="width:100%" onclick="event.stopPropagation()" type="number" placeholder="0.00" step="0.01" value="${p.cost}" id="cost-${p.id}" onblur="saveCost('${p.id}',this.value)">
+        </div>
+        <div class="po-row" style="flex:1">
+          <span class="po-lbl">Price / Item</span>
+          <input class="po-input cost-input" style="width:100%" onclick="event.stopPropagation()" type="number" placeholder="0.00" step="0.01" value="${p.price}" id="price-${p.id}" onblur="savePrice('${p.id}',this.value)">
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
         <button class="po-save-btn" onclick="event.stopPropagation();commitPoEntry('${p.id}','${p.orderId}')" id="po-save-btn-${p.id}">Save PO</button>
@@ -605,11 +611,37 @@ function buildProductCard(p,section){
   let costHtml='';
   if(section==='ord'||section==='tp_ord'){
     costHtml=`<div class="product-card-po">
-      <div class="po-row-inline" style="align-items:flex-end;justify-content:space-between">
+      <div class="po-row">
+        <span class="po-lbl">Supplier</span>
+        <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="text" placeholder="Supplier name" value="${p.supplier}" id="sup-${p.id}" oninput="scheduleAutoSave('${p.id}','${p.orderId}')">
+      </div>
+      <div class="po-row-inline">
+        <div class="po-row" style="flex:1">
+          <span class="po-lbl">PO Number</span>
+          <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="text" placeholder="PO-001" value="${p.poNum}" id="ponum-${p.id}" oninput="scheduleAutoSave('${p.id}','${p.orderId}')">
+        </div>
+        <div class="po-row" style="flex:1">
+          <span class="po-lbl">PO Date</span>
+          <input class="po-input date-input" style="width:100%" onclick="event.stopPropagation()" type="date" id="date-${p.id}" value="${p.poDate||''}" oninput="scheduleAutoSave('${p.id}','${p.orderId}')">
+        </div>
+      </div>
+      <div class="po-row">
+        <span class="po-lbl">Tracking Link</span>
+        <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="url" placeholder="https://..." value="${p.tracking}" id="track-${p.id}" oninput="scheduleAutoSave('${p.id}','${p.orderId}')">
+      </div>
+      <div class="po-row-inline">
         <div class="po-row" style="flex:1">
           <span class="po-lbl">Our Cost / Item</span>
-          <input class="po-input cost-input" style="width:100%" onclick="event.stopPropagation()" type="number" placeholder="0.00" value="${p.cost}" id="cost-${p.id}" onblur="saveCost('${p.id}',this.value)">
+          <input class="po-input cost-input" style="width:100%" onclick="event.stopPropagation()" type="number" placeholder="0.00" step="0.01" value="${p.cost}" id="cost-${p.id}" onblur="saveCost('${p.id}',this.value)">
         </div>
+        <div class="po-row" style="flex:1">
+          <span class="po-lbl">Price / Item</span>
+          <input class="po-input cost-input" style="width:100%" onclick="event.stopPropagation()" type="number" placeholder="0.00" step="0.01" value="${p.price}" id="price-${p.id}" onblur="savePrice('${p.id}',this.value)">
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+        <button class="po-save-btn" onclick="event.stopPropagation();commitPoEntry('${p.id}','${p.orderId}')" id="po-save-btn-${p.id}">Save</button>
+        <span class="po-saved-msg" id="po-saved-${p.id}"></span>
         ${section==='tp_ord'?`<button class="complete-btn" onclick="event.stopPropagation();mark3rdPartyComplete('${p.orderId}','${p.id}',this)">Mark Complete</button>`:''}
       </div>
     </div>`;
@@ -721,6 +753,21 @@ async function saveCost(subId,val){
   showToast('Saving cost...');
   try{
     await mq(`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"numeric_mm266zz9",value:"${num}"){id}}`);
+    const allBuckets=[allToBeOrdered,allOrdered,allThirdParty,allPromoCodes];
+    for(const b of allBuckets){const p=b.find(x=>String(x.id)===String(subId));if(p){p.cost=String(num);break;}}
+    showToast('Saved',false);hideToast();
+  }catch(err){showToast('Error: '+err.message,false);hideToast(3000);}
+}
+
+async function savePrice(subId,val){
+  if(!val)return;
+  const num=parseFloat(val);
+  if(isNaN(num))return;
+  showToast('Saving price...');
+  try{
+    await mq(`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"numeric_mm2299qw",value:"${num}"){id}}`);
+    const allBuckets=[allToBeOrdered,allOrdered,allThirdParty,allPromoCodes];
+    for(const b of allBuckets){const p=b.find(x=>String(x.id)===String(subId));if(p){p.price=String(num);break;}}
     showToast('Saved',false);hideToast();
   }catch(err){showToast('Error: '+err.message,false);hideToast(3000);}
 }
@@ -847,11 +894,19 @@ function openProductDetail(subId){
             value="${p.tracking}" id="modal-track-${p.id}"
             onblur="savePoField('${p.id}','tracking',this.value)">
         </div>
-        <div>
-          <div class="detail-lbl" style="margin-bottom:4px">Our Cost / Item</div>
-          <input class="po-input cost-input" style="width:160px" type="number" placeholder="0.00" step="0.01"
-            value="${p.cost}" id="modal-cost-${p.id}"
-            onblur="saveCost('${p.id}',this.value)">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:120px">
+            <div class="detail-lbl" style="margin-bottom:4px">Our Cost / Item</div>
+            <input class="po-input cost-input" style="width:100%" type="number" placeholder="0.00" step="0.01"
+              value="${p.cost}" id="modal-cost-${p.id}"
+              onblur="saveCost('${p.id}',this.value)">
+          </div>
+          <div style="flex:1;min-width:120px">
+            <div class="detail-lbl" style="margin-bottom:4px">Price / Item</div>
+            <input class="po-input cost-input" style="width:100%" type="number" placeholder="0.00" step="0.01"
+              value="${p.price}" id="modal-price-${p.id}"
+              onblur="savePrice('${p.id}',this.value)">
+          </div>
         </div>
         <div style="font-size:11px;color:var(--text3)">Changes save when you click out of each field.</div>
       </div>`;
