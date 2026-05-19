@@ -583,9 +583,9 @@ function buildProductSummaryLines(subitems){
     const ps=sCol(sub,'color_mm25v786');
     const sl=(ps||'').toLowerCase();
     let icon='', iconStyle='';
-    if(sl.includes('decorated')){icon='✓';iconStyle='color:#059669;font-weight:700';}
-    else if(sl.includes('ordered')){icon='✓';iconStyle='color:#3B82F6;font-weight:700';}
-    else if(sl.includes('in house')){icon='●';iconStyle='color:#F59E0B;font-size:9px';}
+    if(sl.includes('decorated')){icon='✓';iconStyle='color:#D97706;font-weight:700';}
+    else if(sl.includes('ordered')){icon='✓';iconStyle='color:#059669;font-weight:700';}
+    else if(sl.includes('in house')){icon='●';iconStyle='color:#3B82F6;font-size:9px';}
     return`<div class="product-line"><span class="product-line-name" title="${name}">${name}</span>${icon?`<span style="font-size:11px;${iconStyle}" title="${ps}">${icon}</span>`:''}</div>`;
   }).join('');
 }
