@@ -688,15 +688,27 @@ async function commitPoEntry(subId,orderId,explicitDate=null){
       const prod=bucket.find(p=>String(p.id)===String(subId));
       if(prod){if(supplier)prod.supplier=supplier;if(poNum)prod.poNum=poNum;if(tracking)prod.tracking=tracking;prod.poDate=explicitDate||today;prod.statusIndex=statusIndex;break;}
     }
-    // Move from To Be Ordered to Ordered now that it has a PO date
+    // Move from To Be Ordered to Ordered after a 5s delay (allows undoing accidental saves)
     const tboIdx=allToBeOrdered.findIndex(p=>String(p.id)===String(subId));
     if(tboIdx!==-1){
-      const [moved]=allToBeOrdered.splice(tboIdx,1);
-      allOrdered.push(moved);
-      const srt=(a,b)=>{const ai=a.orderInfo.inHands,bi=b.orderInfo.inHands;if(!ai&&!bi)return 0;if(!ai)return 1;if(!bi)return-1;return new Date(ai)-new Date(bi);};
-      allOrdered.sort(srt);
+      const moveBtn=document.getElementById('po-save-btn-'+subId);
+      let countdown=5;
+      if(moveBtn){moveBtn.textContent=`Moving in ${countdown}s...`;moveBtn.disabled=true;}
+      const timer=setInterval(()=>{
+        countdown--;
+        if(moveBtn)moveBtn.textContent=countdown>0?`Moving in ${countdown}s...`:'Moved';
+        if(countdown<=0){
+          clearInterval(timer);
+          const [moved]=allToBeOrdered.splice(tboIdx,1);
+          allOrdered.push(moved);
+          const srt=(a,b)=>{const ai=a.orderInfo.inHands,bi=b.orderInfo.inHands;if(!ai&&!bi)return 0;if(!ai)return 1;if(!bi)return-1;return new Date(ai)-new Date(bi);};
+          allOrdered.sort(srt);
+          applyTabFilter();render();
+        }
+      },1000);
+    } else {
+      applyTabFilter();render();
     }
-    applyTabFilter();render();
   }catch(err){showToast('Error: '+err.message,false);hideToast(3000);}
 }
 

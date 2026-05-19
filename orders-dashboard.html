@@ -475,6 +475,10 @@
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h9M5 3V2h3v1M4 3l.5 7.5h4L9 3"/></svg>
           Delete
         </button>
+        <label id="pipelineLabel" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;margin-right:4px">
+          <input type="checkbox" id="f-pipeline" style="width:14px;height:14px;accent-color:var(--cyan)">
+          Save to Pipeline instead
+        </label>
         <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
         <button class="btn btn-primary" id="submitBtn" onclick="submitOrder()">
           Create Order
@@ -715,14 +719,21 @@ function sortBy(c){sort.dir=sort.col===c?(sort.dir==='asc'?'desc':'asc'):'desc';
   document.querySelectorAll('thead th').forEach(th=>{th.classList.remove('sorted');const a=th.querySelector('.sort-arrow');if(a)a.textContent='↕';});
   const th=document.querySelector(`th[data-col="${c}"]`);if(th){th.classList.add('sorted');const a=th.querySelector('.sort-arrow');if(a)a.textContent=sort.dir==='asc'?'↑':'↓';}
   doSort();render();}
-function doSort(){const m=sort.dir==='asc'?1:-1;filtered.sort((a,b)=>{let va='',vb='';
+function doSort(){
+  const m=sort.dir==='asc'?1:-1;
+  const statusOrder={'New':0,'In House':1,'Products Ordered':2,'Decorated':3,'3rd Party Ordered':4,'3rd Party Complete':5,'Promo Code':6,'Ready for Shipping':7,'Shipped':8,'Delivered':9};
+  filtered.sort((a,b)=>{let va='',vb='';
   if(sort.col==='orderNum'){va=a.ccbNum||a.orderNum;vb=b.ccbNum||b.orderNum;}
   else if(sort.col==='name'){va=a.name;vb=b.name;}
-  else if(sort.col==='status'){va=a.status;vb=b.status;}
+  else if(sort.col==='status'){
+    const ai=statusOrder[a.status]??99, bi=statusOrder[b.status]??99;
+    return (ai-bi)*m;
+  }
   else if(sort.col==='ihd'){va=a.ihd;vb=b.ihd;}
   else if(sort.col==='sales'){va=a.sales;vb=b.sales;}
   else if(sort.col==='invoice'){va=a.invoice;vb=b.invoice;}
-  return va<vb?-m:va>vb?m:0;});}
+  return va<vb?-m:va>vb?m:0;});
+}
 
 async function deleteOrder(){
   if(!editingOrderId)return;
@@ -791,9 +802,11 @@ function openEditModal(orderId){
   document.getElementById('modalTitle').textContent='Edit Order';
   document.getElementById('submitBtn').textContent='Save Changes';
 
-  // Show delete button in edit mode
+  // Show delete button, hide pipeline checkbox in edit mode
   const deleteBtn=document.getElementById('deleteOrderBtn');
   if(deleteBtn)deleteBtn.style.display='inline-flex';
+  const pipelineLabel=document.getElementById('pipelineLabel');
+  if(pipelineLabel)pipelineLabel.style.display='none';
 
   // Hide pipeline checkbox in edit mode (no longer in HTML but guard anyway)
 
@@ -1005,6 +1018,10 @@ function resetModal(){
   });
   const deleteBtn=document.getElementById('deleteOrderBtn');
   if(deleteBtn)deleteBtn.style.display='none';
+  const pipelineLabel=document.getElementById('pipelineLabel');
+  if(pipelineLabel)pipelineLabel.style.display='flex';
+  const pipelineCb=document.getElementById('f-pipeline');
+  if(pipelineCb)pipelineCb.checked=false;
   // Remove injected status field if present
   const sf=document.getElementById('f-status');
   if(sf)sf.closest('.form-row')?.remove();
@@ -1343,20 +1360,13 @@ async function saveOrderEdits(){
 }
 
 async function submitOrder(){
-  // EDIT MODE -- check both editingOrderId and button label as safety net
-  const btn=document.getElementById('submitBtn');
-  const isEditMode=!!(editingOrderId)||(btn&&btn.textContent.trim()==='Save Changes');
-  if(isEditMode&&editingOrderId){
+  // EDIT MODE
+  if(editingOrderId){
     await saveOrderEdits();
     return;
   }
-  if(isEditMode&&!editingOrderId){
-    // Safety: button says Save Changes but ID was lost -- reload and warn
-    alert('Edit session lost. Please close and reopen the edit modal.');
-    return;
-  }
 
-  const toPipeline = false; // Pipeline checkbox removed; use Pipeline page directly
+  const toPipeline = document.getElementById('f-pipeline')?.checked || false;
 
   // Validate
   if(!v('f-company')){alert('Company name is required.');document.getElementById('f-company').focus();return;}
