@@ -512,6 +512,41 @@ cron.schedule('0 14 * * 1-5', async () => {
 // Initial fetch on startup
 fetchFromMonday();
 
+// ── FILE PROXY -- serves Monday protected_static files with auth ──────────────
+// Usage: /api/file-proxy?assetId=12345
+// Fetches the signed public_url from Monday assets API then streams the file back
+app.get('/api/file-proxy', async (req, res) => {
+  const { assetId } = req.query;
+  if (!assetId) return res.status(400).json({ error: 'assetId required' });
+  try {
+    // Get signed URL from Monday assets API
+    const q = `{assets(ids:[${assetId}]){id name public_url url_thumbnail}}`;
+    const apiRes = await fetch('https://api.monday.com/v2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': MONDAY_API_KEY, 'API-Version': '2024-01' },
+      body: JSON.stringify({ query: q })
+    });
+    const data = await apiRes.json();
+    const asset = data?.data?.assets?.[0];
+    if (!asset) return res.status(404).json({ error: 'Asset not found' });
+
+    // Use public_url but strip the content-disposition so it renders inline
+    const signedUrl = asset.public_url;
+    const fileRes = await fetch(signedUrl);
+    if (!fileRes.ok) return res.status(fileRes.status).send('Failed to fetch asset');
+
+    // Forward content-type, remove attachment disposition
+    const ct = fileRes.headers.get('content-type') || 'application/octet-stream';
+    const fname = asset.name || 'file';
+    res.set('Content-Type', ct);
+    res.set('Content-Disposition', `inline; filename="${fname}"`);
+    res.set('Cache-Control', 'private, max-age=3300'); // cache ~55min (URL expires in 60)
+    fileRes.body.pipe(res);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`CCB Tools server running on port ${PORT}`);
 });

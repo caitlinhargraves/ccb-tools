@@ -336,7 +336,7 @@ async function resolveAssets(ids){
   try{
     const data=await mq(`{assets(ids:[${missing.join(',')}]){id name url public_url}}`);
     for(const a of (data.assets||[])){
-      assetCache[a.id]={url:a.public_url||a.url,name:a.name};
+      assetCache[a.id]={url:`/api/file-proxy?assetId=${a.id}`,name:a.name,publicUrl:a.public_url||a.url};
     }
   }catch(e){}
 }
@@ -453,7 +453,7 @@ function openProductModal(subId,section){
   const _allArtAssets=p.artworkAssetIds.map(id=>assetCache[id]).filter(Boolean);
   let artworkHtml='';
   if(_allArtAssets.length){
-    artworkHtml=`<div class="modal-section-title">Artwork Files</div>${_allArtAssets.map(a=>`<div class="modal-file-row"><span class="modal-file-name">${a.name}</span><a class="modal-download-btn" href="${a.url}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(a.url)?'Open PDF':'Download'}</a></div>`).join('')}`;
+    artworkHtml=`<div class="modal-section-title">Artwork Files</div>${_allArtAssets.map(a=>`<div class="modal-file-row"><span class="modal-file-name">${a.name}</span><a class="modal-download-btn" href="${a.publicUrl||a.url}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(a.url)?'Open PDF':'Download'}</a></div>`).join('')}`;
   } else if(p.artworkUrl){
     const fname=getFilename(p.artworkUrl);
     artworkHtml=`<div class="modal-section-title">Artwork Files</div><div class="modal-file-row"><span class="modal-file-name">${fname}</span><a class="modal-download-btn" href="${p.artworkUrl}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(p.artworkUrl)?'Open PDF':'Download'}</a></div>`;
