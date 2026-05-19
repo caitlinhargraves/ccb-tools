@@ -636,7 +636,12 @@ function parseProduct(item,sub){
   const sc={};for(const c of sub.column_values)sc[c.id]=c;
   const decoStyleId=parseInt(sc[S_DECO]?.value?JSON.parse(sc[S_DECO].value||'{}')?.ids?.[0]||0:0);
   const decoStyleText=sc[S_DECO]?.text||'';
-  const decoStyleDisplay=decoStyleId===3||decoStyleId===4?'DTG / DTF':decoStyleText||'Other';
+  // Prefer slot-based deco style for display -- old S_DECO column may be stale
+  const _slotStyleId=(()=>{for(const slot of DECO_SLOTS){try{const ids=JSON.parse(sc[slot.style]?.value||'{}')?.ids||[];if(ids.some(id=>STATION_IDS.includes(parseInt(id))))return parseInt(ids[0]);}catch(e){}}return 0;})();
+  const _slotStyleText=(()=>{for(const slot of DECO_SLOTS){const t=sc[slot.style]?.text||'';if(t)return t;}return '';})();
+  const _effectiveId=_slotStyleId||decoStyleId;
+  const _effectiveText=_slotStyleId?_slotStyleText:decoStyleText;
+  const decoStyleDisplay=_effectiveId===3||_effectiveId===4?'DTG / DTF':_effectiveText||'Other';
   // text field has direct Monday URL, value has assetId for download
   const mockupUrl=sc[S_MOCKUP]?.text||null;
   const artworkUrl=sc[S_ARTWORK]?.text||null;
