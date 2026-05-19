@@ -354,7 +354,11 @@ async function saveDecoFields(subId) {
   if (btn) { btn.classList.add('saving'); btn.textContent = 'Saving...'; }
 
   const p = [...(allActive||[]),...(allUpcoming||[])].find(x=>x.id===subId);
-  if (!p) return;
+  if (!p) {
+    if (btn) { btn.classList.remove('saving'); btn.textContent = 'Save'; }
+    alert('Save error: could not find product in active list. Try refreshing the page.');
+    return;
+  }
 
   // Collect values from inputs
   const colVals = {};
@@ -380,6 +384,10 @@ async function saveDecoFields(subId) {
   }
 
   try {
+    if (!Object.keys(colVals).length) {
+      if (btn) { btn.classList.remove('saving'); btn.textContent = 'Save'; }
+      return;
+    }
     const colStr = JSON.stringify(JSON.stringify(colVals));
     await mq(`mutation{change_multiple_column_values(board_id:${SUBS_BOARD},item_id:${subId},column_values:${colStr}){id}}`);
     if (saved) { saved.classList.add('show'); setTimeout(()=>saved.classList.remove('show'), 2000); }
@@ -529,25 +537,25 @@ function buildCardView(p,section){
         <div class="edit-field-row">
           <div class="edit-field">
             <div class="edit-lbl">Colors / Thread</div>
-            <input class="edit-input" id="edit-colors-${p.id}" type="text"
+            <input class="edit-input" id="edit-colors-${p.id}" type="text" onclick="event.stopPropagation()"
               value="${p.colors||''}" placeholder="e.g. White, Navy...">
           </div>
           ${(!p.decoStyleDisplay||p.decoStyleDisplay.toLowerCase().includes('screen')||p.decoStyleDisplay.toLowerCase().includes('dtg')||p.decoStyleDisplay.toLowerCase().includes('dtf'))?`
           <div class="edit-field narrow">
             <div class="edit-lbl">Screens</div>
-            <input class="edit-input" id="edit-screens-${p.id}" type="number"
+            <input class="edit-input" id="edit-screens-${p.id}" type="number" onclick="event.stopPropagation()"
               value="${p.screens||''}" placeholder="0" min="0">
           </div>`:`<input type="hidden" id="edit-screens-${p.id}" value="">`}
         </div>
         <div class="edit-field">
           <div class="edit-lbl">Production Notes</div>
-          <textarea class="edit-textarea" id="edit-notes-${p.id}"
+          <textarea class="edit-textarea" id="edit-notes-${p.id}" onclick="event.stopPropagation()"
             placeholder="Instructions, price increase, special handling...">${p.prodNotes||''}</textarea>
           ${p.prodNotes&&p.prodNotes.toLowerCase().includes('price')?'<span class="price-note">⚠ Price change noted</span>':''}
         </div>
       </div>
       <div class="edit-actions">
-        <button class="edit-save-btn" id="edit-save-${p.id}" onclick="saveDecoFields('${p.id}')">
+        <button class="edit-save-btn" id="edit-save-${p.id}" onclick="event.stopPropagation();saveDecoFields('${p.id}')">
           <svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-5"/></svg>
           Save
         </button>
@@ -632,7 +640,9 @@ function parseProduct(item,sub){
   // text field has direct Monday URL, value has assetId for download
   const mockupUrl=sc[S_MOCKUP]?.text||null;
   const artworkUrl=sc[S_ARTWORK]?.text||null;
-  const artworkAssetIds=extractAssetIds(sc[S_ARTWORK]?.value);
+  // Collect artwork assetIds from all three deco slot columns, fall back to legacy S_ARTWORK column
+  const _slotArtIds=[D1_ART,D2_ART,D3_ART].flatMap(col=>extractAssetIds(sc[col]?.value));
+  const artworkAssetIds=_slotArtIds.length?_slotArtIds:extractAssetIds(sc[S_ARTWORK]?.value);
   const mockupAssetId=extractAssetIds(sc[S_MOCKUP]?.value)[0]||null;
   // Resolve deco slots for this station
   const _mySlots=typeof getMyDecoSlots==='function'?getMyDecoSlots(sc):[];

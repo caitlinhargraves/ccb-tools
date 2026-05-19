@@ -452,6 +452,16 @@
             <textarea class="form-textarea" id="f-notes" placeholder="Any special instructions or context..."></textarea>
           </div>
         </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Other Charges ($)</label>
+            <input type="number" class="form-input" id="f-other-charges" placeholder="0.00" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Other Charges Details</label>
+            <input type="text" class="form-input" id="f-other-charges-details" placeholder="e.g. Rush fee, setup, shipping...">
+          </div>
+        </div>
       </div>
 
       <!-- PRODUCTS -->
@@ -533,7 +543,9 @@ function parseOrder(o){
     ihd:col(o,'date_mm22wpk2'),contact:col(o,'text_mm221kg3'),invoice:col(o,'color_mm282b4b')||'Not Invoiced',
     imprint:iv?.ids?.map(i=>impMap[i]).filter(Boolean).join(', ')||'',
     tracking:colV(o,'link_mm22d8ca')?.url||'',notes:col(o,'long_text_mm225vbf'),
-    shippingTo:col(o,'text_mm26gtxp'),address:col(o,'location_mm2682nc'),email:colV(o,'email_mm22ap28')?.email||'',phone:col(o,'phone_mm22ertc'),subitems:o.subitems||[],groupId:o.group?.id||'topics'};
+    shippingTo:col(o,'text_mm26gtxp'),address:col(o,'location_mm2682nc'),email:colV(o,'email_mm22ap28')?.email||'',phone:col(o,'phone_mm22ertc'),
+    otherCharges:colV(o,'numeric_mm222s2j')||'',otherChargesDetails:col(o,'long_text_mm22zdh2')||'',
+    subitems:o.subitems||[],groupId:o.group?.id||'topics'};
 }
 
 function statusBadge(s){
@@ -841,6 +853,10 @@ function openEditModal(orderId){
   document.getElementById('f-ihd').value=o.ihd||'';
   document.getElementById('f-shipto').value=o.shippingTo||'';
   document.getElementById('f-notes').value=o.notes||'';
+  const ocEl=document.getElementById('f-other-charges');
+  if(ocEl)ocEl.value=o.otherCharges||'';
+  const ocdEl=document.getElementById('f-other-charges-details');
+  if(ocdEl)ocdEl.value=o.otherChargesDetails||'';
 
   // Pre-fill address fields if available
   if(o.address){
@@ -1033,7 +1049,7 @@ function resetModal(){
   document.getElementById('submitBtn').classList.remove('loading');
   document.getElementById('submitBtn').textContent='Create Order';
   ['f-company','f-contact','f-email','f-phone','f-shipto','f-payment','f-notes',
-   'f-addr-street','f-addr-city','f-addr-state','f-addr-zip'].forEach(id=>{
+   'f-addr-street','f-addr-city','f-addr-state','f-addr-zip','f-other-charges','f-other-charges-details'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   ['f-sales','f-imprint'].forEach(id=>{
@@ -1261,6 +1277,10 @@ async function saveOrderEdits(){
     if(salesId)colVals['dropdown_mm22w5rr']={ids:[salesId]};
     if(imprintId)colVals['dropdown_mm276wtz']={ids:[parseInt(imprintId)]};
     if(status)colVals['color_mm27qyta']={label:status};
+    const otherChargesE=v('f-other-charges');
+    const otherChargesDetailsE=v('f-other-charges-details');
+    if(otherChargesE)colVals['numeric_mm222s2j']=parseFloat(otherChargesE);
+    if(otherChargesDetailsE)colVals['long_text_mm22zdh2']={text:otherChargesDetailsE};
     const addrStreet=v('f-addr-street');
     const addrCity=v('f-addr-city');
     const addrState=v('f-addr-state').toUpperCase();
@@ -1383,6 +1403,7 @@ async function submitOrder(){
     return;
   }
 
+  const btn=document.getElementById('submitBtn');
   const toPipeline = document.getElementById('f-pipeline')?.checked || false;
 
   // Validate
@@ -1429,6 +1450,8 @@ async function submitOrder(){
     const payment=v('f-payment');
     const notes=v('f-notes');
     const contact=v('f-contact');
+    const otherCharges=v('f-other-charges');
+    const otherChargesDetails=v('f-other-charges-details');
 
     let colVals={
       'date4':{date:today},
@@ -1449,6 +1472,8 @@ async function submitOrder(){
       const fullAddr=addrParts.join(', ');
       colVals['location_mm2682nc']={address:fullAddr,lat:null,lng:null};
     }
+    if(otherCharges)colVals['numeric_mm222s2j']=parseFloat(otherCharges);
+    if(otherChargesDetails)colVals['long_text_mm22zdh2']={text:otherChargesDetails};
 
     const targetGroup=toPipeline?PENDING_GROUP:ACTIVE_GROUP;
     const colValsStr=JSON.stringify(JSON.stringify(colVals));

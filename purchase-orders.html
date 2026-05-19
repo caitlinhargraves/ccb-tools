@@ -267,7 +267,7 @@ async function mq(q){
 
 function ffile(val,txt){
   if(!val&&!txt)return null;
-  try{const p=JSON.parse(val||'{}');if(p.files&&p.files.length)return p.files[p.files.length-1].url||p.files[p.files.length-1].public_url||null;if(p.url)return p.url;}catch(e){}
+  try{const p=JSON.parse(val||'{}');if(p.files&&p.files.length){const f=p.files[p.files.length-1];if(f.assetId)return `/api/file-proxy?assetId=${f.assetId}`;if(f.url||f.public_url)return f.url||f.public_url;}if(p.url)return p.url;}catch(e){}
   const m=((val||'')+' '+(txt||'')).match(/https?:\/\/[^\s"',)]+/);
   return m?m[0]:null;
 }

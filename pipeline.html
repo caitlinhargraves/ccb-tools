@@ -257,6 +257,16 @@
         <label class="form-label">Notes</label>
         <textarea class="form-textarea" id="f-notes" placeholder="Context, conversation notes, next steps..."></textarea>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Other Charges ($)</label>
+          <input type="number" class="form-input" id="f-other-charges" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Other Charges Details</label>
+          <input type="text" class="form-input" id="f-other-charges-details" placeholder="e.g. Rush fee, setup...">
+        </div>
+      </div>
 
     </div>
     <div class="modal-footer">
@@ -307,7 +317,7 @@ function buildTicketNotes(status,value,interest,followup,notes){
 async function loadTickets(){
   const btn=document.getElementById('refresh-btn');btn.classList.add('spinning');
   try{
-    const cols=[O_NUM,O_CONTACT,O_EMAIL,O_NOTES,O_SALES,O_INHAND,'phone_mm22ertc','dropdown_mm276wtz','text_mm26gtxp','text_mm22t49y','location_mm2682nc'].map(c=>`"${c}"`).join(',');
+    const cols=[O_NUM,O_CONTACT,O_EMAIL,O_NOTES,O_SALES,O_INHAND,'phone_mm22ertc','dropdown_mm276wtz','text_mm26gtxp','text_mm22t49y','location_mm2682nc','numeric_mm222s2j','long_text_mm22zdh2'].map(c=>`"${c}"`).join(',');
     const q=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name group{id}column_values(ids:[${cols}]){id text value}}}}}`;
     const data=await mq(q);
     const items=data.boards[0].items_page.items.filter(i=>i.group?.id===PENDING_GROUP);
@@ -326,6 +336,7 @@ async function loadTickets(){
         imprintId,shipTo:cv['text_mm26gtxp']?.text||'',payment:cv['text_mm22t49y']?.text||'',
         addrStreet:addrParts[0]||'',addrCity:addrParts[1]||'',
         addrState:stateZip[0]||'',addrZip:addrParts[3]||stateZip[1]||'',
+        otherCharges:cv['numeric_mm222s2j']?.text||'',otherChargesDetails:cv['long_text_mm22zdh2']?.text||'',
         ihd:cv[O_INHAND]?.text||'',followupDate:meta.followup||cv[O_INHAND]?.text||'',...meta};
     });
     updateStats();renderTickets();
@@ -430,6 +441,10 @@ function openModal(id){
   document.getElementById('f-addr-state').value=t?.addrState||'';
   document.getElementById('f-addr-zip').value=t?.addrZip||'';
   document.getElementById('f-notes').value=t?.notes||'';
+  const ocPEl=document.getElementById('f-other-charges');
+  if(ocPEl)ocPEl.value=t?.otherCharges||'';
+  const ocdPEl=document.getElementById('f-other-charges-details');
+  if(ocdPEl)ocdPEl.value=t?.otherChargesDetails||'';
   if(document.getElementById('f-sales'))document.getElementById('f-sales').value=t?.sales||'';
   if(document.getElementById('f-imprint'))document.getElementById('f-imprint').value=t?.imprintId||'';
   document.getElementById('submit-btn').textContent=id?'Save':'Create Order';
@@ -479,6 +494,8 @@ async function createTicket(){
   const addrCity=document.getElementById('f-addr-city').value.trim();
   const addrState=document.getElementById('f-addr-state').value.trim().toUpperCase();
   const addrZip=document.getElementById('f-addr-zip').value.trim();
+  const otherCharges=document.getElementById('f-other-charges')?.value.trim();
+  const otherChargesDetails=document.getElementById('f-other-charges-details')?.value.trim();
 
   const fullNotes=buildTicketNotes(status,value,interest,followup,notes);
 
@@ -496,6 +513,8 @@ async function createTicket(){
       const parts=[addrStreet,[addrCity,addrState].filter(Boolean).join(', '),addrZip].filter(Boolean);
       colVals['location_mm2682nc']={address:parts.join(', '),lat:null,lng:null};
     }
+    if(otherCharges)colVals['numeric_mm222s2j']=parseFloat(otherCharges);
+    if(otherChargesDetails)colVals['long_text_mm22zdh2']={text:otherChargesDetails};
     const cv=JSON.stringify(JSON.stringify(colVals));
     if(editingId){
       await mq(`mutation{change_item_name(board_id:${ORDERS_BOARD},item_id:${editingId},value:"${company.replace(/"/g,'\\"')}"){id}}`);
