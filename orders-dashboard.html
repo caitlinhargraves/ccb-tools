@@ -1350,7 +1350,6 @@ async function submitOrder(){
     }
   }
 
-  const btn=document.getElementById('submitBtn');
   btn.classList.add('loading');
   btn.textContent=toPipeline?'Adding to Pipeline...':'Creating...';
   document.getElementById('modalStatus').textContent=toPipeline?'Adding to Pipeline in Monday...':'Creating order in Monday...';
