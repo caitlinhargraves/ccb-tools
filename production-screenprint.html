@@ -455,16 +455,49 @@ function openProductModal(subId,section){
     ['Order',p.orderName],['CCB #',p.ccbNum],['Contact',p.contact],
     ['In Hands',p.inHands||'—'],['Shelf',p.shelf||'—'],
     ['Qty',p.qty||'—'],['Color',p.color||'—'],['Size',p.size||'—'],
-    ['Style #',p.style||'—'],['Placement',p.placement||'—'],
+    ['Style #',p.style||'—'],
   ].filter(([,v])=>v&&v!=='—').map(([l,v])=>`<div class="modal-cell"><div class="modal-lbl">${l}</div><div class="modal-val">${v}</div></div>`).join('');
-  
-  const _allArtAssets=p.artworkAssetIds.map(id=>assetCache[id]).filter(Boolean);
+
+  // Build per-slot decoration sections (placement + description + artwork file)
+  const SLOT_DEFS=[
+    {style:'dropdown_mm2y4w39',place:'text_mm2y6g62',desc:'text_mm2y3mb9',art:'file_mm2y1yem',num:1},
+    {style:'dropdown_mm2yaxxz',place:'text_mm2yge79',desc:'text_mm2ymf5k',art:'file_mm2ya55c',num:2},
+    {style:'dropdown_mm2ygyew',place:'text_mm2y1j6j',desc:'text_mm2yjq0z',art:'file_mm2yjme2',num:3},
+  ];
+  let decoSlotsHtml='';
+  if(p.mySlots&&p.mySlots.length){
+    decoSlotsHtml=p.mySlots.map(slot=>{
+      const slotDef=SLOT_DEFS.find(s=>s.style===slot.style)||null;
+      const placement=slot.place&&p.id?(document.getElementById('edit-colors-'+p.id),slotDef?assetCache[extractSlotArtId(slotDef,p)]:null,slot.place):slot.place||'';
+      // Get placement/desc from the product's sc data via slot column IDs
+      const _sc=p._sc||{};
+      const _place=_sc[slot.place]?.text||'';
+      const _desc=_sc[slot.desc]?.text||'';
+      const _artId=slotDef?extractAssetIds(_sc[slotDef.art]?.value)[0]:null;
+      const _artAsset=_artId?assetCache[_artId]:null;
+      const _artName=_artAsset?.name||(_sc[slotDef?.art]?.text?getFilename(_sc[slotDef?.art]?.text):'');
+      const _artUrl=_artAsset?.url||_sc[slotDef?.art]?.text||null;
+      let html=`<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:8px">`;
+      html+=`<div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Decoration ${slot.num||''}</div>`;
+      if(_place)html+=`<div style="font-size:12px;margin-bottom:3px"><span style="color:var(--text3)">Placement:</span> ${_place}</div>`;
+      if(_desc)html+=`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--text3)">Artwork:</span> ${_desc}</div>`;
+      if(_artUrl)html+=`<div class="modal-file-row"><span class="modal-file-name">${_artName||'Art file'}</span><a class="modal-download-btn" href="${_artUrl}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>Download</a></div>`;
+      html+=`</div>`;
+      return html;
+    }).join('');
+    if(decoSlotsHtml)decoSlotsHtml=`<div class="modal-section-title">Decoration Details</div>`+decoSlotsHtml;
+  }
+
+  // Fallback artwork list if no slots
   let artworkHtml='';
-  if(_allArtAssets.length){
-    artworkHtml=`<div class="modal-section-title">Artwork Files</div>${_allArtAssets.map(a=>`<div class="modal-file-row"><span class="modal-file-name">${a.name}</span><a class="modal-download-btn" href="${a.publicUrl||a.url}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(a.url)?'Open PDF':'Download'}</a></div>`).join('')}`;
-  } else if(p.artworkUrl){
-    const fname=getFilename(p.artworkUrl);
-    artworkHtml=`<div class="modal-section-title">Artwork Files</div><div class="modal-file-row"><span class="modal-file-name">${fname}</span><a class="modal-download-btn" href="${p.artworkUrl}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(p.artworkUrl)?'Open PDF':'Download'}</a></div>`;
+  if(!p.mySlots||!p.mySlots.length){
+    const _allArtAssets=p.artworkAssetIds.map(id=>assetCache[id]).filter(Boolean);
+    if(_allArtAssets.length){
+      artworkHtml=`<div class="modal-section-title">Artwork Files</div>${_allArtAssets.map(a=>`<div class="modal-file-row"><span class="modal-file-name">${a.name}</span><a class="modal-download-btn" href="${a.publicUrl||a.url}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(a.url)?'Open PDF':'Download'}</a></div>`).join('')}`;
+    } else if(p.artworkUrl){
+      const fname=getFilename(p.artworkUrl);
+      artworkHtml=`<div class="modal-section-title">Artwork Files</div><div class="modal-file-row"><span class="modal-file-name">${fname}</span><a class="modal-download-btn" href="${p.artworkUrl}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(p.artworkUrl)?'Open PDF':'Download'}</a></div>`;
+    }
   }
   
   const prodNotesHtml=p.prodNotes?`<div class="modal-section-title">Production Notes</div><div style="font-size:12px;color:var(--text2);background:var(--surface2);border-radius:50px;padding:10px 12px;margin-bottom:4px">${p.prodNotes}</div>`:'';
@@ -473,7 +506,7 @@ function openProductModal(subId,section){
     ?`<button class="modal-decorated-btn" id="modal-dec-btn-${p.id}" onclick="markDecorated('${p.id}','${p.orderId}',this)"><svg viewBox="0 0 10 8"><polyline points="1 4 4 7 9 1"/></svg>Mark Decorated</button>`
     :'';
 
-  document.getElementById('modal-body').innerHTML=`${mockupHtml}<div class="modal-detail-grid">${fields}</div>${artworkHtml}${prodNotesHtml}${decoratedBtn}`;
+  document.getElementById('modal-body').innerHTML=`${mockupHtml}<div class="modal-detail-grid">${fields}</div>${decoSlotsHtml}${artworkHtml}${prodNotesHtml}${decoratedBtn}`;
   document.getElementById('modal-overlay').classList.add('open');
 }
 
@@ -660,7 +693,7 @@ function parseProduct(item,sub){
     style:sc[S_STYLE]?.text||'',decoStyleId,decoStyleText,decoStyleDisplay,
     placement:_primarySlot?sc[_primarySlot.place]?.text||'':sc[S_PLACEMENT]?.text||'',artworkDesc:_primarySlot?sc[_primarySlot.desc]?.text||'':sc[S_ARTWORK_DESC]?.text||'',screens:_primarySlot?sc[_primarySlot.screens]?.text||'':'',colors:_primarySlot?sc[_primarySlot.colors]?.text||'':'',mySlots:_mySlots,primarySlot:_primarySlot,
     prodNotes:sc[S_PROD_NOTES]?.text||'',
-    mockupUrl,mockupAssetId,artworkUrl,artworkAssetIds
+    mockupUrl,mockupAssetId,artworkUrl,artworkAssetIds,_sc:sc
   };
 }
 
