@@ -151,7 +151,7 @@ tbody tr:hover td { background: var(--surface2); }
   .other-charges-box{display:flex;flex-wrap:wrap;gap:10px;padding:10px 18px;border-bottom:1px solid var(--border);background:#FFFBEB;align-items:flex-end;}
   .other-charges-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--amber);align-self:flex-end;padding-bottom:8px;}
   .field-input.charges-amt{width:110px;}
-  .field-input.charges-detail{width:260px;}
+  .field-input.charges-detail{width:260px;min-height:60px;resize:vertical;line-height:1.5;}
 </style>
 </head>
 <body>
@@ -516,8 +516,8 @@ function buildOrderCard(order) {
       </div>
       <div class="input-group">
         <span class="input-lbl">Details / Description</span>
-        <input class="field-input charges-detail" type="text" placeholder="e.g. Rush fee, setup charge..."
-          value="${order.otherChargesDetails}" id="oc-detail-${order.id}">
+        <textarea class="field-input charges-detail" placeholder="e.g. Rush fee, setup charge..."
+          id="oc-detail-${order.id}">${order.otherChargesDetails}</textarea>
       </div>
       <button class="save-btn" onclick="saveOtherCharges('${order.id}')" style="background:var(--amber)">Save</button>
       <span class="field-saved" id="oc-saved-${order.id}">saved</span>
