@@ -471,10 +471,10 @@
     <div class="modal-footer" id="modalFooter">
       <div style="font-size:12px;color:var(--subtle)" id="modalStatus"></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;margin-right:4px">
-          <input type="checkbox" id="f-pipeline" style="width:14px;height:14px;accent-color:var(--cyan)">
-          Add to Pipeline instead
-        </label>
+        <button class="btn btn-ghost" id="deleteOrderBtn" onclick="deleteOrder()" style="display:none;color:#DC2626;border-color:#FCA5A5">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h9M5 3V2h3v1M4 3l.5 7.5h4L9 3"/></svg>
+          Delete
+        </button>
         <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
         <button class="btn btn-primary" id="submitBtn" onclick="submitOrder()">
           Create Order
@@ -724,6 +724,29 @@ function doSort(){const m=sort.dir==='asc'?1:-1;filtered.sort((a,b)=>{let va='',
   else if(sort.col==='invoice'){va=a.invoice;vb=b.invoice;}
   return va<vb?-m:va>vb?m:0;});}
 
+async function deleteOrder(){
+  if(!editingOrderId)return;
+  const o=all.find(x=>x.id===editingOrderId);
+  const label=o?.ccbNum?`Order ${o.ccbNum}`:(o?.name||'this order');
+  if(!confirm(`Permanently delete ${label}?\n\nThis cannot be undone and will remove it from Monday.`))return;
+
+  const btn=document.getElementById('deleteOrderBtn');
+  btn.textContent='Deleting...';
+  btn.style.pointerEvents='none';
+  try{
+    await mondayMutation(`mutation{delete_item(item_id:${editingOrderId}){id}}`);
+    all=all.filter(x=>x.id!==editingOrderId);
+    closeModal();
+    applyFilters();
+    showAlert(`✓ ${label} deleted.`);
+    setTimeout(hideAlert,3000);
+  }catch(err){
+    btn.textContent='Delete';
+    btn.style.pointerEvents='';
+    alert('Delete failed: '+err.message);
+  }
+}
+
 async function load(){
   try{const res=await fetch(`${API}/api/orders`),data=await res.json();
     if(!data.orders?.length){showAlert('No orders returned.');return;}
@@ -768,9 +791,11 @@ function openEditModal(orderId){
   document.getElementById('modalTitle').textContent='Edit Order';
   document.getElementById('submitBtn').textContent='Save Changes';
 
-  // Hide pipeline checkbox in edit mode
-  const pipelineRow=document.getElementById('f-pipeline')?.closest('label');
-  if(pipelineRow)pipelineRow.style.display='none';
+  // Show delete button in edit mode
+  const deleteBtn=document.getElementById('deleteOrderBtn');
+  if(deleteBtn)deleteBtn.style.display='inline-flex';
+
+  // Hide pipeline checkbox in edit mode (no longer in HTML but guard anyway)
 
   // Pre-fill fields from cached order data
   document.getElementById('f-company').value=o.name||'';
@@ -978,10 +1003,8 @@ function resetModal(){
   ['f-sales','f-imprint'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
-  const pipelineCb=document.getElementById('f-pipeline');
-  if(pipelineCb){pipelineCb.checked=false;}
-  const pipelineRow=pipelineCb?.closest('label');
-  if(pipelineRow)pipelineRow.style.display='';
+  const deleteBtn=document.getElementById('deleteOrderBtn');
+  if(deleteBtn)deleteBtn.style.display='none';
   // Remove injected status field if present
   const sf=document.getElementById('f-status');
   if(sf)sf.closest('.form-row')?.remove();
@@ -1333,7 +1356,7 @@ async function submitOrder(){
     return;
   }
 
-  const toPipeline = document.getElementById('f-pipeline')?.checked;
+  const toPipeline = false; // Pipeline checkbox removed; use Pipeline page directly
 
   // Validate
   if(!v('f-company')){alert('Company name is required.');document.getElementById('f-company').focus();return;}

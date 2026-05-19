@@ -149,34 +149,115 @@
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Company <span class="req">*</span></label><input type="text" class="form-input" id="f-company" placeholder="e.g. Higgins Construction"></div>
-        <div class="form-group"><label class="form-label">Contact</label><input type="text" class="form-input" id="f-contact" placeholder="First Last"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="f-email" placeholder="email@company.com"></div>
-        <div class="form-group"><label class="form-label">Phone</label><input type="tel" class="form-input" id="f-phone" placeholder="(612) 555-0100"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Status</label>
-          <select class="form-select" id="f-status">
-            <option value="Warm">Warm</option><option value="Hot">Hot</option>
-            <option value="Quoted">Quoted</option><option value="New">New</option>
-          </select>
+
+      <!-- PIPELINE STATUS SECTION -->
+      <div style="background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:8px;padding:12px 14px;margin-bottom:16px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin-bottom:10px;">Pipeline Info</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Lead Status</label>
+            <select class="form-select" id="f-status">
+              <option value="Warm">Warm</option><option value="Hot">Hot</option>
+              <option value="Quoted">Quoted</option><option value="New">New</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Est. Value ($)</label>
+            <input type="number" class="form-input" id="f-value" placeholder="0.00" step="0.01">
+          </div>
         </div>
-        <div class="form-group"><label class="form-label">Est. Value ($)</label><input type="number" class="form-input" id="f-value" placeholder="0.00" step="0.01"></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Follow-up Date</label>
+            <input type="date" class="form-input" id="f-followup">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Product Interest</label>
+            <input type="text" class="form-input" id="f-interest" placeholder="e.g. 50 polos, some hats...">
+          </div>
+        </div>
+      </div>
+
+      <!-- ORDER DETAILS (same as orders dashboard) -->
+      <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border2);">Order Details</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Company Name <span class="req">*</span></label>
+          <input type="text" class="form-input" id="f-company" placeholder="e.g. Higgins Construction">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contact Name</label>
+          <input type="text" class="form-input" id="f-contact" placeholder="First Last">
+        </div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Sales Rep</label>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="f-email" placeholder="email@company.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input type="tel" class="form-input" id="f-phone" placeholder="(612) 555-0100">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">In Hands Date</label>
+          <input type="date" class="form-input" id="f-ihd">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sales Rep</label>
           <select class="form-select" id="f-sales">
             <option value="">Select...</option>
-            <option>Chaz Lucius</option><option>Bailey McGraw</option><option>Jess Miller</option><option>Nick Miller</option><option>George Miller</option><option>Web Order</option>
+            <option>Chaz Lucius</option><option>Bailey McGraw</option><option>Jess Miller</option>
+            <option>Nick Miller</option><option>George Miller</option><option>Web Order</option>
           </select>
         </div>
-        <div class="form-group"><label class="form-label">Follow-up Date</label><input type="date" class="form-input" id="f-followup"></div>
       </div>
-      <div class="form-group"><label class="form-label">Product Interest</label><input type="text" class="form-input" id="f-interest" placeholder="e.g. 50 polos, some hats..."></div>
-      <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="f-notes" placeholder="Context, conversation notes, next steps..."></textarea></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">CCB Company</label>
+          <select class="form-select" id="f-imprint">
+            <option value="">Select...</option>
+            <option value="1">CCB Imprint</option>
+            <option value="2">CCB Insight</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Method</label>
+          <input type="text" class="form-input" id="f-payment" placeholder="CC, Gradient Bucks, etc.">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Shipping To (Name / Company)</label>
+          <input type="text" class="form-input" id="f-shipto" placeholder="Name or company">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Street Address</label>
+        <input type="text" class="form-input" id="f-addr-street" placeholder="123 Main St">
+      </div>
+      <div class="form-row" style="grid-template-columns:1fr 80px 100px;">
+        <div class="form-group">
+          <label class="form-label">City</label>
+          <input type="text" class="form-input" id="f-addr-city" placeholder="Minneapolis">
+        </div>
+        <div class="form-group">
+          <label class="form-label">State</label>
+          <input type="text" class="form-input" id="f-addr-state" placeholder="MN" maxlength="2" style="text-transform:uppercase">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Zip</label>
+          <input type="text" class="form-input" id="f-addr-zip" placeholder="55401" maxlength="10">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="f-notes" placeholder="Context, conversation notes, next steps..."></textarea>
+      </div>
+
     </div>
     <div class="modal-footer">
       <button class="cancel-btn" onclick="closeModal()">Cancel</button>
@@ -226,16 +307,26 @@ function buildTicketNotes(status,value,interest,followup,notes){
 async function loadTickets(){
   const btn=document.getElementById('refresh-btn');btn.classList.add('spinning');
   try{
-    const q=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name group{id}column_values(ids:["${O_NUM}","${O_CONTACT}","${O_EMAIL}","${O_NOTES}","${O_SALES}","${O_INHAND}"]){id text value}}}}}`;
+    const cols=[O_NUM,O_CONTACT,O_EMAIL,O_NOTES,O_SALES,O_INHAND,'phone_mm22ertc','dropdown_mm276wtz','text_mm26gtxp','text_mm22t49y','location_mm2682nc'].map(c=>`"${c}"`).join(',');
+    const q=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name group{id}column_values(ids:[${cols}]){id text value}}}}}`;
     const data=await mq(q);
     const items=data.boards[0].items_page.items.filter(i=>i.group?.id===PENDING_GROUP);
     allTickets=items.map(item=>{
       const cv={};for(const c of item.column_values)cv[c.id]=c;
       const salesV=cv[O_SALES]?.value?(()=>{try{return JSON.parse(cv[O_SALES].value);}catch{return null;}})():null;
+      const impV=cv['dropdown_mm276wtz']?.value?(()=>{try{return JSON.parse(cv['dropdown_mm276wtz'].value);}catch{return null;}})():null;
+      const imprintId=impV?.ids?.[0]?String(impV.ids[0]):'';
       const meta=parseTicketMeta(cv[O_NOTES]?.text||'');
+      const addrText=cv['location_mm2682nc']?.text||'';
+      const addrParts=addrText.split(',').map(s=>s.trim());
+      const stateZip=(addrParts[2]||'').trim().split(' ');
       return{id:item.id,mondayId:item.id,name:item.name,ccb:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',
-        email:cv[O_EMAIL]?.text||'',sales:salesV?.ids?.map(i=>SALES_MAP[i]).filter(Boolean).join(', ')||'',
-        followupDate:meta.followup||cv[O_INHAND]?.text||'',...meta};
+        email:cv[O_EMAIL]?.text||'',phone:cv['phone_mm22ertc']?.text||'',
+        sales:salesV?.ids?.map(i=>SALES_MAP[i]).filter(Boolean).join(', ')||'',
+        imprintId,shipTo:cv['text_mm26gtxp']?.text||'',payment:cv['text_mm22t49y']?.text||'',
+        addrStreet:addrParts[0]||'',addrCity:addrParts[1]||'',
+        addrState:stateZip[0]||'',addrZip:addrParts[3]||stateZip[1]||'',
+        ihd:cv[O_INHAND]?.text||'',followupDate:meta.followup||cv[O_INHAND]?.text||'',...meta};
     });
     updateStats();renderTickets();
   }catch(err){
@@ -243,7 +334,6 @@ async function loadTickets(){
   }
   btn.classList.remove('spinning');
 }
-
 function updateStats(){
   const c={};allTickets.forEach(t=>{c[t.status]=(c[t.status]||0)+1;});
   document.getElementById('s-all').textContent=allTickets.length;
@@ -322,16 +412,26 @@ function setFilter(s,el){statusFilter=s;document.querySelectorAll('.stat').forEa
 let editingId=null;
 function openModal(id){
   editingId=id||null;
-  document.getElementById('modal-title').textContent=id?'Edit Ticket':'New Ticket';
+  document.getElementById('modal-title').textContent=id?'Edit Order':'New Order';
   const t=id?allTickets.find(x=>x.id===id):null;
   document.getElementById('f-company').value=t?.name||'';
   document.getElementById('f-contact').value=t?.contact||'';
   document.getElementById('f-email').value=t?.email||'';
+  document.getElementById('f-phone').value=t?.phone||'';
   document.getElementById('f-status').value=t?.status||'Warm';
   document.getElementById('f-value').value=t?.value||'';
   document.getElementById('f-interest').value=t?.interest||'';
   document.getElementById('f-followup').value=t?.followupDate||'';
+  document.getElementById('f-ihd').value=t?.ihd||'';
+  document.getElementById('f-shipto').value=t?.shipTo||'';
+  document.getElementById('f-payment').value=t?.payment||'';
+  document.getElementById('f-addr-street').value=t?.addrStreet||'';
+  document.getElementById('f-addr-city').value=t?.addrCity||'';
+  document.getElementById('f-addr-state').value=t?.addrState||'';
+  document.getElementById('f-addr-zip').value=t?.addrZip||'';
   document.getElementById('f-notes').value=t?.notes||'';
+  if(document.getElementById('f-sales'))document.getElementById('f-sales').value=t?.sales||'';
+  if(document.getElementById('f-imprint'))document.getElementById('f-imprint').value=t?.imprintId||'';
   document.getElementById('submit-btn').textContent=id?'Save':'Create Order';
   document.getElementById('modal-overlay').classList.add('open');
   document.body.style.overflow='hidden';
@@ -360,6 +460,7 @@ async function createTicket(){
   if(!company){alert('Company name is required.');return;}
   const btn=document.getElementById('submit-btn');
   btn.classList.add('loading');btn.textContent='Saving...';
+
   const status=document.getElementById('f-status').value;
   const value=document.getElementById('f-value').value.trim();
   const interest=document.getElementById('f-interest').value.trim();
@@ -367,22 +468,42 @@ async function createTicket(){
   const notes=document.getElementById('f-notes').value.trim();
   const contact=document.getElementById('f-contact').value.trim();
   const email=document.getElementById('f-email').value.trim();
+  const phone=document.getElementById('f-phone').value.trim();
   const salesName=document.getElementById('f-sales').value;
   const salesId=SALES_ID[salesName];
+  const imprintId=document.getElementById('f-imprint').value;
+  const ihd=document.getElementById('f-ihd').value;
+  const shipto=document.getElementById('f-shipto').value.trim();
+  const payment=document.getElementById('f-payment').value.trim();
+  const addrStreet=document.getElementById('f-addr-street').value.trim();
+  const addrCity=document.getElementById('f-addr-city').value.trim();
+  const addrState=document.getElementById('f-addr-state').value.trim().toUpperCase();
+  const addrZip=document.getElementById('f-addr-zip').value.trim();
+
   const fullNotes=buildTicketNotes(status,value,interest,followup,notes);
+
   try{
     const colVals={[O_NOTES]:{text:fullNotes}};
     if(contact)colVals[O_CONTACT]=contact;
     if(email)colVals[O_EMAIL]={email:email,text:email};
+    if(phone)colVals['phone_mm22ertc']={phone:phone,countryShortName:'US'};
     if(salesId)colVals[O_SALES]={ids:[salesId]};
+    if(imprintId)colVals['dropdown_mm276wtz']={ids:[parseInt(imprintId)]};
+    if(ihd)colVals[O_INHAND]={date:ihd};
+    if(shipto)colVals['text_mm26gtxp']=shipto;
+    if(payment)colVals['text_mm22t49y']=payment;
+    if(addrStreet||addrCity||addrState||addrZip){
+      const parts=[addrStreet,[addrCity,addrState].filter(Boolean).join(', '),addrZip].filter(Boolean);
+      colVals['location_mm2682nc']={address:parts.join(', '),lat:null,lng:null};
+    }
     const cv=JSON.stringify(JSON.stringify(colVals));
     if(editingId){
-      await mq(`mutation{change_item_name(board_id:${ORDERS_BOARD},item_id:${editingId},value:"${company.replace(/"/g,'\"')}"){id}}`);
+      await mq(`mutation{change_item_name(board_id:${ORDERS_BOARD},item_id:${editingId},value:"${company.replace(/"/g,'\\"')}"){id}}`);
       await mq(`mutation{change_multiple_column_values(board_id:${ORDERS_BOARD},item_id:${editingId},column_values:${cv}){id}}`);
-      showToast('Ticket updated!');
+      showToast('Order updated!');
     }else{
-      await mq(`mutation{create_item(board_id:${ORDERS_BOARD},group_id:"${PENDING_GROUP}",item_name:"${company.replace(/"/g,'\"')}",column_values:${cv}){id}}`);
-      showToast('Ticket created!');
+      await mq(`mutation{create_item(board_id:${ORDERS_BOARD},group_id:"${PENDING_GROUP}",item_name:"${company.replace(/"/g,'\\"')}",column_values:${cv}){id}}`);
+      showToast('Order created!');
     }
     closeModal();setTimeout(loadTickets,700);
   }catch(err){alert('Error: '+err.message);}
