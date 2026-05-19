@@ -82,12 +82,12 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 .chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
 .chip.shelf{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-border);font-family:'Inter',monospace;letter-spacing:.03em}
 .card-media{display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0}
-.mockup-thumb{width:64px;height:64px;border-radius:6px;object-fit:cover;border:1px solid var(--border);cursor:pointer;transition:opacity .15s;display:block}
+.mockup-thumb{width:96px;height:96px;border-radius:8px;object-fit:cover;border:2px solid var(--border);cursor:pointer;transition:opacity .15s,box-shadow .15s;display:block;box-shadow:0 2px 8px rgba(0,0,0,.08)}.mockup-thumb:hover{opacity:.9;box-shadow:0 4px 16px rgba(0,0,0,.15)}
 .mockup-thumb:hover{opacity:.85}
-.mockup-placeholder{width:64px;height:64px;border-radius:6px;border:1px dashed var(--border2);background:var(--surface2);display:flex;align-items:center;justify-content:center}
+.mockup-placeholder{width:96px;height:96px;border-radius:8px;border:2px dashed var(--border2);background:var(--surface2);display:flex;align-items:center;justify-content:center}
 .mockup-placeholder svg{width:20px;height:20px;stroke:var(--text3);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .media-links{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
-.media-btn{font-size:11px;padding:3px 7px;background:transparent;color:var(--text2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:3px;transition:all .15s;white-space:nowrap}
+.media-btn{font-size:11px;padding:4px 9px;background:#EFF6FF;color:#2563EB;border:1px solid #93C5FD;border-radius:6px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px;transition:all .15s;font-weight:500}
 .media-btn:hover{background:var(--surface2)}
 .media-btn svg{width:10px;height:10px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .card-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0;border-bottom:1px solid var(--border)}
@@ -428,13 +428,15 @@ function openProductModal(subId,section){
   
   const artworkAssets=p.artworkAssetIds.map(id=>assetCache[id]).filter(Boolean);
 
+  const _mCached=p.mockupAssetId?assetCache[p.mockupAssetId]:null;
+  const _mUrl=_mCached?.url||null;
   let mockupHtml='';
-  if(p.mockupUrl){
-    const fname=getFilename(p.mockupUrl);
-    if(isPdfUrl(p.mockupUrl)){
-      mockupHtml=`<div class="modal-mockup"><div style="background:var(--red-bg);border:1px solid var(--red-border);border-radius:50px;padding:20px;text-align:center;margin-bottom:12px"><svg viewBox="0 0 24 24" style="width:40px;height:40px;stroke:var(--red);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div style="font-size:12px;color:var(--red);margin-top:6px;font-weight:500">${fname}</div></div><div style="text-align:right"><a href="${p.mockupUrl}" target="_blank" class="modal-download-btn"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>Open / Download PDF</a></div></div>`;
+  if(_mUrl){
+    const fname=_mCached?.name||getFilename(_mUrl);
+    if(isPdfUrl(_mUrl)){
+      mockupHtml=`<div class="modal-mockup"><div style="background:var(--red-bg);border:1px solid var(--red-border);border-radius:8px;padding:20px;text-align:center;margin-bottom:12px"><svg viewBox="0 0 24 24" style="width:40px;height:40px;stroke:var(--red);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div style="font-size:12px;color:var(--red);margin-top:6px;font-weight:500">${fname}</div></div><div style="text-align:right"><a href="${_mUrl}" target="_blank" class="modal-download-btn"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>Open PDF Mockup</a></div></div>`;
     } else {
-      mockupHtml=`<div class="modal-mockup"><img src="${p.mockupUrl}" alt="Mockup" onclick="window.open('${p.mockupUrl}','_blank')" title="Click to open full size" onerror="this.parentElement.innerHTML='<div class=no-img>Image could not load — try downloading directly</div>'"><div style="text-align:right;margin-top:6px"><a href="${p.mockupUrl}" target="_blank" class="modal-download-btn"><svg viewBox='0 0 12 12'><path d='M6 1v7M3 5l3 3 3-3'/><path d='M1 10h10'/></svg>Download Mockup</a></div></div>`;
+      mockupHtml=`<div class="modal-mockup"><img src="${_mUrl}" alt="Mockup" onclick="window.open('${_mUrl}','_blank')" title="Click to open full size" onerror="this.parentElement.innerHTML='<div class=no-img>Mockup could not load — <a href=${_mUrl} target=_blank style=color:var(--blue)>open directly</a></div>'"><div style="text-align:right;margin-top:8px"><a href="${_mUrl}" target="_blank" class="modal-download-btn"><svg viewBox='0 0 12 12'><path d='M6 1v7M3 5l3 3 3-3'/><path d='M1 10h10'/></svg>Download Mockup</a></div></div>`;
     }
   } else {
     mockupHtml='<div class="modal-mockup"><div class="no-img">No mockup attached</div></div>';
@@ -447,14 +449,14 @@ function openProductModal(subId,section){
     ['Style #',p.style||'—'],['Placement',p.placement||'—'],
   ].filter(([,v])=>v&&v!=='—').map(([l,v])=>`<div class="modal-cell"><div class="modal-lbl">${l}</div><div class="modal-val">${v}</div></div>`).join('');
   
+  const _allArtAssets=p.artworkAssetIds.map(id=>assetCache[id]).filter(Boolean);
   let artworkHtml='';
-  if(artworkAssets.length){
-    artworkHtml=`<div class="modal-section-title">Artwork Files</div>${artworkAssets.map(a=>`<div class="modal-file-row"><span class="modal-file-name">${a.name}</span><a class="modal-download-btn" href="${a.url}" target="_blank"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(a.url)?'Open PDF':'Download'}</a></div>`).join('')}`;
+  if(_allArtAssets.length){
+    artworkHtml=`<div class="modal-section-title">Artwork Files</div>${_allArtAssets.map(a=>`<div class="modal-file-row"><span class="modal-file-name">${a.name}</span><a class="modal-download-btn" href="${a.url}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(a.url)?'Open PDF':'Download'}</a></div>`).join('')}`;
   } else if(p.artworkUrl){
     const fname=getFilename(p.artworkUrl);
-    artworkHtml=`<div class="modal-section-title">Artwork Files</div><div class="modal-file-row"><span class="modal-file-name">${fname}</span><a class="modal-download-btn" href="${p.artworkUrl}" target="_blank"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(p.artworkUrl)?'Open PDF':'Download'}</a></div>`;
+    artworkHtml=`<div class="modal-section-title">Artwork Files</div><div class="modal-file-row"><span class="modal-file-name">${fname}</span><a class="modal-download-btn" href="${p.artworkUrl}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(p.artworkUrl)?'Open PDF':'Download'}</a></div>`;
   }
-  artworkHtml=artworkHtml;
   
   const prodNotesHtml=p.prodNotes?`<div class="modal-section-title">Production Notes</div><div style="font-size:12px;color:var(--text2);background:var(--surface2);border-radius:50px;padding:10px 12px;margin-bottom:4px">${p.prodNotes}</div>`:'';
   
@@ -475,25 +477,26 @@ function buildCardView(p,section){
   const opts=[[1,'Embroidery'],[2,'Screenprint'],[3,'DTG'],[4,'DTF'],[5,'Engrave'],[6,'Other']];
   const decoSel=`<select class="deco-select" onclick="event.stopPropagation()" onchange="moveStation('${p.id}',this.value,this)">${opts.map(([id,n])=>`<option value="${id}" ${p.decoStyleId===id?'selected':''}>${n}</option>`).join('')}</select>`;
   
-  const mockupThumb=p.mockupUrl
-    ?(isPdfUrl(p.mockupUrl)
+  const _mockupCached=p.mockupAssetId?assetCache[p.mockupAssetId]:null;
+  const _mockupUrl=_mockupCached?.url||null;
+  const mockupThumb=_mockupUrl
+    ?(isPdfUrl(_mockupUrl)
       ?`<div class="pdf-thumb" onclick="openProductModal('${p.id}','${section}')" title="PDF mockup"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>PDF</span></div>`
-      :`<img class="mockup-thumb" src="${p.mockupUrl}" alt="Mockup" title="Click to view" onclick="openProductModal('${p.id}','${section}')" onerror="this.outerHTML='<div class=mockup-placeholder><svg viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><circle cx=\"8.5\" cy=\"8.5\" r=\"1.5\"/><polyline points=\"21 15 16 10 5 21\"/></svg></div>'">`
+      :`<img class="mockup-thumb" src="${_mockupUrl}" alt="Mockup" title="Click to view" onclick="openProductModal('${p.id}','${section}')" onerror="this.outerHTML='<div class=mockup-placeholder><svg viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><circle cx=\"8.5\" cy=\"8.5\" r=\"1.5\"/><polyline points=\"21 15 16 10 5 21\"/></svg></div>'">`
     )
     :`<div class="mockup-placeholder" title="No mockup" onclick="openProductModal('${p.id}','${section}')" style="cursor:pointer"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
 
-  const artworkBtn=p.artworkUrl
-    ?`<button class="media-btn" onclick="event.stopPropagation();openProductModal('${p.id}','${section}')"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>Artwork</button>`:'';
+  const _artCached=p.artworkAssetIds.length?p.artworkAssetIds.map(id=>assetCache[id]).filter(Boolean):[];
+  const _artUrl=_artCached.length?_artCached[0].url:(p.artworkUrl||null);
+  const artworkBtn=_artUrl
+    ?`<a class="media-btn" href="${_artUrl}" target="_blank" onclick="event.stopPropagation()" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>Artwork</a>`:'';
   
   const shelfChip=p.shelf?`<span class="chip shelf">📍 ${p.shelf}</span>`:'';
 
   return `<div class="product-card" id="card-${p.id}">
     <div class="card-header">
-      <div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <div class="card-name">${p.name}</div>
-          ${section==='active'?`<button class="decorated-btn inline-dec-btn" id="dec-btn-${p.id}" onclick="event.stopPropagation();markDecorated('${p.id}','${p.orderId}',this)"><svg viewBox="0 0 10 8"><polyline points="1 4 4 7 9 1"/></svg>Mark Decorated</button>`:''}
-        </div>
+      <div style="flex:1;min-width:0">
+        <div class="card-name">${p.name}</div>
         <div class="card-meta">
           <span class="chip" style="font-family:'Inter',monospace">${p.ccbNum}</span>
           <span class="chip">${p.orderName}</span>
@@ -504,7 +507,7 @@ function buildCardView(p,section){
       </div>
       <div class="card-media">
         ${mockupThumb}
-        <div class="media-links">${artworkBtn}</div>
+        ${artworkBtn?`<div style="margin-top:6px;text-align:center">${artworkBtn}</div>`:''}
       </div>
     </div>
     <div class="card-body">
@@ -553,26 +556,32 @@ function buildCardView(p,section){
         </button>
       </div>
     </div></div>
+    ${section==='active'?`<div style="padding:10px 16px 12px;border-top:1px solid var(--border)">
+      <button class="decorated-btn" id="dec-btn-${p.id}" style="width:100%;justify-content:center;font-size:13px;padding:9px 0" onclick="event.stopPropagation();markDecorated('${p.id}','${p.orderId}',this)">
+        <svg viewBox="0 0 10 8" style="width:12px;height:12px"><polyline points="1 4 4 7 9 1"/></svg>Mark Decorated
+      </button>
+    </div>`:''}
     <div class="card-footer">
       <div class="footer-left">
         <span style="font-size:11px;color:var(--text3)">Station:</span>
         ${decoSel}
         <button class="media-btn" onclick="openProductModal('${p.id}','${section}')">Details</button>
       </div>
-
     </div>
   </div>`;
 }
 
 function buildTableRow(p,section){
-  const mockupCell=p.mockupUrl
-    ?(isPdfUrl(p.mockupUrl)
+  const _tmUrl=p.mockupAssetId?assetCache[p.mockupAssetId]?.url:null;
+  const mockupCell=_tmUrl
+    ?(isPdfUrl(_tmUrl)
       ?`<div class="pdf-thumb-sm" onclick="openProductModal('${p.id}','${section}')" title="PDF"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
-      :`<img src="${p.mockupUrl}" style="width:36px;height:36px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer;vertical-align:middle" onclick="openProductModal('${p.id}','${section}')" alt="Mockup" onerror="this.style.display='none'">`
+      :`<img src="${_tmUrl}" style="width:36px;height:36px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer;vertical-align:middle" onclick="openProductModal('${p.id}','${section}')" alt="Mockup" onerror="this.style.display='none'">`
     )
     :`<span style="color:var(--text3);font-size:11px">—</span>`;
-  const artworkCell=p.artworkUrl
-    ?`<button class="media-btn" onclick="openProductModal('${p.id}','${section}')"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>File</button>`
+  const _taUrl=p.artworkAssetIds.length?p.artworkAssetIds.map(id=>assetCache[id]).filter(Boolean)[0]?.url:(p.artworkUrl||null);
+  const artworkCell=_taUrl
+    ?`<a class="media-btn" href="${_taUrl}" target="_blank" download onclick="event.stopPropagation()"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>File</a>`
     :`<span style="color:var(--text3);font-size:11px">—</span>`;
   return `<tr id="tr-${p.id}" onclick="openProductModal('${p.id}','${section}')">
     <td><div class="pname" title="${p.name}">${p.name}</div><div style="font-size:10px;color:var(--text3);font-family:'Inter',monospace;margin-top:1px">${p.ccbNum} · ${p.orderName}</div></td>
@@ -704,11 +713,11 @@ async function loadData(){
     }
     sortByDate(allUpcoming);sortByDate(allActive);
 
-    updateStats();renderContent();
-    // Resolve asset download URLs in background (for download buttons in modal)
+    // Resolve asset URLs BEFORE rendering so images display immediately
     const allProds=[...allUpcoming,...allActive];
     const allAssetIds=[...new Set(allProds.flatMap(p=>[p.mockupAssetId,...p.artworkAssetIds].filter(Boolean)))];
-    if(allAssetIds.length)resolveAssets(allAssetIds).catch(()=>{});
+    if(allAssetIds.length)await resolveAssets(allAssetIds).catch(()=>{});
+    updateStats();renderContent();
     document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
   }catch(err){document.getElementById('content').innerHTML=`<div class="error-box"><strong>Error:</strong> ${err.message}</div>`;}
   btn.disabled=false;btn.classList.remove('spinning');
