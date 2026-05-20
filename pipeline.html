@@ -515,9 +515,9 @@ async function createTicket(){
     }
     if(otherCharges)colVals['numeric_mm222s2j']=parseFloat(otherCharges);
     if(otherChargesDetails)colVals['long_text_mm22zdh2']={text:otherChargesDetails};
+    if(company)colVals['name']=company;
     const cv=JSON.stringify(JSON.stringify(colVals));
     if(editingId){
-      await mq(`mutation{change_item_name(board_id:${ORDERS_BOARD},item_id:${editingId},value:"${company.replace(/"/g,'\\"')}"){id}}`);
       await mq(`mutation{change_multiple_column_values(board_id:${ORDERS_BOARD},item_id:${editingId},column_values:${cv}){id}}`);
       showToast('Order updated!');
     }else{

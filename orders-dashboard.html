@@ -1262,13 +1262,9 @@ async function saveOrderEdits(){
     const status=v('f-status');
     const o=all.find(x=>x.id===editingOrderId);
 
-    // Rename parent item if company name changed
-    if(company&&company!==o?.name){
-      await mondayMutation(`mutation{change_item_name(board_id:${ORDERS_BOARD},item_id:${editingOrderId},value:"${escGql(company)}"){id}}`);
-    }
-
     // Build and send column values
     const colVals={};
+    if(company)colVals['name']=company;
     if(contact)colVals['text_mm221kg3']=contact;
     if(email)colVals['email_mm22ap28']={email:email,text:email};
     if(phone)colVals['phone_mm22ertc']={phone:phone,countryShortName:'US'};
@@ -1346,7 +1342,7 @@ async function saveOrderEdits(){
       }
       let resolvedSubId=subitemId;
       if(subitemId){
-        if(pName){ await mondayMutation(`mutation{change_item_name(board_id:${SUBITEMS_BOARD},item_id:${subitemId},value:"${escGql(pName)}"){id}}`); }
+        if(pName){ await mondayMutation(`mutation{change_multiple_column_values(board_id:${SUBITEMS_BOARD},item_id:${subitemId},column_values:${JSON.stringify(JSON.stringify({name:pName}))}){id}}`); }
         if(Object.keys(subCols).length>0){ const sc=JSON.stringify(JSON.stringify(subCols)); await mondayMutation(`mutation{change_multiple_column_values(board_id:${SUBITEMS_BOARD},item_id:${subitemId},column_values:${sc}){id}}`); }
       } else if(pName){
         const subColsStr=JSON.stringify(JSON.stringify(subCols));
