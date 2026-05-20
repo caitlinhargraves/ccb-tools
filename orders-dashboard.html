@@ -834,6 +834,7 @@ function openEditModal(orderId){
 
   editingOrderId=orderId;
   resetModal();
+  editingOrderId=orderId; // resetModal clears this, re-set it
   document.getElementById('modalTitle').textContent='Edit Order';
   document.getElementById('submitBtn').textContent='Save Changes';
 
