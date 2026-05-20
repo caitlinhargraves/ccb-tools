@@ -1456,9 +1456,9 @@ async function submitOrder(){
 
     let colVals={
       'date4':{date:today},
-      'text_mm221kg3':contact,
-      'email_mm22ap28':{email:email,text:email},
     };
+    if(contact)colVals['text_mm221kg3']=contact;
+    if(email)colVals['email_mm22ap28']={email:email,text:email};
     if(ihd)colVals['date_mm22wpk2']={date:ihd};
     if(ccbOrderNum)colVals['text_mm29djkk']=ccbOrderNum;
     if(phone)colVals['phone_mm22ertc']={phone:phone,countryShortName:'US'};
