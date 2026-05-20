@@ -396,9 +396,10 @@ async function loadData(){
           else if(!subStatus)allThirdParty.push(product);
         } else if(subType.includes('in house')||subType.includes('pre')||subType===''){
           const isBlank=statusIndex===5||subStatus==='';
-          const isProductOrdered=subStatus==='product ordered'||statusIndex===1;
-          if(!poDate||isBlank)allToBeOrdered.push(product);
-          else if(isProductOrdered)allOrdered.push(product);
+          const isDecorated=statusIndex===8||subStatus.includes('decorated')||statusIndex===9;
+          if(!poDate||isBlank) allToBeOrdered.push(product);
+          else if(isDecorated) {} // decorated items leave PO page entirely
+          else allOrdered.push(product); // has a PO date = ordered, regardless of production status
         }
       }
     }
