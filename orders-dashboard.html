@@ -793,33 +793,36 @@ async function deleteOrder(){
   }
 }
 
+async function mondayQuery(query){
+  const res=await fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});
+  const data=await res.json();
+  if(data.errors)throw new Error(data.errors[0].message);
+  return data.data;
+}
+
 async function load(attempt=1){
   try{
-    const res=await fetch(`${API}/api/orders`),data=await res.json();
-    if(!data.orders?.length){
-      if(attempt<=5){
-        // Server may be warming up (Render cold start) -- retry
-        document.getElementById('lastUpdated').innerHTML=`⏳ Warming up... (${attempt}/5)`;
-        await new Promise(r=>setTimeout(r,4000));
-        return load(attempt+1);
-      }
-      showAlert('No orders returned after several attempts. Try refreshing manually.');return;
-    }
-    all=data.orders.map(parseOrder);
-    if(data.lastUpdated){const t=new Date(data.lastUpdated).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
-      document.getElementById('lastUpdated').innerHTML=`Updated <strong>${t}</strong>`;}
+    document.getElementById('lastUpdated').innerHTML=`⏳ Loading orders...`;
+    const q=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:500){items{id name created_at updated_at group{id}column_values{id text value}subitems{id name column_values{id text value}}}}}}`;
+    const data=await mondayQuery(q);
+    const items=data?.boards?.[0]?.items_page?.items||[];
+    if(!items.length){showAlert('No orders found.');document.getElementById('lastUpdated').innerHTML='';return;}
+    all=items.map(parseOrder);
+    const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+    document.getElementById('lastUpdated').innerHTML=`Updated <strong>${t}</strong>`;
     updateStats(all);applyFilters();hideAlert();updateArchiveBtn();
   }catch(e){
-    if(attempt<=5){
-      document.getElementById('lastUpdated').innerHTML=`⏳ Connecting... (${attempt}/5)`;
-      await new Promise(r=>setTimeout(r,4000));
+    if(attempt<=3){
+      document.getElementById('lastUpdated').innerHTML=`⏳ Retrying... (${attempt}/3)`;
+      await new Promise(r=>setTimeout(r,3000));
       return load(attempt+1);
     }
-    showAlert('Could not reach CCB API.');
+    showAlert('Could not load orders: '+e.message);
+    document.getElementById('lastUpdated').innerHTML='';
   }
 }
 async function manualRefresh(){const btn=document.getElementById('refreshBtn');btn.classList.add('loading');
-  try{await fetch(`${API}/api/refresh`);await load();}catch{showAlert('Refresh failed.');}
+  try{await load();}catch{showAlert('Refresh failed.');}
   btn.classList.remove('loading');}
 function showAlert(m){document.getElementById('alertBar').style.display='flex';document.getElementById('alertMsg').textContent=m;}
 function hideAlert(){document.getElementById('alertBar').style.display='none';}
