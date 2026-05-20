@@ -1286,9 +1286,9 @@ async function saveOrderEdits(){
     const addrCity=v('f-addr-city');
     const addrState=v('f-addr-state').toUpperCase();
     const addrZip=v('f-addr-zip');
-    if(addrStreet||addrCity||addrState||addrZip){
+    if(!shipto&&(addrStreet||addrCity||addrState||addrZip)){
       const addrParts=[addrStreet,[addrCity,addrState].filter(Boolean).join(', '),addrZip].filter(Boolean);
-      colVals['location_mm2682nc']={address:addrParts.join(', '),lat:null,lng:null};
+      colVals['text_mm26gtxp']=addrParts.join(', ');
     }
     const cv=JSON.stringify(JSON.stringify(colVals));
     await mondayMutation(`mutation{change_multiple_column_values(board_id:${ORDERS_BOARD},item_id:${editingOrderId},column_values:${cv}){id}}`);
@@ -1467,11 +1467,10 @@ async function submitOrder(){
     if(notes)colVals['long_text_mm225vbf']={text:notes};
     if(salesId)colVals['dropdown_mm22w5rr']={ids:[salesId]};
     if(imprintId)colVals['dropdown_mm276wtz']={ids:[parseInt(imprintId)]};
-    // Full shipping address to location column
-    if(addrStreet||addrCity||addrState||addrZip){
+    // Combine address fields into shipto if shipto not explicitly set
+    if(!shipto&&(addrStreet||addrCity||addrState||addrZip)){
       const addrParts=[addrStreet,[addrCity,addrState].filter(Boolean).join(', '),addrZip].filter(Boolean);
-      const fullAddr=addrParts.join(', ');
-      colVals['location_mm2682nc']={address:fullAddr,lat:null,lng:null};
+      colVals['text_mm26gtxp']=addrParts.join(', ');
     }
     if(otherCharges)colVals['numeric_mm222s2j']=parseFloat(otherCharges);
     if(otherChargesDetails)colVals['long_text_mm22zdh2']={text:otherChargesDetails};

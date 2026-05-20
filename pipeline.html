@@ -509,9 +509,9 @@ async function createTicket(){
     if(ihd)colVals[O_INHAND]={date:ihd};
     if(shipto)colVals['text_mm26gtxp']=shipto;
     if(payment)colVals['text_mm22t49y']=payment;
-    if(addrStreet||addrCity||addrState||addrZip){
+    if(!shipto&&(addrStreet||addrCity||addrState||addrZip)){
       const parts=[addrStreet,[addrCity,addrState].filter(Boolean).join(', '),addrZip].filter(Boolean);
-      colVals['location_mm2682nc']={address:parts.join(', '),lat:null,lng:null};
+      colVals['text_mm26gtxp']=parts.join(', ');
     }
     if(otherCharges)colVals['numeric_mm222s2j']=parseFloat(otherCharges);
     if(otherChargesDetails)colVals['long_text_mm22zdh2']={text:otherChargesDetails};
