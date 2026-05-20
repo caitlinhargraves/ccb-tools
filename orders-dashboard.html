@@ -793,14 +793,30 @@ async function deleteOrder(){
   }
 }
 
-async function load(){
-  try{const res=await fetch(`${API}/api/orders`),data=await res.json();
-    if(!data.orders?.length){showAlert('No orders returned.');return;}
+async function load(attempt=1){
+  try{
+    const res=await fetch(`${API}/api/orders`),data=await res.json();
+    if(!data.orders?.length){
+      if(attempt<=5){
+        // Server may be warming up (Render cold start) -- retry
+        document.getElementById('lastUpdated').innerHTML=`⏳ Warming up... (${attempt}/5)`;
+        await new Promise(r=>setTimeout(r,4000));
+        return load(attempt+1);
+      }
+      showAlert('No orders returned after several attempts. Try refreshing manually.');return;
+    }
     all=data.orders.map(parseOrder);
     if(data.lastUpdated){const t=new Date(data.lastUpdated).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
       document.getElementById('lastUpdated').innerHTML=`Updated <strong>${t}</strong>`;}
     updateStats(all);applyFilters();hideAlert();updateArchiveBtn();
-  }catch(e){showAlert('Could not reach CCB API.');}
+  }catch(e){
+    if(attempt<=5){
+      document.getElementById('lastUpdated').innerHTML=`⏳ Connecting... (${attempt}/5)`;
+      await new Promise(r=>setTimeout(r,4000));
+      return load(attempt+1);
+    }
+    showAlert('Could not reach CCB API.');
+  }
 }
 async function manualRefresh(){const btn=document.getElementById('refreshBtn');btn.classList.add('loading');
   try{await fetch(`${API}/api/refresh`);await load();}catch{showAlert('Refresh failed.');}
