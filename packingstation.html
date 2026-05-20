@@ -721,7 +721,8 @@ function renderDetailItems() {
     const mockupVal = v('file_mm26e29h');
     let mockupHTML = `<div class="mockup-ph">👕</div>`;
     if (mockupVal?.files?.length > 0) {
-      const url = mockupVal.files[0].url || mockupVal.files[0].thumb_url;
+      const f = mockupVal.files[0];
+      const url = f.assetId ? `/api/file-proxy?assetId=${f.assetId}` : (f.url || f.thumb_url || '');
       if (url) mockupHTML = `<img src="${url}" alt="Mockup" loading="lazy" />`;
     }
 

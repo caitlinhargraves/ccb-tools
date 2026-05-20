@@ -784,7 +784,7 @@ async function loadOrders() {
           if (rawMockup) {
             const parsed = JSON.parse(rawMockup);
             if (parsed.files) {
-              mockupUrls = parsed.files.map(f => f.url || f.public_url || '').filter(Boolean);
+              mockupUrls = parsed.files.map(f => f.assetId ? `/api/file-proxy?assetId=${f.assetId}` : (f.url || f.public_url || '')).filter(Boolean);
             }
           }
         } catch(e) {}
