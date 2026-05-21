@@ -1016,7 +1016,7 @@ function openEditModal(orderId){
             <label class="form-label">Product Type</label>
             <select class="form-select" id="p${id}-type">
               <option value="">Select...</option>
-              <option ${pType==="In House"?"selected":""}>In House</option>
+              <option ${(pType==="In House"||pType==="In House Decoration")?"selected":""}>In House</option>
               <option ${pType==="Pre-Decorated"?"selected":""}>Pre-Decorated</option>
               <option ${pType.includes("3rd")?"selected":""}>3rd Party</option>
               <option ${pType.includes("Promo")?"selected":""}>Promo Code</option>
@@ -1425,7 +1425,7 @@ async function saveOrderEdits(){
       if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
       if(pPoNumE)subCols['text_mm27ns9d']=pPoNumE;
       if(pPoDateE)subCols['date_mm26mc76']={date:pPoDateE};
-      if(pTypeE)subCols['color_mm2dd6d5']={label:pTypeE};
+      if(pTypeE)subCols['color_mm2dd6d5']={label:pTypeE==='In House'?'In House Decoration':pTypeE};
       if(pProductStatusE)subCols['color_mm25v786']={label:pProductStatusE};
       const artworkFilesE={};
       for(let dId=1;dId<=3;dId++){
@@ -1641,7 +1641,7 @@ async function submitOrder(){
         }
         if(pPoNum)subCols['text_mm27ns9d']=pPoNum;
         if(pPoDate)subCols['date_mm26mc76']={date:pPoDate};
-        if(pType)subCols['color_mm2dd6d5']={label:pType};
+        if(pType)subCols['color_mm2dd6d5']={label:pType==='In House'?'In House Decoration':pType};
         if(pProductStatus)subCols['color_mm25v786']={label:pProductStatus};
 
         // Gather deco spots
@@ -1926,4 +1926,5 @@ function checkForDraft() {
 </script>
 </body>
 </html>
+
 
