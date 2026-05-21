@@ -128,6 +128,12 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 .recent-table tr:last-child td{border-bottom:none}
 .done-badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:4px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
 .empty-msg{font-size:13px;color:var(--text2);padding:20px 0}
+.order-group{margin-bottom:20px}
+.order-group-header{display:flex;align-items:center;gap:8px;padding:8px 0 8px;border-bottom:1.5px solid var(--border);margin-bottom:10px;flex-wrap:wrap}
+.order-group-num{font-family:'Inter',monospace;font-size:11px;font-weight:700;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 8px}
+.order-group-name{font-size:13px;font-weight:600;color:var(--text)}
+.order-group-meta{display:flex;align-items:center;gap:8px;margin-left:auto}
+.order-group-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
 .pdf-thumb{width:64px;height:64px;border-radius:6px;border:1px solid var(--border);background:var(--red-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:3px;flex-shrink:0}.pdf-thumb svg{width:22px;height:22px;stroke:var(--red);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}.pdf-thumb span{font-size:9px;font-weight:600;color:var(--red);letter-spacing:.05em}.pdf-thumb-sm{width:36px;height:36px;border-radius:4px;border:1px solid var(--border);background:var(--red-bg);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;vertical-align:middle}.pdf-thumb-sm svg{width:16px;height:16px;stroke:var(--red);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
 /* TOAST */
 .toast{position:fixed;bottom:20px;right:20px;background:var(--text);color:white;font-size:13px;padding:10px 16px;border-radius:50px;display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;z-index:999}
@@ -693,7 +699,7 @@ function parseProduct(item,sub){
   const _slotStyleText=(()=>{for(const slot of DECO_SLOTS){const t=sc[slot.style]?.text||'';if(t)return t;}return '';})();
   const _effectiveId=_slotStyleId||decoStyleId;
   const _effectiveText=_slotStyleId?_slotStyleText:decoStyleText;
-  const decoStyleDisplay=_effectiveId===3||_effectiveId===4?'DTG / DTF':_effectiveText||'Other';
+  const decoStyleDisplay=_effectiveId===3?'DTG':_effectiveId===4?'DTF':_effectiveText||'Other';
   // text field has direct Monday URL, value has assetId for download
   const mockupUrl=sc[S_MOCKUP]?.text||null;
   const artworkUrl=sc[S_ARTWORK]?.text||null;
