@@ -88,12 +88,18 @@
   .modal-close:hover{background:var(--border);}
   .modal-body{overflow-y:auto;padding:18px 22px;flex:1;}
   .modal-footer{padding:14px 22px;border-top:1px solid var(--border2);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;}
-  .form-group{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
-  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .form-section{margin-bottom:20px;}
+  .form-section-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .form-section-title::after{content:'';flex:1;height:1px;background:var(--border2);}
+  .form-row{display:grid;gap:10px;margin-bottom:10px;}
+  .form-row.cols-2{grid-template-columns:1fr 1fr;}
+  .form-row.cols-3{grid-template-columns:1fr 1fr 1fr;}
+  .form-group{display:flex;flex-direction:column;gap:4px;}
   .form-label{font-size:11px;font-weight:600;letter-spacing:.02em;}
   .form-label .req{color:var(--magenta);}
   .form-input,.form-select,.form-textarea{padding:8px 11px;border:1px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;color:var(--text);background:var(--surface);outline:none;transition:border-color .2s,box-shadow .2s;width:100%;}
   .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,174,239,.1);}
+  .form-input::placeholder,.form-textarea::placeholder{color:var(--subtle);}
   .form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7280' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer;}
   .form-textarea{resize:vertical;min-height:60px;line-height:1.5;}
   .cancel-btn{display:inline-flex;align-items:center;padding:8px 18px;background:transparent;color:var(--text2);border:1.5px solid var(--border);border-radius:50px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
@@ -150,10 +156,10 @@
     </div>
     <div class="modal-body">
 
-      <!-- PIPELINE STATUS SECTION -->
-      <div style="background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:8px;padding:12px 14px;margin-bottom:16px;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin-bottom:10px;">Pipeline Info</div>
-        <div class="form-row">
+      <!-- PIPELINE INFO -->
+      <div class="form-section">
+        <div class="form-section-title">Pipeline Info</div>
+        <div class="form-row cols-2">
           <div class="form-group">
             <label class="form-label">Lead Status</label>
             <select class="form-select" id="f-status">
@@ -166,7 +172,7 @@
             <input type="number" class="form-input" id="f-value" placeholder="0.00" step="0.01">
           </div>
         </div>
-        <div class="form-row">
+        <div class="form-row cols-2">
           <div class="form-group">
             <label class="form-label">Follow-up Date</label>
             <input type="date" class="form-input" id="f-followup">
@@ -178,93 +184,96 @@
         </div>
       </div>
 
-      <!-- ORDER DETAILS (same as orders dashboard) -->
-      <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border2);">Order Details</div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Company Name <span class="req">*</span></label>
-          <input type="text" class="form-input" id="f-company" placeholder="e.g. Higgins Construction">
+      <!-- ORDER DETAILS -->
+      <div class="form-section">
+        <div class="form-section-title">Order Details</div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label class="form-label">Company Name <span class="req">*</span></label>
+            <input type="text" class="form-input" id="f-company" placeholder="e.g. Higgins Construction">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contact Name</label>
+            <input type="text" class="form-input" id="f-contact" placeholder="First Last">
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Contact Name</label>
-          <input type="text" class="form-input" id="f-contact" placeholder="First Last">
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="f-email" placeholder="email@company.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="tel" class="form-input" id="f-phone" placeholder="(612) 555-0100">
+          </div>
         </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Email</label>
-          <input type="email" class="form-input" id="f-email" placeholder="email@company.com">
+        <div class="form-row cols-3">
+          <div class="form-group">
+            <label class="form-label">In Hands Date</label>
+            <input type="date" class="form-input" id="f-ihd">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sales Rep</label>
+            <select class="form-select" id="f-sales">
+              <option value="">Select...</option>
+              <option>Chaz Lucius</option><option>Bailey McGraw</option><option>Jess Miller</option>
+              <option>Nick Miller</option><option>George Miller</option><option>Web Order</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">CCB Company</label>
+            <select class="form-select" id="f-imprint">
+              <option value="">Select...</option>
+              <option value="1">CCB Imprint</option>
+              <option value="2">CCB Insight</option>
+            </select>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Phone</label>
-          <input type="tel" class="form-input" id="f-phone" placeholder="(612) 555-0100">
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label class="form-label">Shipping To (Name / Company)</label>
+            <input type="text" class="form-input" id="f-shipto" placeholder="Name or company">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payment Method</label>
+            <input type="text" class="form-input" id="f-payment" placeholder="CC, Gradient Bucks, etc.">
+          </div>
         </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">In Hands Date</label>
-          <input type="date" class="form-input" id="f-ihd">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Street Address</label>
+            <input type="text" class="form-input" id="f-addr-street" placeholder="123 Main St">
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Sales Rep</label>
-          <select class="form-select" id="f-sales">
-            <option value="">Select...</option>
-            <option>Chaz Lucius</option><option>Bailey McGraw</option><option>Jess Miller</option>
-            <option>Nick Miller</option><option>George Miller</option><option>Web Order</option>
-          </select>
+        <div class="form-row cols-3">
+          <div class="form-group">
+            <label class="form-label">City</label>
+            <input type="text" class="form-input" id="f-addr-city" placeholder="Minneapolis">
+          </div>
+          <div class="form-group">
+            <label class="form-label">State</label>
+            <input type="text" class="form-input" id="f-addr-state" placeholder="MN" maxlength="2" style="text-transform:uppercase">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Zip</label>
+            <input type="text" class="form-input" id="f-addr-zip" placeholder="55401" maxlength="10">
+          </div>
         </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">CCB Company</label>
-          <select class="form-select" id="f-imprint">
-            <option value="">Select...</option>
-            <option value="1">CCB Imprint</option>
-            <option value="2">CCB Insight</option>
-          </select>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea class="form-textarea" id="f-notes" placeholder="Context, conversation notes, next steps..."></textarea>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Payment Method</label>
-          <input type="text" class="form-input" id="f-payment" placeholder="CC, Gradient Bucks, etc.">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Shipping To (Name / Company)</label>
-          <input type="text" class="form-input" id="f-shipto" placeholder="Name or company">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Street Address</label>
-        <input type="text" class="form-input" id="f-addr-street" placeholder="123 Main St">
-      </div>
-      <div class="form-row" style="grid-template-columns:1fr 80px 100px;">
-        <div class="form-group">
-          <label class="form-label">City</label>
-          <input type="text" class="form-input" id="f-addr-city" placeholder="Minneapolis">
-        </div>
-        <div class="form-group">
-          <label class="form-label">State</label>
-          <input type="text" class="form-input" id="f-addr-state" placeholder="MN" maxlength="2" style="text-transform:uppercase">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Zip</label>
-          <input type="text" class="form-input" id="f-addr-zip" placeholder="55401" maxlength="10">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Notes</label>
-        <textarea class="form-textarea" id="f-notes" placeholder="Context, conversation notes, next steps..."></textarea>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Other Charges ($)</label>
-          <input type="number" class="form-input" id="f-other-charges" placeholder="0.00" step="0.01" min="0">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Other Charges Details</label>
-          <input type="text" class="form-input" id="f-other-charges-details" placeholder="e.g. Rush fee, setup...">
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label class="form-label">Other Charges ($)</label>
+            <input type="number" class="form-input" id="f-other-charges" placeholder="0.00" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Other Charges Details</label>
+            <input type="text" class="form-input" id="f-other-charges-details" placeholder="e.g. Rush fee, setup...">
+          </div>
         </div>
       </div>
 
