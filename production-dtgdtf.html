@@ -472,15 +472,15 @@ function openProductModal(subId,section){
       const _sc=p._sc||{};
       const _place=_sc[slot.place]?.text||'';
       const _desc=_sc[slot.desc]?.text||'';
-      const _artId=slotDef?extractAssetIds(_sc[slotDef.art]?.value)[0]:null;
-      const _artAsset=_artId?assetCache[_artId]:null;
-      const _artName=_artAsset?.name||(_sc[slotDef?.art]?.text?getFilename(_sc[slotDef?.art]?.text):'');
-      const _artUrl=_artAsset?.url||_sc[slotDef?.art]?.text||null;
+      const _artIds=slotDef?extractAssetIds(_sc[slotDef.art]?.value):[];
+      const _artAssets=_artIds.map(id=>assetCache[id]).filter(Boolean);
+      const _fallbackArtUrl=_sc[slotDef?.art]?.text||null;
       let html=`<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:8px">`;
       html+=`<div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Decoration ${slot.num||''}</div>`;
       if(_place)html+=`<div style="font-size:12px;margin-bottom:3px"><span style="color:var(--text3)">Placement:</span> ${_place}</div>`;
       if(_desc)html+=`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--text3)">Artwork:</span> ${_desc}</div>`;
-      if(_artUrl)html+=`<div class="modal-file-row"><span class="modal-file-name">${_artName||'Art file'}</span><a class="modal-download-btn" href="${_artUrl}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>Download</a></div>`;
+      if(_artAssets.length){html+=_artAssets.map(a=>`<div class="modal-file-row"><span class="modal-file-name">${a.name||'Art file'}</span><a class="modal-download-btn" href="${a.publicUrl||a.url}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(a.url)?'Open PDF':'Download'}</a></div>`).join('');}
+      else if(_fallbackArtUrl)html+=`<div class="modal-file-row"><span class="modal-file-name">${getFilename(_fallbackArtUrl)||'Art file'}</span><a class="modal-download-btn" href="${_fallbackArtUrl}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>Download</a></div>`;
       html+=`</div>`;
       return html;
     }).join('');
