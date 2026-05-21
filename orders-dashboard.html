@@ -516,7 +516,7 @@ const PENDING_GROUP = 'group_mm2wb7r2';
 
 // All Monday calls go through the server proxy -- API key never in browser
 async function mondayMutation(query){
-  const res=await fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});
+  const res=await fetch('https://api.monday.com/v2',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0OTQ0NjE4NywiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMjNUMTU6Mzc6MTkuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.6FPYgwwTj-05GWXHxxq5lSstcJTGfVOqATNhk5FQBic','API-Version':'2024-01'},body:JSON.stringify({query})});
   const data=await res.json();
   if(data.errors)throw new Error(data.errors[0].message);
   return data.data;
@@ -798,9 +798,9 @@ async function mondayQuery(query){
   const timeout=setTimeout(()=>controller.abort(),25000);
   let res;
   try{
-    res=await fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query}),signal:controller.signal});
+    res=await fetch('https://api.monday.com/v2',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0OTQ0NjE4NywiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMjNUMTU6Mzc6MTkuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.6FPYgwwTj-05GWXHxxq5lSstcJTGfVOqATNhk5FQBic','API-Version':'2024-01'},body:JSON.stringify({query}),signal:controller.signal});
   }catch(e){
-    if(e.name==='AbortError')throw new Error('Request timed out -- server may be waking up. Try refreshing.');
+    if(e.name==='AbortError')throw new Error('Request timed out. Try refreshing.');
     throw e;
   }finally{clearTimeout(timeout);}
   const data=await res.json();
