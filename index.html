@@ -107,7 +107,7 @@
   <!-- ORDERS & MANAGEMENT -->
   <div class="section">
     <div class="section-label">Orders &amp; Management <span class="lock-icon">🔒</span></div>
-    <div class="tile-grid cols-4">
+    <div class="tile-grid cols-3">
       <div class="tile featured featured-orders" onclick="openPinFor('orders-dashboard.html')">
         <div class="tile-lock">🔒</div>
         <div class="tile-emoji">📋</div>
@@ -117,11 +117,6 @@
         <div class="tile-lock">🔒</div>
         <div class="tile-emoji">🎯</div>
         <div class="tile-name">Pipeline</div>
-      </div>
-      <div class="tile" onclick="openPinFor('invoicing.html')">
-        <div class="tile-lock">🔒</div>
-        <div class="tile-emoji">🧾</div>
-        <div class="tile-name">Invoicing</div>
       </div>
       <div class="tile" onclick="openPinFor('purchase-orders.html')">
         <div class="tile-lock">🔒</div>
@@ -178,13 +173,22 @@
     </div>
   </div>
 
-  <!-- INVENTORY & FINANCE -->
+  <!-- MISC -->
   <div class="section">
-    <div class="section-label">Inventory &amp; Finance</div>
-    <div class="tile-grid cols-2">
+    <div class="section-label">Misc</div>
+    <div class="tile-grid cols-4">
       <div class="tile" onclick="location.href='inventory.html'">
         <div class="tile-emoji">🗃</div>
         <div class="tile-name">Inventory</div>
+      </div>
+      <div class="tile" onclick="openPinFor('invoicing.html')">
+        <div class="tile-lock">🔒</div>
+        <div class="tile-emoji">🧾</div>
+        <div class="tile-name">Invoicing</div>
+      </div>
+      <div class="tile" onclick="location.href='quote-calculator.html'">
+        <div class="tile-emoji">🧮</div>
+        <div class="tile-name">Quote Calculator</div>
       </div>
     </div>
   </div>
