@@ -1170,7 +1170,6 @@ function addDeco(productId){
   if(!decoCounters[productId])decoCounters[productId]=0;
   decoCounters[productId]++;
   const dId=decoCounters[productId];
-  const container=document.getElementById(`p${productId}-decos`);
   const div=document.createElement('div');
   div.className='deco-spot-block';
   div.id=`p${productId}-deco${dId}`;
