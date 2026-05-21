@@ -577,12 +577,12 @@ function buildProductCard(p,section){
     poHtml=`<div class="product-card-po">
       <div class="po-row">
         <span class="po-lbl">Supplier</span>
-        <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="text" placeholder="Supplier name" value="${p.supplier}" id="sup-${p.id}" oninput="scheduleAutoSave('${p.id}','${p.orderId}')">
+        <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="text" placeholder="Supplier name" value="${p.supplier}" id="sup-${p.id}" >
       </div>
       <div class="po-row-inline">
         <div class="po-row" style="flex:1">
           <span class="po-lbl">PO Number</span>
-          <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="text" placeholder="PO-001" value="${p.poNum}" id="ponum-${p.id}" oninput="scheduleAutoSave('${p.id}','${p.orderId}')">
+          <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="text" placeholder="PO-001" value="${p.poNum}" id="ponum-${p.id}">
         </div>
         <div class="po-row" style="flex:1">
           <span class="po-lbl">PO Date</span>
@@ -591,7 +591,7 @@ function buildProductCard(p,section){
       </div>
       <div class="po-row">
         <span class="po-lbl">Tracking Link</span>
-        <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="url" placeholder="https://..." value="${p.tracking}" id="track-${p.id}" oninput="scheduleAutoSave('${p.id}','${p.orderId}')">
+        <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="url" placeholder="https://..." value="${p.tracking}" id="track-${p.id}">
       </div>
       <div class="po-row-inline">
         <div class="po-row" style="flex:1">
@@ -615,21 +615,21 @@ function buildProductCard(p,section){
     costHtml=`<div class="product-card-po">
       <div class="po-row">
         <span class="po-lbl">Supplier</span>
-        <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="text" placeholder="Supplier name" value="${p.supplier}" id="sup-${p.id}" oninput="scheduleAutoSave('${p.id}','${p.orderId}')">
+        <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="text" placeholder="Supplier name" value="${p.supplier}" id="sup-${p.id}">
       </div>
       <div class="po-row-inline">
         <div class="po-row" style="flex:1">
           <span class="po-lbl">PO Number</span>
-          <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="text" placeholder="PO-001" value="${p.poNum}" id="ponum-${p.id}" oninput="scheduleAutoSave('${p.id}','${p.orderId}')">
+          <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="text" placeholder="PO-001" value="${p.poNum}" id="ponum-${p.id}">
         </div>
         <div class="po-row" style="flex:1">
           <span class="po-lbl">PO Date</span>
-          <input class="po-input date-input" style="width:100%" onclick="event.stopPropagation()" type="date" id="date-${p.id}" value="${p.poDate||''}" oninput="scheduleAutoSave('${p.id}','${p.orderId}')">
+          <input class="po-input date-input" style="width:100%" onclick="event.stopPropagation()" type="date" id="date-${p.id}" value="${p.poDate||''}">
         </div>
       </div>
       <div class="po-row">
         <span class="po-lbl">Tracking Link</span>
-        <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="url" placeholder="https://..." value="${p.tracking}" id="track-${p.id}" oninput="scheduleAutoSave('${p.id}','${p.orderId}')">
+        <input class="po-input" style="width:100%" onclick="event.stopPropagation()" type="url" placeholder="https://..." value="${p.tracking}" id="track-${p.id}">
       </div>
       <div class="po-row-inline">
         <div class="po-row" style="flex:1">
@@ -697,30 +697,41 @@ async function commitPoEntry(subId,orderId,explicitDate=null){
   const supplier=document.getElementById('sup-'+subId)?.value.trim()||'';
   const poNum=document.getElementById('ponum-'+subId)?.value.trim()||'';
   const tracking=document.getElementById('track-'+subId)?.value.trim()||'';
-  const today=explicitDate||new Date().toISOString().split('T')[0];
+  // FIX 1: Read the actual date field value — never default to today
   const dateEl=document.getElementById('date-'+subId);
-  if(dateEl&&!dateEl.value)dateEl.value=today;
+  const dateVal=explicitDate||(dateEl?.value||'');
+  if(!dateVal){showToast('Enter a PO date first',false);hideToast(2500);return;}
 
   showToast('Saving PO...');
   try{
-    const typeEl=document.querySelector(`#row-${subId} .type-3p`);
-    const statusIndex=typeEl?2:1;
     const vals={};
     if(supplier)vals['text_mm22qdag']=supplier;
     if(poNum)vals['text_mm27ns9d']=poNum;
     if(tracking)vals['link_mm26rzea']={url:tracking,text:'Track'};
-    vals['date_mm26mc76']={date:today};
-    vals['color_mm25v786']={index:statusIndex};
+    vals['date_mm26mc76']={date:dateVal};
+    // FIX 2: Only set Product Status if it is currently blank (index 5 = no status)
+    // Find the in-memory product to check current statusIndex
+    const allBuckets=[allToBeOrdered,allOrdered,allThirdParty,allPromoCodes];
+    let currentStatusIndex=5;
+    for(const bucket of allBuckets){
+      const prod=bucket.find(p=>String(p.id)===String(subId));
+      if(prod){currentStatusIndex=prod.statusIndex??5;break;}
+    }
+    if(currentStatusIndex===5||currentStatusIndex===undefined){
+      // Blank status — set to Product Ordered (1) or 3rd Party (2)
+      const typeEl=document.querySelector(`#row-${subId} .type-3p`);
+      vals['color_mm25v786']={index:typeEl?2:1};
+    }
+    // If status is already set, leave it alone
     const valStr=JSON.stringify(JSON.stringify(vals));
     await mq(`mutation{change_multiple_column_values(board_id:${SUBS_BOARD},item_id:${subId},column_values:${valStr}){id}}`);
     showToast('Saved',false);hideToast();
     const savedEl=document.getElementById('po-saved-'+subId);
     if(savedEl){savedEl.textContent='Saved';setTimeout(()=>savedEl.textContent='',2000);}
-    // Update in-memory objects so fields persist without wiping inputs on reload
-    const allBuckets=[allToBeOrdered,allOrdered,allThirdParty,allPromoCodes];
+    // FIX 3: Use dateVal (not today) for in-memory update
     for(const bucket of allBuckets){
       const prod=bucket.find(p=>String(p.id)===String(subId));
-      if(prod){if(supplier)prod.supplier=supplier;if(poNum)prod.poNum=poNum;if(tracking)prod.tracking=tracking;prod.poDate=explicitDate||today;prod.statusIndex=statusIndex;break;}
+      if(prod){if(supplier)prod.supplier=supplier;if(poNum)prod.poNum=poNum;if(tracking)prod.tracking=tracking;prod.poDate=dateVal;break;}
     }
     // Move from To Be Ordered to Ordered after a 5s delay (allows undoing accidental saves)
     const tboIdx=allToBeOrdered.findIndex(p=>String(p.id)===String(subId));
@@ -962,4 +973,5 @@ loadData();
 
 </body>
 </html>
+
 
