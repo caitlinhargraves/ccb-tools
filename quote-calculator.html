@@ -13,32 +13,18 @@
   *{margin:0;padding:0;box-sizing:border-box;}
   body{background:var(--bg);color:var(--navy);font-family:'Inter',sans-serif;min-height:100vh;font-size:15px;line-height:1.65;}
 
-  /* HEADER */
   .header{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(27,42,74,.06);}
   .header-left{display:flex;align-items:center;gap:20px;}
-  .logo{display:flex;align-items:center;gap:8px;}
-  .logo-text{font-weight:800;font-size:16px;color:var(--navy);letter-spacing:-.3px;}
-  .logo-text span{color:var(--muted);font-weight:600;}
   .nav-div{width:1px;height:22px;background:var(--border);}
   .page-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
   .back-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;background:none;border:none;font-family:'Inter',sans-serif;transition:color .15s;}
   .back-btn:hover{color:var(--navy);}
 
-  /* LAYOUT */
   .page-wrap{max-width:680px;margin:0 auto;padding:32px 24px 80px;}
   .page-title{font-size:26px;font-weight:800;color:var(--navy);letter-spacing:-.4px;margin-bottom:4px;}
   .page-sub{font-size:14px;color:var(--muted);margin-bottom:28px;}
 
-  /* METHOD GRID */
-  .method-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px;}
-  .method-btn{padding:12px 6px;border:1.5px solid var(--border2);border-radius:12px;background:var(--white);cursor:pointer;text-align:center;transition:all .15s;font-family:'Inter',sans-serif;}
-  .method-btn:hover{background:var(--bg);border-color:var(--border);}
-  .method-btn.active{border-color:var(--cyan);background:#EBF8FF;}
-  .method-btn .m-icon{font-size:22px;margin-bottom:5px;}
-  .method-btn .m-label{font-size:11px;font-weight:600;color:var(--muted);line-height:1.3;}
-  .method-btn.active .m-label{color:#0077AA;}
-
-  /* CARDS */
+  /* CARD */
   .card{background:var(--white);border:1px solid var(--border2);border-radius:14px;padding:20px 22px;margin-bottom:14px;}
   .card-title{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle);margin-bottom:14px;}
   .field-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;}
@@ -48,19 +34,36 @@
   .field input:focus{outline:none;border-color:var(--cyan);background:var(--white);}
   .field-hint{font-size:11px;color:var(--subtle);margin-top:2px;}
 
-  /* METHOD DETAIL */
-  .method-detail{font-size:12px;color:var(--muted);margin-top:12px;padding:9px 12px;background:var(--bg);border-radius:8px;line-height:1.5;}
+  /* LOCATION CARDS */
+  .loc-card{background:var(--white);border:1px solid var(--border2);border-radius:14px;padding:18px 20px;margin-bottom:10px;position:relative;}
+  .loc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .loc-num{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle);}
+  .loc-remove{background:none;border:none;cursor:pointer;font-size:18px;color:var(--subtle);line-height:1;padding:0 2px;transition:color .15s;}
+  .loc-remove:hover{color:#C0392B;}
+
+  /* METHOD PILLS */
+  .method-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+  .mpill{padding:6px 12px;border:1.5px solid var(--border2);border-radius:50px;background:var(--white);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:var(--muted);transition:all .15s;}
+  .mpill:hover{border-color:var(--border);background:var(--bg);}
+  .mpill.active{border-color:var(--cyan);background:#EBF8FF;color:#0077AA;}
 
   /* EMBROIDERY TILES */
-  .emb-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px;}
-  .emb-tile{border:1.5px solid var(--border2);border-radius:10px;padding:10px 6px;cursor:pointer;text-align:center;background:var(--white);transition:all .15s;font-family:'Inter',sans-serif;}
+  .emb-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:4px;}
+  .emb-tile{border:1.5px solid var(--border2);border-radius:9px;padding:8px 5px;cursor:pointer;text-align:center;background:var(--white);transition:all .15s;font-family:'Inter',sans-serif;}
   .emb-tile:hover{background:var(--bg);}
   .emb-tile.active{border-color:var(--cyan);background:#EBF8FF;}
-  .emb-tile .et-name{font-size:12px;font-weight:700;color:var(--navy);}
+  .emb-tile .et-name{font-size:11px;font-weight:700;color:var(--navy);}
   .emb-tile.active .et-name{color:#0077AA;}
-  .emb-tile .et-size{font-size:11px;color:var(--subtle);margin-top:3px;}
+  .emb-tile .et-size{font-size:10px;color:var(--subtle);margin-top:2px;}
 
-  /* PREMIUM TOGGLE */
+  .method-detail{font-size:12px;color:var(--muted);margin-top:10px;padding:8px 11px;background:var(--bg);border-radius:8px;line-height:1.5;}
+  .loc-deco-cost{font-size:12px;font-weight:600;color:var(--navy);margin-top:10px;padding:7px 11px;background:#EBF8FF;border-radius:8px;color:#0077AA;}
+
+  /* ADD BUTTON */
+  .add-loc-btn{width:100%;padding:13px;border:2px dashed var(--border);border-radius:14px;background:transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--muted);transition:all .15s;margin-bottom:14px;}
+  .add-loc-btn:hover{border-color:var(--cyan);color:var(--cyan);background:#EBF8FF;}
+
+  /* PREMIUM */
   .premium-row{display:flex;align-items:center;gap:9px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border2);}
   .premium-row label{font-size:13px;font-weight:600;color:var(--navy);cursor:pointer;}
   .premium-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--cyan);cursor:pointer;}
@@ -92,15 +95,16 @@
   .metric .m-val{font-size:20px;font-weight:700;color:#fff;line-height:1.2;}
   .metric .m-lbl{font-size:11px;color:rgba(255,255,255,.45);margin-top:3px;}
   .breakdown-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:13px;color:rgba(255,255,255,.6);}
-  .breakdown-row:last-child{border-bottom:none;font-weight:600;color:#fff;}
+  .breakdown-row:last-child{border-bottom:none;}
   .breakdown-row .br-lbl{color:rgba(255,255,255,.5);}
+  .breakdown-row.total{font-weight:700;color:#fff;}
   .breakdown-row.total .br-lbl{color:rgba(255,255,255,.8);}
+  .breakdown-row.section-head{color:rgba(255,255,255,.35);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding-top:12px;}
 
   @media(max-width:600px){
     .page-wrap{padding:20px 16px 60px;}
-    .method-grid{grid-template-columns:repeat(5,1fr);}
-    .metrics-grid{grid-template-columns:repeat(3,1fr);}
     .sell-big{font-size:34px;}
+    .metrics-grid{grid-template-columns:repeat(3,1fr);}
   }
 </style>
 </head>
@@ -119,31 +123,7 @@
 
 <div class="page-wrap">
   <div class="page-title">Quote Calculator</div>
-  <div class="page-sub">Enter item cost, quantity, and decoration method to get a sell price.</div>
-
-  <!-- METHOD SELECTOR -->
-  <div class="method-grid">
-    <button class="method-btn active" data-method="none" onclick="setMethod('none')">
-      <div class="m-icon">🏷️</div>
-      <div class="m-label">No Deco</div>
-    </button>
-    <button class="method-btn" data-method="dtf_dtg" onclick="setMethod('dtf_dtg')">
-      <div class="m-icon">🖨️</div>
-      <div class="m-label">DTF / DTG</div>
-    </button>
-    <button class="method-btn" data-method="screenprint" onclick="setMethod('screenprint')">
-      <div class="m-icon">🎨</div>
-      <div class="m-label">Screenprint</div>
-    </button>
-    <button class="method-btn" data-method="embroidery" onclick="setMethod('embroidery')">
-      <div class="m-icon">🧵</div>
-      <div class="m-label">Embroidery</div>
-    </button>
-    <button class="method-btn" data-method="engraving" onclick="setMethod('engraving')">
-      <div class="m-icon">✏️</div>
-      <div class="m-label">Engraving</div>
-    </button>
-  </div>
+  <div class="page-sub">Enter item cost, quantity, and decoration locations to get a sell price.</div>
 
   <!-- JOB DETAILS -->
   <div class="card">
@@ -157,32 +137,7 @@
         <label>Quantity</label>
         <input type="number" id="qty" value="24" min="1" oninput="calc()">
       </div>
-      <div class="field" id="spField" style="display:none"></div>
     </div>
-
-    <div id="embField" style="display:none;margin-top:14px;">
-      <div style="font-size:13px;font-weight:500;color:var(--muted);margin-bottom:6px;">Embroidery size</div>
-      <div class="emb-grid">
-        <div class="emb-tile active" data-emb="small" onclick="selectEmb('small')">
-          <div class="et-name">Small</div>
-          <div class="et-size">up to 3"</div>
-        </div>
-        <div class="emb-tile" data-emb="standard" onclick="selectEmb('standard')">
-          <div class="et-name">Standard</div>
-          <div class="et-size">3" – 5"</div>
-        </div>
-        <div class="emb-tile" data-emb="large" onclick="selectEmb('large')">
-          <div class="et-name">Large</div>
-          <div class="et-size">5" – 8"</div>
-        </div>
-        <div class="emb-tile" data-emb="fullback" onclick="selectEmb('fullback')">
-          <div class="et-name">Full Back</div>
-          <div class="et-size">8"+ / blankets</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="method-detail" id="methodDetail">Item only -- no decoration charge or setup fee.</div>
 
     <div class="premium-row">
       <input type="checkbox" id="premiumCheck" onchange="togglePremium()">
@@ -217,6 +172,11 @@
     </div>
   </div>
 
+  <!-- DECORATION LOCATIONS -->
+  <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle);margin-bottom:8px;">Decoration Locations</div>
+  <div id="locationsContainer"></div>
+  <button class="add-loc-btn" onclick="addLocation()">+ Add Decoration Location</button>
+
   <!-- RESULTS -->
   <div class="results-card">
     <div class="sell-row">
@@ -230,7 +190,7 @@
       </div>
       <div class="metric">
         <div class="m-val" id="res-setup">—</div>
-        <div class="m-lbl">Setup fee</div>
+        <div class="m-lbl">Setup fees</div>
       </div>
       <div class="metric">
         <div class="m-val" id="res-grandtotal">—</div>
@@ -239,7 +199,6 @@
     </div>
     <div id="breakdownRows"></div>
   </div>
-
 </div>
 
 <script>
@@ -251,49 +210,106 @@ const MARKUP=[
   {max:50.00, pct:1.05},
   {max:Infinity, pct:0.85},
 ];
-const DECO={
-  none:       {flat:0,    setupFee:0,  detail:'Item only -- no decoration charge or setup fee.'},
-  dtf_dtg:    {flat:4.00, setupFee:50, detail:'Flat rate per piece. Covers both DTF transfers and DTG direct prints.'},
-  screenprint:{flat:null, perColor:2.50, detail:'Charged per color. Enter number of ink colors in the design.'},
-  embroidery: {sizes:{small:3.00,standard:4.50,large:6.00,fullback:8.00}, setupFee:50, detail:'Rate based on logo size. Small = up to 3" · Standard = 3-5" · Large = 5-8" · Full Back = 8"+ or blankets.'},
-  engraving:  {flat:3.50, setupFee:50, detail:'Flat rate per piece. Best for hard goods, drinkware, and awards.'},
+const METHODS={
+  none:       {label:'No Decoration', flat:0,    setupFee:0,  detail:'No decoration charge.'},
+  dtf_dtg:    {label:'DTF / DTG',     flat:4.00, setupFee:50, detail:'Flat rate per piece. Covers DTF transfers and DTG prints.'},
+  screenprint:{label:'Screenprint',   flat:null, perColor:2.50, detail:'Charged per color. Each color adds $2.50/pc + $25 screen to setup.'},
+  embroidery: {label:'Embroidery',    sizes:{small:3.00,standard:4.50,large:6.00,fullback:8.00}, setupFee:50, detail:'Rate by logo size: Small (up to 3") · Standard (3-5") · Large (5-8") · Full Back (8"+)'},
+  engraving:  {label:'Engraving',     flat:3.50, setupFee:50, detail:'Flat rate per piece. Best for hard goods, drinkware, awards.'},
 };
 
-let currentMethod='none', selectedTier='floor', selectedEmb='small';
+let locations=[];
+let locCounter=0;
+let selectedTier='floor';
 
 function getMarkup(c){for(const t of MARKUP){if(c<=t.max)return t.pct;}return 0.85;}
 
-function setMethod(m){
-  currentMethod=m;
-  document.querySelectorAll('.method-btn').forEach(b=>b.classList.toggle('active',b.dataset.method===m));
-  document.getElementById('spField').style.display='none';
-  document.getElementById('spField').innerHTML='';
-  document.getElementById('embField').style.display='none';
-  if(m==='screenprint'){
-    const ef=document.getElementById('spField');
-    ef.style.display='flex';
-    ef.innerHTML='<label>Number of colors</label><input type="number" id="extraVal" value="2" min="1" max="8" oninput="calc()"><span class="field-hint">Each color adds $2.50/piece + $25 screen to setup</span>';
-  } else if(m==='embroidery'){
-    document.getElementById('embField').style.display='block';
-  }
-  document.getElementById('methodDetail').textContent=DECO[m].detail;
+function addLocation(){
+  const id='loc'+(++locCounter);
+  locations.push({id, method:'none', embSize:'small', colors:2});
+  renderLocations();
   calc();
 }
 
-function selectEmb(s){
-  selectedEmb=s;
-  document.querySelectorAll('.emb-tile').forEach(t=>t.classList.toggle('active',t.dataset.emb===s));
+function removeLocation(id){
+  locations=locations.filter(l=>l.id!==id);
+  renderLocations();
   calc();
 }
 
-function getDecoRate(){
-  const cfg=DECO[currentMethod];
-  if(currentMethod==='screenprint'){
-    const colors=parseFloat(document.getElementById('extraVal')?.value)||0;
-    return {decoPerPiece:colors*cfg.perColor,setupFee:colors*25};
+function setLocMethod(id, method){
+  const loc=locations.find(l=>l.id===id);
+  if(loc) loc.method=method;
+  renderLocations();
+  calc();
+}
+
+function setLocEmb(id, size){
+  const loc=locations.find(l=>l.id===id);
+  if(loc) loc.embSize=size;
+  renderLocations();
+  calc();
+}
+
+function getLocRate(loc){
+  const cfg=METHODS[loc.method];
+  if(loc.method==='screenprint'){
+    const el=document.getElementById(loc.id+'-colors');
+    const colors=el?parseFloat(el.value)||0:loc.colors;
+    loc.colors=colors;
+    return {decoPerPiece:colors*cfg.perColor, setupFee:colors*25};
   }
-  if(currentMethod==='embroidery') return {decoPerPiece:cfg.sizes[selectedEmb],setupFee:cfg.setupFee};
-  return {decoPerPiece:cfg.flat,setupFee:cfg.setupFee};
+  if(loc.method==='embroidery') return {decoPerPiece:cfg.sizes[loc.embSize], setupFee:cfg.setupFee};
+  return {decoPerPiece:cfg.flat, setupFee:cfg.setupFee};
+}
+
+function renderLocations(){
+  const container=document.getElementById('locationsContainer');
+  container.innerHTML='';
+  locations.forEach((loc,i)=>{
+    const cfg=METHODS[loc.method];
+    const rate=getLocRate(loc);
+
+    // method pills
+    const pillsHtml=Object.entries(METHODS).map(([key,m])=>
+      `<button class="mpill${loc.method===key?' active':''}" onclick="setLocMethod('${loc.id}','${key}')">${m.label}</button>`
+    ).join('');
+
+    // extra inputs
+    let extraHtml='';
+    if(loc.method==='screenprint'){
+      extraHtml=`<div class="field" style="max-width:160px;margin-top:10px;">
+        <label>Number of colors</label>
+        <input type="number" id="${loc.id}-colors" value="${loc.colors}" min="1" max="8" oninput="calc()">
+      </div>`;
+    } else if(loc.method==='embroidery'){
+      const tiles=['small','standard','large','fullback'];
+      const names={small:'Small',standard:'Standard',large:'Large',fullback:'Full Back'};
+      const sizes={small:'up to 3"',standard:'3"–5"',large:'5"–8"',fullback:'8"+ / blankets'};
+      extraHtml=`<div style="font-size:13px;font-weight:500;color:var(--muted);margin-top:10px;margin-bottom:6px;">Logo size</div>
+      <div class="emb-grid">${tiles.map(t=>`
+        <div class="emb-tile${loc.embSize===t?' active':''}" onclick="setLocEmb('${loc.id}','${t}')">
+          <div class="et-name">${names[t]}</div>
+          <div class="et-size">${sizes[t]}</div>
+        </div>`).join('')}</div>`;
+    }
+
+    const decoLabel=loc.method==='none'?'No charge':`$${rate.decoPerPiece.toFixed(2)}/pc${rate.setupFee>0?' + $'+rate.setupFee+' setup':''}`;
+
+    const div=document.createElement('div');
+    div.className='loc-card';
+    div.innerHTML=`
+      <div class="loc-header">
+        <span class="loc-num">Location ${i+1}</span>
+        <button class="loc-remove" onclick="removeLocation('${loc.id}')" title="Remove">×</button>
+      </div>
+      <div class="method-pills">${pillsHtml}</div>
+      ${extraHtml}
+      <div class="method-detail">${cfg.detail}</div>
+      ${loc.method!=='none'?`<div class="loc-deco-cost">${decoLabel}</div>`:''}
+    `;
+    container.appendChild(div);
+  });
 }
 
 function togglePremium(){
@@ -312,16 +328,34 @@ function selectTier(t){
 function calc(){
   const itemCost=parseFloat(document.getElementById('itemCost').value)||0;
   const qty=Math.max(1,parseInt(document.getElementById('qty').value)||1);
-  const {decoPerPiece,setupFee}=getDecoRate();
   const isPremium=document.getElementById('premiumCheck').checked;
   const msrp=parseFloat(document.getElementById('msrp')?.value)||0;
   const markup=getMarkup(itemCost);
-  const costBased=parseFloat((itemCost*markup+decoPerPiece).toFixed(2));
+  const markupPct=Math.round((markup-1)*100);
+
+  // sum all location charges
+  let totalDecoPerPiece=0;
+  let totalSetupFee=0;
+  const locBreakdown=[];
+  locations.forEach((loc,i)=>{
+    const r=getLocRate(loc);
+    totalDecoPerPiece+=r.decoPerPiece;
+    totalSetupFee+=r.setupFee;
+    if(loc.method!=='none'){
+      locBreakdown.push({label:`Location ${i+1} (${METHODS[loc.method].label})`, decoPerPiece:r.decoPerPiece, setupFee:r.setupFee});
+    }
+  });
+
+  const costBased=parseFloat((itemCost*markup+totalDecoPerPiece).toFixed(2));
   let sellPrice=costBased;
 
   if(isPremium&&msrp>0){
-    const da=decoPerPiece||4;
-    const tiers={floor:parseFloat((msrp+da*1.0).toFixed(2)),sweet:parseFloat((msrp+da*2.5).toFixed(2)),premium:parseFloat((msrp+da*4.0).toFixed(2))};
+    const da=totalDecoPerPiece||4;
+    const tiers={
+      floor:  parseFloat((msrp+da*1.0).toFixed(2)),
+      sweet:  parseFloat((msrp+da*2.5).toFixed(2)),
+      premium:parseFloat((msrp+da*4.0).toFixed(2)),
+    };
     ['floor','sweet','premium'].forEach(t=>{
       document.getElementById('tp-'+t).textContent='$'+tiers[t].toFixed(2);
       document.getElementById('tv-'+t).textContent='$'+(tiers[t]-msrp).toFixed(0)+' over MSRP';
@@ -331,33 +365,43 @@ function calc(){
   }
 
   const subtotal=sellPrice*qty;
-  const grandTotal=subtotal+setupFee;
-  const markupPct=Math.round((markup-1)*100);
+  const grandTotal=subtotal+totalSetupFee;
 
   document.getElementById('res-sellprice').textContent='$'+sellPrice.toFixed(2);
   document.getElementById('res-subtotal').textContent='$'+subtotal.toFixed(2);
-  document.getElementById('res-setup').textContent=setupFee>0?'$'+setupFee.toFixed(2):'—';
+  document.getElementById('res-setup').textContent=totalSetupFee>0?'$'+totalSetupFee.toFixed(2):'—';
   document.getElementById('res-grandtotal').textContent='$'+grandTotal.toFixed(2);
 
+  // breakdown
   const rows=[];
   if(!isPremium){
-    rows.push({l:'Item cost',v:'$'+itemCost.toFixed(2)+'/pc'});
-    rows.push({l:'Markup ('+markupPct+'%)',v:'$'+(itemCost*(markup-1)).toFixed(2)+'/pc'});
-    if(decoPerPiece>0) rows.push({l:'Decoration charge',v:'$'+decoPerPiece.toFixed(2)+'/pc'});
+    rows.push({l:'Item cost', v:'$'+itemCost.toFixed(2)+'/pc'});
+    rows.push({l:'Markup ('+markupPct+'%)', v:'$'+(itemCost*(markup-1)).toFixed(2)+'/pc'});
+    if(locBreakdown.length>0){
+      rows.push({l:'Decoration', v:'', section:true});
+      locBreakdown.forEach(lb=>{
+        rows.push({l:lb.label, v:'$'+lb.decoPerPiece.toFixed(2)+'/pc'});
+      });
+      if(locBreakdown.length>1){
+        rows.push({l:'Total decoration', v:'$'+totalDecoPerPiece.toFixed(2)+'/pc'});
+      }
+    }
   } else {
-    rows.push({l:'Blank MSRP',v:'$'+msrp.toFixed(2)});
-    rows.push({l:'Decoration premium',v:'$'+(sellPrice-msrp).toFixed(2)+'/pc'});
-    rows.push({l:'Your cost (blank + deco)',v:'$'+(itemCost+decoPerPiece).toFixed(2)+'/pc'});
-    rows.push({l:'Dollar profit / piece',v:'$'+(sellPrice-itemCost-decoPerPiece).toFixed(2)});
+    rows.push({l:'Blank MSRP', v:'$'+msrp.toFixed(2)});
+    rows.push({l:'Decoration premium', v:'$'+(sellPrice-msrp).toFixed(2)+'/pc'});
+    rows.push({l:'Your cost (blank + deco)', v:'$'+(itemCost+totalDecoPerPiece).toFixed(2)+'/pc'});
+    rows.push({l:'Dollar profit / piece', v:'$'+(sellPrice-itemCost-totalDecoPerPiece).toFixed(2)});
   }
-  rows.push({l:'Sell price / piece',v:'$'+sellPrice.toFixed(2),total:true});
+  rows.push({l:'Sell price / piece', v:'$'+sellPrice.toFixed(2), total:true});
 
-  document.getElementById('breakdownRows').innerHTML=rows.map(r=>
-    `<div class="breakdown-row${r.total?' total':''}"><span class="br-lbl">${r.l}</span><span>${r.v}</span></div>`
-  ).join('');
+  document.getElementById('breakdownRows').innerHTML=rows.map(r=>{
+    if(r.section) return `<div class="breakdown-row section-head"><span>${r.l}</span></div>`;
+    return `<div class="breakdown-row${r.total?' total':''}"><span class="br-lbl">${r.l}</span><span>${r.v}</span></div>`;
+  }).join('');
 }
 
-calc();
+// Start with one location
+addLocation();
 </script>
 </body>
 </html>
