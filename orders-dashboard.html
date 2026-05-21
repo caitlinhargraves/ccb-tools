@@ -462,6 +462,23 @@
             <input type="text" class="form-input" id="f-other-charges-details" placeholder="e.g. Rush fee, setup, shipping...">
           </div>
         </div>
+        <div class="form-row" id="order-status-row">
+          <div class="form-group">
+            <label class="form-label">Order Status <span style="font-size:10px;color:var(--subtle);font-weight:400">(leave blank for New)</span></label>
+            <select class="form-select" id="f-status">
+              <option value="">New</option>
+              <option>In House</option>
+              <option>Products Ordered</option>
+              <option>Decorated</option>
+              <option>3rd Party Ordered</option>
+              <option>3rd Party Complete</option>
+              <option>Promo Code</option>
+              <option>Ready for Shipping</option>
+              <option>Shipped</option>
+              <option>Delivered</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <!-- PRODUCTS -->
@@ -911,33 +928,8 @@ function openEditModal(orderId){
     else if(o.imprint==='CCB Insight')impEl.value='2';
   }
 
-  // Status field -- add one if not present
-  let statusField=document.getElementById('f-status');
-  if(!statusField){
-    const notesGroup=document.getElementById('f-notes')?.closest('.form-row')||document.getElementById('f-notes')?.closest('.form-group');
-    if(notesGroup){
-      const statusDiv=document.createElement('div');
-      statusDiv.className='form-row';
-      statusDiv.innerHTML=`<div class="form-group">
-        <label class="form-label">Order Status</label>
-        <select class="form-select" id="f-status">
-          <option value="">No change</option>
-          <option>New</option>
-          <option>In House</option>
-          <option>Products Ordered</option>
-          <option>Decorated</option>
-          <option>3rd Party Ordered</option>
-          <option>3rd Party Complete</option>
-          <option>Promo Code</option>
-          <option>Ready for Shipping</option>
-          <option>Shipped</option>
-          <option>Delivered</option>
-        </select>
-      </div>`;
-      notesGroup.after(statusDiv);
-      statusField=document.getElementById('f-status');
-    }
-  }
+  // Pre-fill Order Status from cached order
+  const statusField=document.getElementById('f-status');
   if(statusField&&o.status)statusField.value=o.status;
 
   // Hide "Add Another Order" button in edit mode
@@ -970,6 +962,10 @@ function openEditModal(orderId){
       const pSupplier=sCol(sub,'text_mm22qdag');
       const pPrice=sCol(sub,'numeric_mm2299qw');
       const pCost=sCol(sub,'numeric_mm266zz9');
+      const pPoNum=sCol(sub,'text_mm27ns9d');
+      const pPoDate=sCol(sub,'date_mm26mc76');
+      const pType=sCol(sub,'color_mm2dd6d5');
+      const pProductStatus=sCol(sub,'color_mm25v786');
       div.innerHTML=`
         <div class="product-block-header">
           <div class="product-block-num">Product ${id}</div>
@@ -1013,6 +1009,42 @@ function openEditModal(orderId){
           <div class="form-group">
             <label class="form-label">Our Cost / Item ($)</label>
             <input type="number" step="0.01" class="form-input" id="p${id}-cost" placeholder="0.00" value="${pCost}">
+          </div>
+        </div>
+        <div class="form-row cols-3">
+          <div class="form-group">
+            <label class="form-label">Product Type</label>
+            <select class="form-select" id="p${id}-type">
+              <option value="">Select...</option>
+              <option ${pType==="In House"?"selected":""}>In House</option>
+              <option ${pType==="Pre-Decorated"?"selected":""}>Pre-Decorated</option>
+              <option ${pType.includes("3rd")?"selected":""}>3rd Party</option>
+              <option ${pType.includes("Promo")?"selected":""}>Promo Code</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">PO #</label>
+            <input type="text" class="form-input" id="p${id}-ponum" placeholder="PO number" value="${pPoNum.replace(/"/g,'&quot;')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">PO Date</label>
+            <input type="date" class="form-input" id="p${id}-podate" value="${pPoDate}">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Product Status</label>
+            <select class="form-select" id="p${id}-productstatus">
+              <option value="">No change</option>
+              <option ${pProductStatus==="In House"?"selected":""}>In House</option>
+              <option ${pProductStatus==="Product Ordered"?"selected":""}>Product Ordered</option>
+              <option ${pProductStatus==="Receiving"?"selected":""}>Receiving</option>
+              <option ${pProductStatus==="On Shelf (Undecorated)"?"selected":""}>On Shelf (Undecorated)</option>
+              <option ${pProductStatus==="In Production"?"selected":""}>In Production</option>
+              <option ${pProductStatus==="QC"?"selected":""}>QC</option>
+              <option ${pProductStatus==="Decorated"?"selected":""}>Decorated</option>
+              <option ${pProductStatus==="On Shelf (Decorated)"?"selected":""}>On Shelf (Decorated)</option>
+            </select>
           </div>
         </div>
         <div class="deco-spots-list" id="p${id}-decos"></div>
@@ -1089,9 +1121,9 @@ function resetModal(){
   if(pipelineLabel)pipelineLabel.style.display='flex';
   const pipelineCb=document.getElementById('f-pipeline');
   if(pipelineCb)pipelineCb.checked=false;
-  // Remove injected status field if present
+  // Reset order status to blank
   const sf=document.getElementById('f-status');
-  if(sf)sf.closest('.form-row')?.remove();
+  if(sf)sf.value='';
   // Restore Add Another button
   const btn=document.querySelector('#modalSuccess .btn-ghost');
   if(btn)btn.style.display='';
@@ -1146,6 +1178,42 @@ function addProduct(){
       <div class="form-group">
         <label class="form-label">Our Cost / Item ($)</label>
         <input type="number" step="0.01" class="form-input" id="p${id}-cost" placeholder="0.00">
+      </div>
+    </div>
+    <div class="form-row cols-3">
+      <div class="form-group">
+        <label class="form-label">Product Type</label>
+        <select class="form-select" id="p${id}-type">
+          <option value="">Select...</option>
+          <option>In House</option>
+          <option>Pre-Decorated</option>
+          <option>3rd Party</option>
+          <option>Promo Code</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">PO #</label>
+        <input type="text" class="form-input" id="p${id}-ponum" placeholder="PO number">
+      </div>
+      <div class="form-group">
+        <label class="form-label">PO Date</label>
+        <input type="date" class="form-input" id="p${id}-podate">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Product Status</label>
+        <select class="form-select" id="p${id}-productstatus">
+          <option value="">No status</option>
+          <option>In House</option>
+          <option>Product Ordered</option>
+          <option>Receiving</option>
+          <option>On Shelf (Undecorated)</option>
+          <option>In Production</option>
+          <option>QC</option>
+          <option>Decorated</option>
+          <option>On Shelf (Decorated)</option>
+        </select>
       </div>
     </div>
     <div class="deco-spots-list" id="p${id}-decos"></div>
@@ -1338,6 +1406,10 @@ async function saveOrderEdits(){
       const pPrice=v(`p${pid}-price`);
       const pCost=v(`p${pid}-cost`);
       const pQtyDirect=v(`p${pid}-qty`);
+      const pPoNumE=v(`p${pid}-ponum`);
+      const pPoDateE=v(`p${pid}-podate`);
+      const pTypeE=v(`p${pid}-type`);
+      const pProductStatusE=v(`p${pid}-productstatus`);
       let subCols={};
       if(pStyle)subCols['text_mm22fv7y']=pStyle;
       if(pColor)subCols['text_mm2276wz']=pColor;
@@ -1351,6 +1423,10 @@ async function saveOrderEdits(){
       if(pSupplier)subCols['text_mm22qdag']=pSupplier;
       if(pPrice)subCols['numeric_mm2299qw']=parseFloat(pPrice);
       if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
+      if(pPoNumE)subCols['text_mm27ns9d']=pPoNumE;
+      if(pPoDateE)subCols['date_mm26mc76']={date:pPoDateE};
+      if(pTypeE)subCols['color_mm2dd6d5']={label:pTypeE};
+      if(pProductStatusE)subCols['color_mm25v786']={label:pProductStatusE};
       const artworkFilesE={};
       for(let dId=1;dId<=3;dId++){
         const styleEl=document.getElementById(`p${pid}-d${dId}-style`);
@@ -1479,6 +1555,7 @@ async function submitOrder(){
     const contact=v('f-contact');
     const otherCharges=v('f-other-charges');
     const otherChargesDetails=v('f-other-charges-details');
+    const orderStatus=v('f-status');
 
     let colVals={
       'date4':{date:today},
@@ -1500,6 +1577,7 @@ async function submitOrder(){
     }
     if(otherCharges)colVals['numeric_mm222s2j']=parseFloat(otherCharges);
     if(otherChargesDetails)colVals['long_text_mm22zdh2']={text:otherChargesDetails};
+    if(orderStatus)colVals['color_mm27qyta']={label:orderStatus};
 
     const targetGroup=toPipeline?PENDING_GROUP:ACTIVE_GROUP;
     const colValsStr=JSON.stringify(JSON.stringify(colVals));
@@ -1550,6 +1628,10 @@ async function submitOrder(){
         if(pPrice)subCols['numeric_mm2299qw']=parseFloat(pPrice);
         if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
         // Calculate total quantity
+        const pPoNum=v(`p${pid}-ponum`);
+        const pPoDate=v(`p${pid}-podate`);
+        const pType=v(`p${pid}-type`);
+        const pProductStatus=v(`p${pid}-productstatus`);
         const pQtyDirect=v(`p${pid}-qty`);
         if(pQtyDirect){
           subCols['numeric_mm22crjt']=parseFloat(pQtyDirect);
@@ -1557,6 +1639,10 @@ async function submitOrder(){
           let total=0;pSize.split(',').forEach(part=>{const m=part.trim().match(/\/(\d+)/);if(m)total+=parseInt(m[1]);});
           if(total>0)subCols['numeric_mm22crjt']=total;
         }
+        if(pPoNum)subCols['text_mm27ns9d']=pPoNum;
+        if(pPoDate)subCols['date_mm26mc76']={date:pPoDate};
+        if(pType)subCols['color_mm2dd6d5']={label:pType};
+        if(pProductStatus)subCols['color_mm25v786']={label:pProductStatus};
 
         // Gather deco spots
         const artworkFiles={};
@@ -1840,3 +1926,4 @@ function checkForDraft() {
 </script>
 </body>
 </html>
+
