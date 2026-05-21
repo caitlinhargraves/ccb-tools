@@ -287,7 +287,15 @@ const SALES_ID={'Chaz Lucius':1,'Bailey McGraw':2,'Jess Miller':3,'Nick Miller':
 let allTickets=[],filtered=[],statusFilter='all';
 
 async function mq(query){
-  const res=await fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),25000);
+  let res;
+  try{
+    res=await fetch('https://api.monday.com/v2',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0OTQ0NjE4NywiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMjNUMTU6Mzc6MTkuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.6FPYgwwTj-05GWXHxxq5lSstcJTGfVOqATNhk5FQBic','API-Version':'2024-01'},body:JSON.stringify({query}),signal:controller.signal});
+  }catch(e){
+    if(e.name==='AbortError')throw new Error('Request timed out. Try refreshing.');
+    throw e;
+  }finally{clearTimeout(timeout);}
   const data=await res.json();
   if(data.errors)throw new Error(data.errors[0].message);
   return data.data;
