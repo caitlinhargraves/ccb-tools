@@ -1060,6 +1060,40 @@ function openEditModal(orderId){
       const decoDescCols={1:'text_mm2y3mb9',2:'text_mm2ymf5k',3:'text_mm2yjq0z'};
       const decoScreenCols={1:'numeric_mm2yn2nb',2:'numeric_mm2ynqby',3:'numeric_mm2y55qh'};
       const decoColorCols={1:'text_mm2y2y6a',2:'text_mm2y5vn6',3:'text_mm2y8bg8'};
+      // Helper: parse asset IDs out of a Monday file column value JSON
+      function parseAssetIds(sub, colId){
+        try{
+          const raw=sub.column_values?.find(c=>c.id===colId)?.value;
+          if(!raw)return[];
+          const p=JSON.parse(raw);
+          return(p.files||[]).map(f=>f.assetId).filter(Boolean);
+        }catch(e){return[];}
+      }
+      // Helper: build view buttons for a list of asset IDs and an optional label prefix
+      function makeViewButtons(assetIds, label){
+        if(!assetIds.length)return'';
+        return assetIds.map((aid,i)=>{
+          const btnLabel=assetIds.length>1?`${label} ${i+1}`:label;
+          return `<button type="button" onclick="viewAsset(${aid})" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:11px;font-weight:600;cursor:pointer;margin:2px 4px 2px 0">`+
+            `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><line x1="17" y1="17" x2="22" y2="22"/></svg>${btnLabel}</button>`;
+        }).join('');
+      }
+
+      // Inject mockup + proof view buttons on the product block header area
+      const mockupIds=parseAssetIds(sub,'file_mm26e29h');
+      const proofIds=parseAssetIds(sub,'file_mm25ph2d');
+      if(mockupIds.length||proofIds.length){
+        const headerEl=div.querySelector('.product-block-header');
+        if(headerEl){
+          const fileRow=document.createElement('div');
+          fileRow.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin:4px 0 2px;padding:6px 0 4px;border-top:1px solid var(--border)';
+          fileRow.innerHTML=(mockupIds.length?'<span style="font-size:10px;color:var(--muted);font-weight:600;margin-right:2px">MOCKUP:</span>'+makeViewButtons(mockupIds,'Mockup'):'')+
+            (proofIds.length?'<span style="font-size:10px;color:var(--muted);font-weight:600;margin-right:2px;margin-left:'+(mockupIds.length?'10px':'0')+'">\PROOF:</span>'+makeViewButtons(proofIds,'Proof'):'');
+          headerEl.insertAdjacentElement('afterend',fileRow);
+        }
+      }
+
+      const artFileCols={1:'file_mm2y1yem',2:'file_mm2ya55c',3:'file_mm2yjme2'};
       for(let dId=1;dId<=3;dId++){
         const sv=sColV(sub,decoStyleCols[dId]);
         const styleId=sv?.ids?.[0]||null;
@@ -1080,6 +1114,17 @@ function openEditModal(orderId){
         if(scEl)scEl.value=sc;
         const dcEl=document.getElementById(`p${id}-d${curDId}-colors`);
         if(dcEl)dcEl.value=dc;
+        // Inject artwork view buttons into the deco block if files exist
+        const artIds=parseAssetIds(sub,artFileCols[dId]);
+        if(artIds.length){
+          const decoBlock=document.getElementById(`p${id}-d${curDId}`);
+          if(decoBlock){
+            const artRow=document.createElement('div');
+            artRow.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)';
+            artRow.innerHTML='<span style="font-size:10px;color:var(--muted);font-weight:600;margin-right:2px">ARTWORK ON FILE:</span>'+makeViewButtons(artIds,'Artwork');
+            decoBlock.appendChild(artRow);
+          }
+        }
       }
     });
   }
@@ -1092,6 +1137,66 @@ function openEditModal(orderId){
 function closeModal(){
   document.getElementById('modalOverlay').classList.remove('open');
   document.body.style.overflow='';
+}
+
+// ── File viewer lightbox ──────────────────────────────────────────────
+async function viewAsset(assetId){
+  // Create lightbox if it doesn't exist
+  let lb=document.getElementById('assetLightbox');
+  if(!lb){
+    lb=document.createElement('div');
+    lb.id='assetLightbox';
+    lb.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:99999;align-items:center;justify-content:center;cursor:zoom-out';
+    lb.innerHTML=`
+      <div style="position:relative;max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center">
+        <button onclick="document.getElementById('assetLightbox').style.display='none'" style="position:absolute;top:-36px;right:0;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1">✕</button>
+        <div id="assetLightboxContent" style="display:flex;align-items:center;justify-content:center;min-width:120px;min-height:80px">
+          <div id="assetLightboxSpinner" style="color:#fff;font-size:14px">Loading...</div>
+        </div>
+        <div id="assetLightboxName" style="color:rgba(255,255,255,.6);font-size:12px;margin-top:10px;max-width:80vw;text-align:center;word-break:break-all"></div>
+        <a id="assetLightboxDownload" href="#" target="_blank" style="margin-top:8px;color:#7ec8ff;font-size:12px;text-decoration:underline">Open / Download</a>
+      </div>`;
+    lb.addEventListener('click',function(e){if(e.target===lb)lb.style.display='none';});
+    document.body.appendChild(lb);
+  }
+  // Show spinner
+  lb.style.display='flex';
+  document.getElementById('assetLightboxSpinner').style.display='';
+  document.getElementById('assetLightboxContent').innerHTML='<div id="assetLightboxSpinner" style="color:#fff;font-size:14px">Loading...</div>';
+  document.getElementById('assetLightboxName').textContent='';
+  document.getElementById('assetLightboxDownload').href='#';
+
+  try{
+    // Fetch asset metadata via Monday API proxy
+    const r=await fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({query:`{assets(ids:[${assetId}]){id name public_url url_thumbnail}}`})});
+    const d=await r.json();
+    const asset=d?.data?.assets?.[0];
+    if(!asset){
+      document.getElementById('assetLightboxContent').innerHTML='<div style="color:#f66;font-size:14px">Could not load file.</div>';
+      return;
+    }
+    const proxyUrl=`/api/file-proxy?assetId=${assetId}`;
+    const isImage=/\.(png|jpe?g|gif|webp|svg|bmp|tiff?)$/i.test(asset.name)||/^image\//i.test('');
+    // Try rendering as image; fall back to download link for non-images
+    const ext=(asset.name||'').split('.').pop().toLowerCase();
+    const imgExts=['png','jpg','jpeg','gif','webp','svg','bmp','tiff','tif'];
+    if(imgExts.includes(ext)){
+      document.getElementById('assetLightboxContent').innerHTML=
+        `<img src="${proxyUrl}" alt="${asset.name}" style="max-width:86vw;max-height:80vh;border-radius:8px;box-shadow:0 4px 32px rgba(0,0,0,.5)" onerror="this.outerHTML='<div style=color:#f66;font-size:14px>Image failed to load</div>'">`;
+    } else {
+      document.getElementById('assetLightboxContent').innerHTML=
+        `<div style="text-align:center;color:#fff;padding:32px">
+          <div style="font-size:40px;margin-bottom:12px">📎</div>
+          <div style="font-size:15px;font-weight:600">${asset.name}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:6px">Non-image file — use the link below to open or download</div>
+        </div>`;
+    }
+    document.getElementById('assetLightboxName').textContent=asset.name||'';
+    document.getElementById('assetLightboxDownload').href=proxyUrl;
+  }catch(err){
+    document.getElementById('assetLightboxContent').innerHTML=`<div style="color:#f66;font-size:14px">Error: ${err.message}</div>`;
+  }
 }
 
 function handleOverlayClick(e){
@@ -1409,9 +1514,13 @@ async function saveOrderEdits(){
       const pPoNumE=v(`p${pid}-ponum`);
       const pPoDateE=v(`p${pid}-podate`);
       const pTypeE=v(`p${pid}-type`);
-      // Auto-set Product Ordered when Order Status is Products Ordered and no status explicitly set
+      // Auto-cascade product status from order status when no status explicitly chosen
       const pProductStatusRaw=v(`p${pid}-productstatus`);
-      const pProductStatusE=(!pProductStatusRaw && status==='Products Ordered') ? 'Product Ordered' : pProductStatusRaw;
+      let pProductStatusE=pProductStatusRaw;
+      if(!pProductStatusRaw){
+        if(status==='Products Ordered') pProductStatusE='Product Ordered';
+        else if(status==='In House') pProductStatusE='In House';
+      }
       let subCols={};
       if(pStyle)subCols['text_mm22fv7y']=pStyle;
       if(pColor)subCols['text_mm2276wz']=pColor;
@@ -1633,9 +1742,13 @@ async function submitOrder(){
         const pPoNum=v(`p${pid}-ponum`);
         const pPoDate=v(`p${pid}-podate`);
         const pType=v(`p${pid}-type`);
-        // Auto-set Product Ordered when Order Status is Products Ordered and no status explicitly set
+        // Auto-cascade product status from order status when no status explicitly chosen
         const pProductStatusRaw=v(`p${pid}-productstatus`);
-        const pProductStatus=(!pProductStatusRaw && orderStatus==='Products Ordered') ? 'Product Ordered' : pProductStatusRaw;
+        let pProductStatus=pProductStatusRaw;
+        if(!pProductStatusRaw){
+          if(orderStatus==='Products Ordered') pProductStatus='Product Ordered';
+          else if(orderStatus==='In House') pProductStatus='In House';
+        }
         const pQtyDirect=v(`p${pid}-qty`);
         if(pQtyDirect){
           subCols['numeric_mm22crjt']=parseFloat(pQtyDirect);
