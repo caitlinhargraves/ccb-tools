@@ -150,6 +150,21 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 .modal-body{padding:16px}
 .modal-body img{width:100%;border-radius:50px;margin-bottom:8px;display:block}
 .modal-body .no-img{text-align:center;padding:40px;color:var(--text3);font-size:13px}
+.modal-mockup{margin-bottom:12px}.modal-mockup img{width:100%;border-radius:8px;display:block;cursor:pointer}
+.modal-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.modal-cell{background:var(--surface2);border-radius:8px;padding:9px 12px}
+.modal-lbl{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:2px}
+.modal-val{font-size:12px;color:var(--text)}
+.modal-section-title{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin:14px 0 8px}
+.modal-file-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px}
+.modal-file-name{font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;margin-right:10px}
+.modal-download-btn{font-size:11px;padding:4px 10px;background:var(--text);color:white;border:none;border-radius:4px;cursor:pointer;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;flex-shrink:0}
+.modal-download-btn:hover{opacity:.85}
+.modal-download-btn svg{width:11px;height:11px;stroke:white;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.modal-decorated-btn{width:100%;margin-top:14px;padding:12px;font-size:14px;font-family:'Inter',sans-serif;font-weight:500;background:#16a34a;color:white;border:none;border-radius:50px;cursor:pointer;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.modal-decorated-btn:hover{opacity:.85}
+.modal-decorated-btn:disabled{opacity:.4;cursor:not-allowed}
+.modal-decorated-btn svg{width:16px;height:16px;stroke:white;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
 </style>
 </head>
 <body>
@@ -206,27 +221,29 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 <script>
 
 const ORDERS_BOARD='18407165363';const SUBS_BOARD='18407165552';
-const O_NUM='pulse_id_mm27vwa5';const O_STATUS='color_mm27qyta';const O_INHAND='date_mm22wpk2';const O_CONTACT='text_mm221kg3';
+const O_NUM='pulse_id_mm27vwa5';const O_STATUS='color_mm27qyta';const O_INHAND='date_mm22wpk2';const O_CONTACT='text_mm221kg3';const O_SHELF='text_mm2ngkpv';const O_SALES='dropdown_mm22w5rr';
 const S_STATUS='color_mm25v786';const S_TYPE='color_mm2dd6d5';const S_QTY='numeric_mm22crjt';const S_COLOR='text_mm2276wz';const S_SIZE='text_mm22yw8s';const S_STYLE='text_mm22fv7y';const S_DECO='dropdown_mm22dn1f';
-const D1_STYLE='dropdown_mm2y4w39';const D2_STYLE='dropdown_mm2yaxxz';const D3_STYLE='dropdown_mm2ygyew';
-const D1_PLACE='text_mm2y6g62';const D2_PLACE='text_mm2yge79';const D3_PLACE='text_mm2y1j6j';
-const D1_DONE='boolean_mm2y62fz';const D2_DONE='boolean_mm2yty7y';const D3_DONE='boolean_mm2y8jm6';
+const D1_STYLE='dropdown_mm2y4w39';const D1_PLACE='text_mm2y6g62';const D1_DESC='text_mm2y3mb9';const D1_ART='file_mm2y1yem';const D1_SCREENS='numeric_mm2yn2nb';const D1_COLORS='text_mm2y2y6a';
+const D2_STYLE='dropdown_mm2yaxxz';const D2_PLACE='text_mm2yge79';const D2_DESC='text_mm2ymf5k';const D2_ART='file_mm2ya55c';const D2_SCREENS='numeric_mm2ynqby';const D2_COLORS='text_mm2y5vn6';
+const D3_STYLE='dropdown_mm2ygyew';const D3_PLACE='text_mm2y1j6j';const D3_DESC='text_mm2yjq0z';const D3_ART='file_mm2yjme2';const D3_SCREENS='numeric_mm2y55qh';const D3_COLORS='text_mm2y8bg8';
 const DECO_SLOTS=[
-  {style:D1_STYLE,place:D1_PLACE,done:D1_DONE,num:1},
-  {style:D2_STYLE,place:D2_PLACE,done:D2_DONE,num:2},
-  {style:D3_STYLE,place:D3_PLACE,done:D3_DONE,num:3},
+  {style:D1_STYLE,place:D1_PLACE,desc:D1_DESC,art:D1_ART,screens:D1_SCREENS,colors:D1_COLORS,num:1},
+  {style:D2_STYLE,place:D2_PLACE,desc:D2_DESC,art:D2_ART,screens:D2_SCREENS,colors:D2_COLORS,num:2},
+  {style:D3_STYLE,place:D3_PLACE,desc:D3_DESC,art:D3_ART,screens:D3_SCREENS,colors:D3_COLORS,num:3},
 ];
 const S_PLACEMENT='text_mm226hzf';const S_ARTWORK_DESC='text_mm2521d5';const S_PROD_NOTES='long_text_mm27e9c4';const S_MOCKUP='file_mm26e29h';const S_ARTWORK='file_mm221c09';const S_PROOF='file_mm25ph2d';
 const DECO_STYLES={1:'Embroidery',2:'Screenprint',3:'DTG',4:'DTF',5:'Engrave',6:'Other'};
 const DECO_DISPLAY={1:'Embroidery',2:'Screenprint',3:'DTG / DTF',4:'DTG / DTF',5:'Engrave',6:'Other'};
 const DECO_BG={'Embroidery':'#dbeafe','Screenprint':'#fef3c7','DTG / DTF':'#e8f5ee','DTG':'#e8f5ee','DTF':'#e8f5ee','Engrave':'#f3e8ff','Other':'#F3F5FA'};
 const DECO_TC={'Embroidery':'#1e3a5f','Screenprint':'#92400e','DTG / DTF':'#2d6a4f','DTG':'#2d6a4f','DTF':'#2d6a4f','Engrave':'#6b21a8','Other':'#6B7280'};
-const STATION_URLS={Embroidery:'production-embroidery.html',Screenprint:'production-screenprint.html','DTG / DTF':'production-dtgdtf.html','DTG':'production-dtgdtf.html','DTF':'production-dtgdtf.html',Engrave:'production-engrave.html',Other:'production-other.html'};
-const STATION_DISPLAY_NAMES=['Embroidery','Screenprint','DTG / DTF','Engrave','Other'];
+const STATION_URLS={Embroidery:'production-embroidery.html',Screenprint:'production-screenprint.html','DTG / DTF':'production-dtgdtf.html',Engrave:'production-engrave.html',Other:'production-other.html'};
+const assetCache={};
 
-async function mq(q){const r=await fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json',
-},body:JSON.stringify({query:q})});const d=await r.json();if(d.errors)throw new Error(d.errors[0].message);return d.data;}
-function ffile(val,txt){if(!val&&!txt)return null;try{const p=JSON.parse(val||'{}');if(p.files&&p.files.length){const f=p.files[p.files.length-1];if(f.assetId)return `/api/file-proxy?assetId=${f.assetId}`;if(f.url||f.public_url)return f.url||f.public_url;}}catch(e){}const m=((val||'')+' '+(txt||'')).match(/https?:\/\/[^\s"',)]+/);return m?m[0]:null;}
+async function mq(q){const r=await fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});const d=await r.json();if(d.errors)throw new Error(d.errors[0].message);return d.data;}
+function extractAssetIds(val){if(!val)return[];try{const p=JSON.parse(val);return(p.files||[]).map(f=>String(f.assetId)).filter(Boolean);}catch(e){return[];}}
+async function resolveAssets(ids){const missing=ids.filter(id=>id&&!assetCache[id]);if(!missing.length)return;try{const data=await mq(`{assets(ids:[${missing.join(',')}]){id name url public_url}}`);for(const a of(data.assets||[])){assetCache[a.id]={url:`/api/file-proxy?assetId=${a.id}`,name:a.name,publicUrl:a.public_url||a.url};}}catch(e){}}
+function isPdfUrl(url){if(!url)return false;return url.split('?')[0].toLowerCase().endsWith('.pdf');}
+function getFilename(url){if(!url)return'File';try{return decodeURIComponent(url.split('/').pop().split('?')[0]);}catch(e){return'File';}}
 function duechip(d){if(!d)return'<span class="chip">No date</span>';const due=new Date(d+'T00:00:00');const t=new Date();t.setHours(0,0,0,0);const diff=Math.round((due-t)/86400000);const fmt=due.toLocaleDateString('en-US',{month:'short',day:'numeric'});if(diff<0)return`<span class="chip overdue">Due ${fmt}</span>`;if(diff===0)return`<span class="chip due-soon">Due Today</span>`;if(diff<=3)return`<span class="chip due-soon">Due ${fmt}</span>`;return`<span class="chip ok">Due ${fmt}</span>`;}
 function fdatestr(d){if(!d)return'—';const due=new Date(d+'T00:00:00');const t=new Date();t.setHours(0,0,0,0);const diff=Math.round((due-t)/86400000);const fmt=due.toLocaleDateString('en-US',{month:'short',day:'numeric'});if(diff<0)return`<span style="color:var(--red);font-weight:500">${fmt} (${Math.abs(diff)}d late)</span>`;if(diff===0)return`<span style="color:var(--amber);font-weight:500">Today</span>`;if(diff<=3)return`<span style="color:var(--amber);font-weight:500">${fmt}</span>`;return`<span style="color:var(--green)">${fmt}</span>`;}
 function showToast(msg,spinning=true){document.getElementById('toast-msg').textContent=msg;document.getElementById('toast-spinner').style.display=spinning?'block':'none';document.getElementById('toast').classList.add('visible');}
@@ -234,7 +251,7 @@ function hideToast(d=1500){setTimeout(()=>document.getElementById('toast').class
 
 async function markDecorated(subId,orderId,btn){
   const p=allActive.find(x=>x.id===subId)||allUpcoming.find(x=>x.id===subId);
-  btn.disabled=true;btn.textContent='Updating...';
+  if(btn){btn.disabled=true;btn.innerHTML='<svg viewBox="0 0 10 8" style="width:12px;height:12px;stroke:white;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round"><polyline points="1 4 4 7 9 1"/></svg> Updating...';}
   showToast('Marking decorated...');
   try{
     await mq(`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"${S_STATUS}",value:"{\\"index\\":8}"){id}}`);
@@ -246,34 +263,87 @@ async function markDecorated(subId,orderId,btn){
       if(allDone)await mq(`mutation{change_column_value(board_id:${ORDERS_BOARD},item_id:${orderId},column_id:"${O_STATUS}",value:"{\\"index\\":2}"){id}}`);
     }catch(e){}
     if(p){sessionDone.unshift(p);allActive=allActive.filter(x=>x.id!==subId);allUpcoming=allUpcoming.filter(x=>x.id!==subId);}
-    showToast('Decorated',false);hideToast();
-    const card=document.getElementById('card-'+subId);
-    if(card){card.classList.add('fading');setTimeout(()=>{renderContent();renderRecentlyDone();updateStats();},400);}
-  }catch(err){btn.disabled=false;btn.textContent='✓ Mark Decorated';showToast('Error: '+err.message,false);hideToast(3000);}
+    showToast('Decorated!',false);hideToast();
+    closeModalDirect();
+    const el=document.getElementById('card-'+subId);
+    if(el){el.classList.add('fading');setTimeout(()=>{renderContent();renderRecentlyDone();updateStats();},400);}
+  }catch(err){if(btn){btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 10 8" style="width:12px;height:12px;stroke:white;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round"><polyline points="1 4 4 7 9 1"/></svg> Mark Decorated';}showToast('Error: '+err.message,false);hideToast(3000);}
 }
-
-
 
 async function moveStation(subId,newStyleId,selectEl){
   showToast('Reassigning station...');
-  try{
-    await mq(`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"${S_DECO}",value:"{\\"ids\\":[${newStyleId}]}"){id}}`);
-    showToast('Reassigned',false);hideToast();
-    setTimeout(()=>loadData(),600);
-  }catch(err){showToast('Error: '+err.message,false);hideToast(3000);}
+  try{await mq(`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"${S_DECO}",value:"{\\"ids\\":[${newStyleId}]}"){id}}`);showToast('Reassigned',false);hideToast();setTimeout(()=>loadData(),600);}
+  catch(err){showToast('Error: '+err.message,false);hideToast(3000);}
 }
 
-function decoSelectHTML(p){
-  const opts=[[1,'Embroidery'],[2,'Screenprint'],[3,'DTG'],[4,'DTF'],[5,'Engrave'],[6,'Other']];
-  return `<select class="deco-select" onchange="moveStation('${p.id}',this.value,this)">${opts.map(([id,name])=>`<option value="${id}" ${p.decoStyleId==id?'selected':''}>${name}</option>`).join('')}</select>`;
+function openProductModal(subId,section){
+  const p=[...allActive,...allUpcoming].find(x=>x.id===subId);if(!p)return;
+  document.getElementById('modal-title').textContent=p.name;
+  const _mCached=p.mockupAssetId?assetCache[p.mockupAssetId]:null;
+  const _mUrl=_mCached?.url||null;
+  let mockupHtml='';
+  if(_mUrl){
+    const fname=_mCached?.name||getFilename(_mUrl);
+    if(isPdfUrl(_mUrl)){mockupHtml=`<div class="modal-mockup"><div style="background:var(--red-bg);border:1px solid var(--red-border);border-radius:8px;padding:20px;text-align:center;margin-bottom:12px"><svg viewBox="0 0 24 24" style="width:40px;height:40px;stroke:var(--red);stroke-width:1.5;fill:none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div style="font-size:12px;color:var(--red);margin-top:6px;font-weight:500">${fname}</div></div><div style="text-align:right"><a href="${_mUrl}" target="_blank" class="modal-download-btn"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>Open PDF Mockup</a></div></div>`;}
+    else{mockupHtml=`<div class="modal-mockup"><img src="${_mUrl}" alt="Mockup" onclick="window.open('${_mUrl}','_blank')" style="width:100%;border-radius:8px;cursor:pointer" onerror="this.style.display='none'"><div style="text-align:right;margin-top:8px"><a href="${_mUrl}" target="_blank" class="modal-download-btn"><svg viewBox='0 0 12 12'><path d='M6 1v7M3 5l3 3 3-3'/><path d='M1 10h10'/></svg>Download Mockup</a></div></div>`;}
+  } else {mockupHtml='<div class="modal-mockup"><div class="no-img">No mockup attached</div></div>';}
+  const fields=[['Order',p.orderName],['CCB #',p.ccbNum],['Contact',p.contact],['In Hands',p.inHands||'—'],['Shelf',p.shelf||'—'],['Qty',p.qty||'—'],['Color',p.color||'—'],['Size',p.size||'—'],['Style #',p.style||'—']].filter(([,v])=>v&&v!=='—').map(([l,v])=>`<div class="modal-cell"><div class="modal-lbl">${l}</div><div class="modal-val">${v}</div></div>`).join('');
+  let decoSlotsHtml='';
+  if(p.allSlots&&p.allSlots.length){
+    decoSlotsHtml=p.allSlots.map(slot=>{
+      const _sc=p._sc||{};
+      const _styleTxt=_sc[slot.style]?.text||'';
+      const _place=_sc[slot.place]?.text||'';
+      const _desc=_sc[slot.desc]?.text||'';
+      const _artIds=extractAssetIds(_sc[slot.art]?.value);
+      const _artAssets=_artIds.map(id=>assetCache[id]).filter(Boolean);
+      let html=`<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:8px">`;
+      html+=`<div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px"><span style="color:${DECO_TC[_styleTxt]||'var(--text3)'}">Decoration ${slot.num} — ${_styleTxt}</span></div>`;
+      if(_place)html+=`<div style="font-size:12px;margin-bottom:3px"><span style="color:var(--text3)">Placement:</span> ${_place}</div>`;
+      if(_desc)html+=`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--text3)">Artwork:</span> ${_desc}</div>`;
+      if(_artAssets.length){html+=_artAssets.map(a=>`<div class="modal-file-row"><span class="modal-file-name">${a.name||'Art file'}</span><a class="modal-download-btn" href="${a.publicUrl||a.url}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(a.url)?'Open PDF':'Download'}</a></div>`).join('');}
+      html+=`</div>`;return html;
+    }).join('');
+    if(decoSlotsHtml)decoSlotsHtml=`<div class="modal-section-title">Decoration Details</div>`+decoSlotsHtml;
+  }
+  const prodNotesHtml=p.prodNotes?`<div class="modal-section-title">Production Notes</div><div style="font-size:12px;color:var(--text2);background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:4px">${p.prodNotes}</div>`:'';
+  const decoratedBtn=section==='active'?`<button class="modal-decorated-btn" id="modal-dec-btn-${p.id}" onclick="markDecorated('${p.id}','${p.orderId}',this)"><svg viewBox="0 0 10 8"><polyline points="1 4 4 7 9 1"/></svg>Mark Decorated</button>`:'';
+  document.getElementById('modal-body').innerHTML=`${mockupHtml}<div class="modal-detail-grid">${fields}</div>${decoSlotsHtml}${prodNotesHtml}${decoratedBtn}`;
+  document.getElementById('modal-overlay').classList.add('open');
 }
+function closeModal(e){if(e.target===document.getElementById('modal-overlay'))closeModalDirect();}
+function closeModalDirect(){document.getElementById('modal-overlay').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModalDirect();});
+
+let allUpcoming=[],allActive=[],sessionDone=[];
+let searchQuery='';
+let cachedData=null,cacheTime=0;
+function applySearch(){searchQuery=document.getElementById('search-input').value.toLowerCase().trim();renderContent();}
+function filterItems(arr){if(!searchQuery)return arr;return arr.filter(p=>[p.name,p.orderName,p.ccbNum,p.color,p.size,p.style,p.placement,p.artworkDesc,p.contact].join(' ').toLowerCase().includes(searchQuery));}
+
+const VIEW_KEY='ccb_prod_view';
+let currentView=localStorage.getItem(VIEW_KEY)||'card';
+function setView(v){currentView=v;localStorage.setItem(VIEW_KEY,v);document.getElementById('btn-card').classList.toggle('active',v==='card');document.getElementById('btn-table').classList.toggle('active',v==='table');renderContent();}
+function scrollToSection(id,btn){const el=document.getElementById(id);if(el){const off=56+40;const top=el.getBoundingClientRect().top+window.scrollY-off-8;window.scrollTo({top,behavior:'smooth'});}document.querySelectorAll('.sec-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');}
 
 function buildCard(p,section){
-  const bg=DECO_BG[p.decoStyleDisplay]||'#F3F5FA';const tc=DECO_TC[p.decoStyleDisplay]||'#6B7280';
-  const mockupThumb=p.mockupUrl?`<img class="card-mockup-thumb" src="${p.mockupUrl}" alt="Mockup" title="Click to view" onclick="openMockup('${p.mockupUrl}','${p.name.replace(/'/g,"\\'")}');" onerror="this.style.display='none'">`:`<div class="card-mockup-placeholder"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
-  const mediaLinks=[p.artworkUrl?`<a class="media-btn" href="${p.artworkUrl}" target="_blank">Artwork</a>`:'',p.proofUrl?`<a class="media-btn" href="${p.proofUrl}" target="_blank">Proof</a>`:''].filter(Boolean).join('');
+  const bg=DECO_BG[p.primaryDecoDisplay]||'#F3F5FA';const tc=DECO_TC[p.primaryDecoDisplay]||'#6B7280';
+  // Build deco spot badges for all filled slots
+  const decoBadgesHtml=p.allSlots.length
+    ?p.allSlots.map(slot=>{const t=p._sc?.[slot.style]?.text||'';const bg2=DECO_BG[t]||'#F3F5FA';const tc2=DECO_TC[t]||'#6B7280';return`<span class="deco-badge" style="background:${bg2};color:${tc2};border:1px solid ${tc2}22">${t}</span>`;}).join('')
+    :`<span class="deco-badge" style="background:${bg};color:${tc};border:1px solid ${tc}22">${p.primaryDecoDisplay||'—'}</span>`;
+  const _mockupCached=p.mockupAssetId?assetCache[p.mockupAssetId]:null;
+  const _mockupUrl=_mockupCached?.url||null;
+  const mockupThumb=_mockupUrl
+    ?(isPdfUrl(_mockupUrl)
+      ?`<div class="card-mockup-placeholder" style="cursor:pointer;background:var(--red-bg)" onclick="openProductModal('${p.id}','${section}')" title="PDF mockup"><svg viewBox="0 0 24 24" style="stroke:var(--red)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
+      :`<img class="card-mockup-thumb" src="${_mockupUrl}" alt="Mockup" title="Click to view" onclick="openProductModal('${p.id}','${section}')" onerror="this.style.display='none'">`)
+    :`<div class="card-mockup-placeholder" style="cursor:pointer" onclick="openProductModal('${p.id}','${section}')" title="No mockup"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
   const opts=[[1,'Embroidery'],[2,'Screenprint'],[3,'DTG'],[4,'DTF'],[5,'Engrave'],[6,'Other']];
-  const decoSel=`<select class="deco-select" onchange="moveStation('${p.id}',this.value,this)">${opts.map(([id,name])=>`<option value="${id}" ${p.decoStyleId===id?'selected':''}>${name}</option>`).join('')}</select>`;
+  const decoSel=`<select class="deco-select" onchange="moveStation('${p.id}',this.value,this)">${opts.map(([id,name])=>`<option value="${id}" ${p.primaryDecoId===id?'selected':''}>${name}</option>`).join('')}</select>`;
+  // Primary placement/desc from first slot
+  const primaryPlacement=p.allSlots.length>0?(p._sc?.[p.allSlots[0].place]?.text||p.placement||'—'):p.placement||'—';
+  const primaryDesc=p.allSlots.length>0?(p._sc?.[p.allSlots[0].desc]?.text||p.artworkDesc||'—'):p.artworkDesc||'—';
   return `<div class="product-card" id="card-${p.id}">
     <div class="card-header">
       <div>
@@ -282,86 +352,58 @@ function buildCard(p,section){
           <span class="chip" style="font-family:'Inter',monospace">${p.ccbNum}</span>
           <span class="chip">${p.orderName}</span>
           ${duechip(p.inHands)}
-          <span class="deco-badge" style="background:${bg};color:${tc};border:1px solid ${tc}22">${p.decoStyleDisplay||'—'}</span>
+          ${decoBadgesHtml}
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">${mockupThumb}<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${mediaLinks}</div></div>
+      <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">${mockupThumb}</div>
     </div>
     <div class="card-body">
       <div class="info-cell"><div class="info-lbl">Qty</div><div class="info-val mono">${p.qty||'—'}</div></div>
       <div class="info-cell"><div class="info-lbl">Color</div><div class="info-val">${p.color||'—'}</div></div>
       <div class="info-cell"><div class="info-lbl">Size</div><div class="info-val">${p.size||'—'}</div></div>
       <div class="info-cell"><div class="info-lbl">Style #</div><div class="info-val mono">${p.style||'—'}</div></div>
-      <div class="info-cell"><div class="info-lbl">Placement</div><div class="info-val">${p.placement||'—'}</div></div>
-      <div class="info-cell"><div class="info-lbl">Artwork</div><div class="info-val muted">${p.artworkDesc||'—'}</div></div>
+      <div class="info-cell"><div class="info-lbl">Placement</div><div class="info-val">${primaryPlacement}</div></div>
+      <div class="info-cell"><div class="info-lbl">Artwork</div><div class="info-val muted">${primaryDesc}</div></div>
+      ${p.allSlots.length>1?`<div class="info-cell wide"><div class="info-lbl">Multi-decoration</div><div class="info-val muted">${p.allSlots.map((slot,i)=>{const t=p._sc?.[slot.style]?.text||'';const pl=p._sc?.[slot.place]?.text||'';return t?`<span style="font-weight:500">Deco ${slot.num}: ${t}</span>${pl?' · '+pl:''}`:null;}).filter(Boolean).join(' &nbsp;|&nbsp; ')}</div></div>`:''}
       ${p.prodNotes?`<div class="info-cell wide"><div class="info-lbl">Production Notes</div><div class="info-val muted">${p.prodNotes}</div></div>`:''}
     </div>
     <div class="card-footer">
       <div class="footer-left">
         <span style="font-size:11px;color:var(--text3)">Station:</span>
         ${decoSel}
+        <button class="media-btn" onclick="openProductModal('${p.id}','${section}')">Details</button>
       </div>
-      ${section==='active'?`<button class="decorated-btn" id="dec-btn-${p.id}" onclick="markDecorated('${p.id}','${p.orderId}',this)">✓ Mark Decorated</button>`:''}
+      ${section==='active'?`<button class="decorated-btn" id="dec-btn-${p.id}" onclick="markDecorated('${p.id}','${p.orderId}',this)"><svg viewBox="0 0 10 8" style="width:12px;height:12px;stroke:white;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round"><polyline points="1 4 4 7 9 1"/></svg> Mark Decorated</button>`:''}
     </div>
   </div>`;
-}
-
-
-
-const VIEW_KEY='ccb_prod_view';
-let currentView=localStorage.getItem(VIEW_KEY)||'card';
-function setView(v){currentView=v;localStorage.setItem(VIEW_KEY,v);renderContent();}
-function scrollToSection(id,btn){const el=document.getElementById(id);if(el){const off=56+40;const top=el.getBoundingClientRect().top+window.scrollY-off-8;window.scrollTo({top,behavior:'smooth'});}document.querySelectorAll('.sec-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');}
-function openMockup(url,name){if(!url)return;document.getElementById('modal-title').textContent=name;document.getElementById('modal-body').innerHTML=`<img src="${url}" alt="Mockup" onerror="this.style.display='none';this.nextElementSibling.style.display='block'" style="width:100%;border-radius:8px"><div style="display:none;padding:12px;font-size:12px;color:var(--text3);text-align:center">Image could not load — <a href="${url}" target="_blank" style="color:var(--blue)">open directly</a></div>`;document.getElementById('modal-overlay').classList.add('open');}
-function closeModal(e){if(e.target===document.getElementById('modal-overlay'))closeModalDirect();}
-function closeModalDirect(){document.getElementById('modal-overlay').classList.remove('open');}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModalDirect();});
-let allUpcoming=[],allActive=[],sessionDone=[];
-
-let searchQuery='';
-function applySearch(){
-  searchQuery=document.getElementById('search-input').value.toLowerCase().trim();
-  renderContent();
-}
-function filterItems(arr){
-  if(!searchQuery)return arr;
-  return arr.filter(p=>[p.name,p.orderName,p.ccbNum,p.color,p.size,p.style,p.placement,p.artworkDesc,p.contact].join(' ').toLowerCase().includes(searchQuery));
-}
-
-
-async function fetchItems(){
-  const q=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200){items{id name url column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}"]){id text value}subitems{id name url column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_DECO}","${S_PLACEMENT}","${S_ARTWORK_DESC}","${S_PROD_NOTES}","${S_MOCKUP}","${S_ARTWORK}","${S_PROOF}"]){id text value}}}}}}`;
-  const data=await mq(q);
-  return data.boards[0].items_page.items;
 }
 
 function parseProduct(item,sub){
   const cv={};for(const c of item.column_values)cv[c.id]=c;
   const sc={};for(const c of sub.column_values)sc[c.id]=c;
-  const decoStyleId=parseInt(sc[S_DECO]?.value?JSON.parse(sc[S_DECO].value||'{}')?.ids?.[0]||0:0);
-  const decoStyleText=sc[S_DECO]?.text||'';
-  const decoStyleDisplay=decoStyleId===3||decoStyleId===4?'DTG / DTF':decoStyleText||'Other';
-  return{id:sub.id,name:sub.name,url:sub.url,orderId:item.id,orderName:item.name,orderUrl:item.url,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',inHands:cv[O_INHAND]?.text||'',qty:sc[S_QTY]?.text||'',color:sc[S_COLOR]?.text||'',size:sc[S_SIZE]?.text||'',style:sc[S_STYLE]?.text||'',decoStyleId,decoStyleText,decoStyleDisplay,placement:sc[S_PLACEMENT]?.text||'',artworkDesc:sc[S_ARTWORK_DESC]?.text||'',prodNotes:sc[S_PROD_NOTES]?.text||'',mockupUrl:ffile(sc[S_MOCKUP]?.value,sc[S_MOCKUP]?.text),artworkUrl:ffile(sc[S_ARTWORK]?.value,sc[S_ARTWORK]?.text),proofUrl:ffile(sc[S_PROOF]?.value,sc[S_PROOF]?.text)};
+  // Find all filled deco slots
+  const allSlots=DECO_SLOTS.filter(slot=>{const v=sc[slot.style];if(!v||!v.value)return false;try{const ids=JSON.parse(v.value||'{}')?.ids||[];return ids.length>0;}catch(e){return false;}});
+  // Primary deco for backwards compat / station routing
+  const _oldDecoId=parseInt(sc[S_DECO]?.value?JSON.parse(sc[S_DECO].value||'{}')?.ids?.[0]||0:0);
+  const _slotDecoId=allSlots.length?parseInt(JSON.parse(sc[allSlots[0].style]?.value||'{}')?.ids?.[0]||0):0;
+  const primaryDecoId=_slotDecoId||_oldDecoId;
+  const primaryDecoDisplay=DECO_DISPLAY[primaryDecoId]||sc[S_DECO]?.text||'Other';
+  const mockupAssetId=extractAssetIds(sc[S_MOCKUP]?.value)[0]||null;
+  const _slotArtIds=allSlots.flatMap(slot=>extractAssetIds(sc[slot.art]?.value));
+  const artworkAssetIds=_slotArtIds.length?_slotArtIds:extractAssetIds(sc[S_ARTWORK]?.value);
+  const primaryPlacement=allSlots.length>0?sc[allSlots[0].place]?.text||'':sc[S_PLACEMENT]?.text||'';
+  const primaryDesc=allSlots.length>0?sc[allSlots[0].desc]?.text||'':sc[S_ARTWORK_DESC]?.text||'';
+  return{id:sub.id,name:sub.name,orderId:item.id,orderName:item.name,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',inHands:cv[O_INHAND]?.text||'',shelf:cv[O_SHELF]?.text||'',salesperson:cv[O_SALES]?.text||'',qty:sc[S_QTY]?.text||'',color:sc[S_COLOR]?.text||'',size:sc[S_SIZE]?.text||'',style:sc[S_STYLE]?.text||'',primaryDecoId,primaryDecoDisplay,placement:primaryPlacement,artworkDesc:primaryDesc,prodNotes:sc[S_PROD_NOTES]?.text||'',mockupAssetId,artworkAssetIds,allSlots,_sc:sc};
 }
 
 function sortByDate(arr){return arr.sort((a,b)=>{if(!a.inHands&&!b.inHands)return 0;if(!a.inHands)return 1;if(!b.inHands)return-1;return new Date(a.inHands)-new Date(b.inHands);});}
 
 function renderRecentlyDone(){
-  const sec=document.getElementById('recently-section');
-  const list=document.getElementById('recently-list');
+  const sec=document.getElementById('recently-section');const list=document.getElementById('recently-list');
   if(!sec||!list||sessionDone.length===0){if(sec)sec.style.display='none';return;}
   sec.style.display='block';
-  list.innerHTML=sessionDone.map(p=>`<tr>
-    <td style="font-weight:500">${p.name}</td>
-    <td style="font-family:'Inter',monospace;font-size:11px">${p.ccbNum} · ${p.orderName}</td>
-    <td>${p.qty||'—'}</td>
-    <td>${p.color||'—'}</td>
-    <td>${p.size||'—'}</td>
-    <td>${fdatestr(p.inHands)}</td>
-    <td><span class="done-badge">Decorated</span></td>
-  </tr>`).join('');
+  list.innerHTML=sessionDone.map(p=>`<tr><td style="font-weight:500">${p.name}</td><td style="font-family:'Inter',monospace;font-size:11px">${p.ccbNum} · ${p.orderName}</td><td>${p.qty||'—'}</td><td>${p.color||'—'}</td><td>${p.size||'—'}</td><td>${fdatestr(p.inHands)}</td><td><span class="done-badge">Decorated</span></td></tr>`).join('');
 }
-
 
 function updateStats(){
   document.getElementById('stat-up').textContent=allUpcoming.length;
@@ -371,20 +413,29 @@ function updateStats(){
 }
 
 function stationCounts(arr){
+  // Count by all deco slots, not just primary
   const c={};
   for(const p of arr){
-    const s=p.decoStyleDisplay||'Other';
-    c[s]=(c[s]||0)+1;
+    const counted=new Set();
+    if(p.allSlots&&p.allSlots.length){
+      for(const slot of p.allSlots){
+        const t=p._sc?.[slot.style]?.text||'';const d=DECO_DISPLAY[parseInt(JSON.parse(p._sc?.[slot.style]?.value||'{}')?.ids?.[0]||0)]||t;
+        if(d&&!counted.has(d)){c[d]=(c[d]||0)+1;counted.add(d);}
+      }
+    } else {
+      const d=p.primaryDecoDisplay||'Other';
+      c[d]=(c[d]||0)+1;
+    }
   }
   return c;
 }
 
 function renderContent(){
+  document.getElementById('btn-card').classList.toggle('active',currentView==='card');
+  document.getElementById('btn-table').classList.toggle('active',currentView==='table');
   const filtUp=filterItems(allUpcoming);const filtAc=filterItems(allActive);
-  const upCounts=stationCounts(allUpcoming);
-  const acCounts=stationCounts(allActive);
+  const upCounts=stationCounts(allUpcoming);const acCounts=stationCounts(allActive);
   let html='';
-  // Station cards
   html+=`<div class="section-header"><span class="section-label">Decoration Stations</span><div class="section-line"></div></div>`;
   html+=`<div class="station-grid">`;
   const stationDefs=[
@@ -411,28 +462,38 @@ function renderContent(){
     </a>`;
   }
   html+=`</div>`;
-
-  // Active first
   html+=`<div id="sec-active" style="scroll-margin-top:100px"><div class="section-header" style="margin-top:0"><span class="section-label">Active — All Stations</span><span class="section-count">${filtAc.length}</span><div class="section-line"></div></div>`;
   if(filtAc.length===0)html+=`<p class="empty-msg">${searchQuery?'No results for "'+searchQuery+'"':'No active products in production.'}</p>`;
-  else { for(const p of filtAc){try{html+=buildCard(p,"active")}catch(e){html+=`<div class="error-box"><strong>Error:</strong> ${e.message}</div>`}} }
+  else{for(const p of filtAc){try{html+=buildCard(p,'active')}catch(e){html+=`<div class="error-box"><strong>Error:</strong> ${e.message}</div>`;}}}
   html+=`</div>`;
-
-  // Upcoming
-  html+=`<div id="sec-upcoming" style="scroll-margin-top:100px"><div class="section-header" style="margin-top:20px"><span class="section-label">Upcoming — All Stations</span><span class="section-count">${filtUp.length}</span><div class="section-line"></div></div>`;
-  if(filtUp.length===0)html+=`<p class="empty-msg">${searchQuery?'No results for "'+searchQuery+'"':'No products currently in Product Ordered status.'}</p>`;
-  else { for(const p of filtUp){try{html+=buildCard(p,"upcoming")}catch(e){html+=`<div class="error-box"><strong>Error:</strong> ${e.message}</div>`}} }
+  html+=`<div id="sec-upcoming" style="scroll-margin-top:100px"><div class="section-header"><span class="section-label">Upcoming — Product Ordered</span><span class="section-count">${filtUp.length}</span><div class="section-line"></div></div>`;
+  if(filtUp.length===0)html+=`<p class="empty-msg">${searchQuery?'No results for "'+searchQuery+'"':'No upcoming products.'}</p>`;
+  else{for(const p of filtUp){try{html+=buildCard(p,'upcoming')}catch(e){html+=`<div class="error-box"><strong>Error:</strong> ${e.message}</div>`;}}}
   html+=`</div>`;
-
   document.getElementById('content').innerHTML=html;
-  document.getElementById('nav-count-ac').textContent=filtAc.length;
-  document.getElementById('nav-count-up').textContent=filtUp.length;
+  document.getElementById('sec-count-ac').textContent=filtAc.length;
+  document.getElementById('sec-count-up').textContent=filtUp.length;
 }
 
 async function loadData(){
+  const now=Date.now();if(cachedData&&(now-cacheTime)<60000&&!window._forceRefresh){renderContent();updateStats();return;}
+  window._forceRefresh=false;
   const btn=document.getElementById('refresh-btn');btn.disabled=true;btn.classList.add('spinning');
   try{
-    const items=await fetchItems();
+    const q1=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:500,query_params:{rules:[{column_id:"group",compare_value:["topics"]}]}){items{id name column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHELF}","${O_SALES}"]){id text value}subitems{id name}}}}}`;
+    const data1=await mq(q1);
+    const rawItems=data1.boards[0].items_page.items;
+    const allSubIds=[];
+    for(const item of rawItems)for(const sub of(item.subitems||[]))allSubIds.push(sub.id);
+    const subColMap={};
+    for(let i=0;i<allSubIds.length;i+=100){
+      const batch=allSubIds.slice(i,i+100);
+      const newDecoCols=[D1_STYLE,D1_PLACE,D1_DESC,D1_ART,D1_SCREENS,D1_COLORS,D2_STYLE,D2_PLACE,D2_DESC,D2_ART,D2_SCREENS,D2_COLORS,D3_STYLE,D3_PLACE,D3_DESC,D3_ART,D3_SCREENS,D3_COLORS].map(c=>`"${c}"`).join(',');
+      const q2=`{items(limit:500,ids:[${batch.join(',')}]){id column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_DECO}","${S_PLACEMENT}","${S_ARTWORK_DESC}","${S_PROD_NOTES}","${S_MOCKUP}","${S_ARTWORK}","${S_PROOF}",${newDecoCols}]){id text value}}}`;
+      const d2=await mq(q2);
+      for(const sub of(d2.items||[]))subColMap[sub.id]=sub.column_values;
+    }
+    const items=rawItems.map(item=>({...item,subitems:(item.subitems||[]).map(sub=>({...sub,column_values:subColMap[sub.id]||[]}))}));
     allUpcoming=[];allActive=[];
     for(const item of items){
       for(const sub of(item.subitems||[])){
@@ -445,19 +506,33 @@ async function loadData(){
         else if(subStatus==='in house')allActive.push(p);
       }
     }
+    cachedData=true;cacheTime=Date.now();
     sortByDate(allUpcoming);sortByDate(allActive);
+    const allProds=[...allUpcoming,...allActive];
+    const allAssetIds=[...new Set(allProds.flatMap(p=>[p.mockupAssetId,...p.artworkAssetIds].filter(Boolean)))];
+    if(allAssetIds.length)await resolveAssets(allAssetIds).catch(()=>{});
     updateStats();renderContent();
     document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
   }catch(err){document.getElementById('content').innerHTML=`<div class="error-box"><strong>Error:</strong> ${err.message}</div>`;}
   btn.disabled=false;btn.classList.remove('spinning');
 }
 loadData();
+
+(function(){
+  const REFRESH_MS=5*60*1000;
+  const jitter=Math.floor(Math.random()*60000);
+  setTimeout(function scheduleRefresh(){
+    if(typeof loadData==='function')loadData();
+    setTimeout(scheduleRefresh,REFRESH_MS+Math.floor(Math.random()*30000));
+  },REFRESH_MS+jitter);
+})();
+
 </script>
 
 <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title" id="modal-title">Mockup</span>
+      <span class="modal-title" id="modal-title">Product Detail</span>
       <button class="modal-close" onclick="closeModalDirect()"><svg viewBox="0 0 14 14"><path d="M1 1l12 12M13 1L1 13"/></svg></button>
     </div>
     <div class="modal-body" id="modal-body"></div>
