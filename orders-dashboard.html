@@ -198,6 +198,8 @@
   .remove-deco:hover{background:var(--border);color:var(--magenta);}
   .add-deco-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--cyan);background:none;border:1px dashed #99D9F5;border-radius:8px;padding:6px 12px;cursor:pointer;margin-top:8px;transition:background .15s;}
   .add-deco-btn:hover{background:#F0FAFF;}
+  .file-view-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:11px;font-weight:600;cursor:pointer;margin:1px 3px 1px 0;transition:background .15s,border-color .15s;}
+  .file-view-btn:hover{background:var(--border);border-color:var(--cyan);color:var(--cyan);}
   .add-product-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;background:none;border:1.5px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;width:100%;transition:border-color .2s,color .2s,background .2s;}
   .add-product-btn:hover{border-color:var(--cyan);color:var(--cyan);background:#F0FAFF;}
 
@@ -1060,40 +1062,7 @@ function openEditModal(orderId){
       const decoDescCols={1:'text_mm2y3mb9',2:'text_mm2ymf5k',3:'text_mm2yjq0z'};
       const decoScreenCols={1:'numeric_mm2yn2nb',2:'numeric_mm2ynqby',3:'numeric_mm2y55qh'};
       const decoColorCols={1:'text_mm2y2y6a',2:'text_mm2y5vn6',3:'text_mm2y8bg8'};
-      // Helper: parse asset IDs out of a Monday file column value JSON
-      function parseAssetIds(sub, colId){
-        try{
-          const raw=sub.column_values?.find(c=>c.id===colId)?.value;
-          if(!raw)return[];
-          const p=JSON.parse(raw);
-          return(p.files||[]).map(f=>f.assetId).filter(Boolean);
-        }catch(e){return[];}
-      }
-      // Helper: build view buttons for a list of asset IDs and an optional label prefix
-      function makeViewButtons(assetIds, label){
-        if(!assetIds.length)return'';
-        return assetIds.map((aid,i)=>{
-          const btnLabel=assetIds.length>1?`${label} ${i+1}`:label;
-          return `<button type="button" onclick="viewAsset(${aid})" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:11px;font-weight:600;cursor:pointer;margin:2px 4px 2px 0">`+
-            `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><line x1="17" y1="17" x2="22" y2="22"/></svg>${btnLabel}</button>`;
-        }).join('');
-      }
 
-      // Inject mockup + proof view buttons on the product block header area
-      const mockupIds=parseAssetIds(sub,'file_mm26e29h');
-      const proofIds=parseAssetIds(sub,'file_mm25ph2d');
-      if(mockupIds.length||proofIds.length){
-        const headerEl=div.querySelector('.product-block-header');
-        if(headerEl){
-          const fileRow=document.createElement('div');
-          fileRow.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin:4px 0 2px;padding:6px 0 4px;border-top:1px solid var(--border)';
-          fileRow.innerHTML=(mockupIds.length?'<span style="font-size:10px;color:var(--muted);font-weight:600;margin-right:2px">MOCKUP:</span>'+makeViewButtons(mockupIds,'Mockup'):'')+
-            (proofIds.length?'<span style="font-size:10px;color:var(--muted);font-weight:600;margin-right:2px;margin-left:'+(mockupIds.length?'10px':'0')+'">\PROOF:</span>'+makeViewButtons(proofIds,'Proof'):'');
-          headerEl.insertAdjacentElement('afterend',fileRow);
-        }
-      }
-
-      const artFileCols={1:'file_mm2y1yem',2:'file_mm2ya55c',3:'file_mm2yjme2'};
       for(let dId=1;dId<=3;dId++){
         const sv=sColV(sub,decoStyleCols[dId]);
         const styleId=sv?.ids?.[0]||null;
@@ -1114,17 +1083,6 @@ function openEditModal(orderId){
         if(scEl)scEl.value=sc;
         const dcEl=document.getElementById(`p${id}-d${curDId}-colors`);
         if(dcEl)dcEl.value=dc;
-        // Inject artwork view buttons into the deco block if files exist
-        const artIds=parseAssetIds(sub,artFileCols[dId]);
-        if(artIds.length){
-          const decoBlock=document.getElementById(`p${id}-d${curDId}`);
-          if(decoBlock){
-            const artRow=document.createElement('div');
-            artRow.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)';
-            artRow.innerHTML='<span style="font-size:10px;color:var(--muted);font-weight:600;margin-right:2px">ARTWORK ON FILE:</span>'+makeViewButtons(artIds,'Artwork');
-            decoBlock.appendChild(artRow);
-          }
-        }
       }
     });
   }
@@ -1132,6 +1090,71 @@ function openEditModal(orderId){
   document.getElementById('modalOverlay').classList.add('open');
   document.body.style.overflow='hidden';
   setTimeout(()=>document.getElementById('f-company').focus(),300);
+
+  // Live-fetch file assets for all subitems -- cache doesn't reliably include file column data
+  const subitemIds=(o.subitems||[]).map(s=>s.id).filter(Boolean);
+  if(subitemIds.length){
+    const FILE_COLS=['file_mm26e29h','file_mm25ph2d','file_mm2y1yem','file_mm2ya55c','file_mm2yjme2'];
+    const fileQuery=`{items(ids:[${subitemIds.join(',')}]){id column_values(ids:${JSON.stringify(FILE_COLS)}){id value}}}`;
+    fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:fileQuery})})
+      .then(r=>r.json())
+      .then(d=>{
+        const liveItems=d?.data?.items||[];
+        // Build a map: subitemId -> { colId -> [assetId, ...] }
+        const fileMap={};
+        liveItems.forEach(item=>{
+          fileMap[item.id]={};
+          (item.column_values||[]).forEach(cv=>{
+            try{
+              const p=JSON.parse(cv.value||'null');
+              const ids=(p?.files||[]).map(f=>f.assetId).filter(Boolean);
+              if(ids.length) fileMap[item.id][cv.id]=ids;
+            }catch(e){}
+          });
+        });
+        // Now inject view buttons into already-rendered product blocks
+        document.querySelectorAll('.product-block[data-subitem-id]').forEach(pb=>{
+          const sid=pb.dataset.subitemId;
+          const files=fileMap[sid];
+          if(!files)return;
+          // Mockup + Proof buttons on the product block header
+          const mockupIds=files['file_mm26e29h']||[];
+          const proofIds=files['file_mm25ph2d']||[];
+          if(mockupIds.length||proofIds.length){
+            // Remove any previously injected file row to avoid duplicates
+            pb.querySelectorAll('.injected-file-row').forEach(el=>el.remove());
+            const headerEl=pb.querySelector('.product-block-header');
+            if(headerEl){
+              const fileRow=document.createElement('div');
+              fileRow.className='injected-file-row';
+              fileRow.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin:4px 0 2px;padding:6px 0 4px;border-top:1px solid var(--border)';
+              fileRow.innerHTML=
+                (mockupIds.length?'<span style="font-size:10px;color:var(--muted);font-weight:600;margin-right:4px">MOCKUP:</span>'+mockupIds.map((aid,i)=>`<button type="button" onclick="viewAsset(${aid})" class="file-view-btn">${mockupIds.length>1?'Mockup '+(i+1):'Mockup'}</button>`).join(''): '')+
+                (proofIds.length?'<span style="font-size:10px;color:var(--muted);font-weight:600;margin-right:4px;margin-left:'+(mockupIds.length?'12px':'0')+'">PROOF:</span>'+proofIds.map((aid,i)=>`<button type="button" onclick="viewAsset(${aid})" class="file-view-btn">${proofIds.length>1?'Proof '+(i+1):'Proof'}</button>`).join(''): '');
+              headerEl.insertAdjacentElement('afterend',fileRow);
+            }
+          }
+          // Artwork buttons on each deco block
+          const artCols={1:'file_mm2y1yem',2:'file_mm2ya55c',3:'file_mm2yjme2'};
+          [1,2,3].forEach(dId=>{
+            const artIds=files[artCols[dId]]||[];
+            if(!artIds.length)return;
+            // Find the deco block by looking for the nth deco-spot-block inside this product block
+            const decoBlocks=pb.querySelectorAll('.deco-spot-block');
+            const decoBlock=decoBlocks[dId-1];
+            if(!decoBlock)return;
+            decoBlock.querySelectorAll('.injected-file-row').forEach(el=>el.remove());
+            const artRow=document.createElement('div');
+            artRow.className='injected-file-row';
+            artRow.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)';
+            artRow.innerHTML='<span style="font-size:10px;color:var(--muted);font-weight:600;margin-right:4px">ARTWORK ON FILE:</span>'+
+              artIds.map((aid,i)=>`<button type="button" onclick="viewAsset(${aid})" class="file-view-btn">${artIds.length>1?'Artwork '+(i+1):'View Artwork'}</button>`).join('');
+            decoBlock.appendChild(artRow);
+          });
+        });
+      })
+      .catch(err=>console.warn('File fetch failed:',err));
+  }
 }
 
 function closeModal(){
