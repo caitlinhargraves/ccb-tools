@@ -418,10 +418,10 @@ function openModal(id){
   document.getElementById('f-contact').value=t?.contact||'';
   document.getElementById('f-email').value=t?.email||'';
   document.getElementById('f-phone').value=t?.phone||'';
-  document.getElementById('f-status').value=t?.status||'Warm';
-  document.getElementById('f-value').value=t?.value||'';
-  document.getElementById('f-interest').value=t?.interest||'';
-  document.getElementById('f-followup').value=t?.followupDate||'';
+  document.getElementById('f-status') && (document.getElementById('f-status').value=t?.status||'Warm');
+  document.getElementById('f-value') && (document.getElementById('f-value').value=t?.value||'');
+  document.getElementById('f-interest') && (document.getElementById('f-interest').value=t?.interest||'');
+  document.getElementById('f-followup') && (document.getElementById('f-followup').value=t?.followupDate||'');
   document.getElementById('f-ihd').value=t?.ihd||'';
   document.getElementById('f-shipto').value=t?.shipTo||'';
   document.getElementById('f-payment').value=t?.payment||'';
@@ -465,10 +465,10 @@ async function createTicket(){
   const btn=document.getElementById('submit-btn');
   btn.classList.add('loading');btn.textContent='Saving...';
 
-  const status=document.getElementById('f-status').value;
-  const value=document.getElementById('f-value').value.trim();
-  const interest=document.getElementById('f-interest').value.trim();
-  const followup=document.getElementById('f-followup').value;
+  const status='Warm';
+  const value='';
+  const interest='';
+  const followup='';
   const notes=document.getElementById('f-notes').value.trim();
   const contact=document.getElementById('f-contact').value.trim();
   const email=document.getElementById('f-email').value.trim();
