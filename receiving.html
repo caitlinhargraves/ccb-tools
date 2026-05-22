@@ -267,6 +267,9 @@
   .chip.due { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
   .chip.overdue { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
   .chip.ok { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+  .chip-sales { background: #F5F3FF; color: #6D28D9; border-color: #DDD6FE; font-weight: 600; }
+  .chip-imprint { background: #EFF6FF; color: #2563EB; border-color: #BFDBFE; font-weight: 600; }
+  .chip-insight { background: #FFF7ED; color: #C2410C; border-color: #FED7AA; font-weight: 600; }
 
   .progress-section { margin-top: 10px; }
 
@@ -707,6 +710,7 @@ const ORDER_STATUS_COL = 'color_mm29xat9';
 const SHELF_COL = 'text_mm2ngkpv';
 const SALES_COL = 'dropdown_mm22w5rr';
 const NOTES_COL = 'long_text_mm225vbf';
+const IMPRINT_COL = 'dropdown_mm276wtz';
 
 const EXCLUDED_TYPES = ['promo code', '3rd party'];
 const EXCLUDED_ORDER_STATUSES = ['promo code', '3rd party', '3rd party ordered'];
@@ -815,6 +819,7 @@ async function loadOrders() {
           shelf: colMap[SHELF_COL]?.text || '',
           salesperson: colMap[SALES_COL]?.text || '',
           notes: colMap[NOTES_COL]?.text || '',
+          imprint: colMap[IMPRINT_COL]?.text || '',
           products: orderedProducts
         });
       }
@@ -929,6 +934,8 @@ function renderDashboard(orders, snapshot = true) {
           </div>
           <div class="order-chips">
             ${order.contact ? `<span class="chip">${order.contact}</span>` : ''}
+            ${order.salesperson ? `<span class="chip chip-sales">Rep: ${order.salesperson}</span>` : ''}
+            ${order.imprint ? `<span class="chip chip-co ${order.imprint==='CCB Insight'?'chip-insight':'chip-imprint'}">${order.imprint}</span>` : ''}
             ${getDueBadge(order.inHands)}
           </div>
           <div class="progress-section">
