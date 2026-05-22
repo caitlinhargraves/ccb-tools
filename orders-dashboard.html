@@ -1409,7 +1409,9 @@ async function saveOrderEdits(){
       const pPoNumE=v(`p${pid}-ponum`);
       const pPoDateE=v(`p${pid}-podate`);
       const pTypeE=v(`p${pid}-type`);
-      const pProductStatusE=v(`p${pid}-productstatus`);
+      // Auto-set Product Ordered when Order Status is Products Ordered and no status explicitly set
+      const pProductStatusRaw=v(`p${pid}-productstatus`);
+      const pProductStatusE=(!pProductStatusRaw && status==='Products Ordered') ? 'Product Ordered' : pProductStatusRaw;
       let subCols={};
       if(pStyle)subCols['text_mm22fv7y']=pStyle;
       if(pColor)subCols['text_mm2276wz']=pColor;
@@ -1631,7 +1633,9 @@ async function submitOrder(){
         const pPoNum=v(`p${pid}-ponum`);
         const pPoDate=v(`p${pid}-podate`);
         const pType=v(`p${pid}-type`);
-        const pProductStatus=v(`p${pid}-productstatus`);
+        // Auto-set Product Ordered when Order Status is Products Ordered and no status explicitly set
+        const pProductStatusRaw=v(`p${pid}-productstatus`);
+        const pProductStatus=(!pProductStatusRaw && orderStatus==='Products Ordered') ? 'Product Ordered' : pProductStatusRaw;
         const pQtyDirect=v(`p${pid}-qty`);
         if(pQtyDirect){
           subCols['numeric_mm22crjt']=parseFloat(pQtyDirect);
