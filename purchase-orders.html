@@ -351,7 +351,8 @@ async function loadData(){
     for(const item of items){
       const cv={};for(const c of item.column_values)cv[c.id]=c;
       const orderStatus=(cv[O_STATUS]?.text||'').toLowerCase();
-      if(['shipped','3rd party complete'].includes(orderStatus))continue;
+      // Skip orders that are fully past the ordering stage
+      if(['shipped','delivered','decorated','ready for shipping','3rd party complete','on shelf (decorated)'].includes(orderStatus))continue;
 
       const companyText=cv[O_COMPANY]?.text||'';
       const cKey=companyKey(companyText);
