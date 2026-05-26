@@ -418,12 +418,17 @@ app.post('/api/upload-file', upload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file provided' });
     if (!itemId || !columnId) return res.status(400).json({ error: 'itemId and columnId required' });
 
+    // Normalize MIME type — browsers often send empty string for .ai / .eps files
+    const ext = (req.file.originalname.split('.').pop() || '').toLowerCase();
+    const mimeOverrides = { ai: 'application/postscript', eps: 'application/postscript', svg: 'image/svg+xml' };
+    const contentType = req.file.mimetype || mimeOverrides[ext] || 'application/octet-stream';
+
     const form = new FormData();
     const query = `mutation add_file($file: File!) { add_file_to_column(item_id: ${itemId}, column_id: "${columnId}", file: $file) { id } }`;
     form.append('query', query);
     form.append('variables[file]', req.file.buffer, {
       filename: req.file.originalname,
-      contentType: req.file.mimetype,
+      contentType,
       knownLength: req.file.size
     });
 
