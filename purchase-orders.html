@@ -398,10 +398,10 @@ async function loadData(){
         } else if(subType.includes('in house')||subType.includes('pre')||subType===''){
           const isBlank=statusIndex===5||subStatus==='';
           // Skip anything past ordering: In House (0), Decorated (8), Packing (4), Shipped (6)
-          const isPastOrdering=statusIndex===0||statusIndex===8||statusIndex===4||statusIndex===6||subStatus.includes('decorated');
+          const isPastOrdering=statusIndex===0||statusIndex===8||statusIndex===4||statusIndex===6||subStatus.includes('decorated')||subStatus.includes('in house');
           if(isPastOrdering){} // leave PO page entirely
-          else if(poDate) allOrdered.push(product); // has a PO date = ordered
-          else if(isBlank||statusIndex===1) allToBeOrdered.push(product); // no PO date = needs ordering
+          else if(poDate||statusIndex===1) allOrdered.push(product); // has a PO date or "Product Ordered" status = ordered
+          else if(isBlank) allToBeOrdered.push(product); // blank status, no PO date = needs ordering
           // items with a non-blank status but no PO date are in production — don't show on PO page
         }
       }
@@ -976,5 +976,6 @@ loadData();
 
 </body>
 </html>
+
 
 
