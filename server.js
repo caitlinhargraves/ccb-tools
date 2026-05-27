@@ -54,7 +54,8 @@ async function sendEmail(subject, html, attachments) {
 let cache = { orders: [], lastUpdated: null, isLoading: false };
 
 // ── Auth middleware ─────────────────────────────────────────────────────────
-// Cookie-based: browser only prompts once per 12 hours instead of every page.
+// Cookie-based: prompts once, then cookie keeps you in for 12 hours.
+// No more re-prompting every time you navigate to a new page.
 const crypto = require('crypto');
 
 function makeAuthToken(user, pass) {
@@ -73,7 +74,7 @@ app.use((req, res, next) => {
 
   const expectedToken = makeAuthToken(user, pass);
 
-  // Check cookie -- already authenticated
+  // Check cookie -- already authenticated this session
   const cookies = {};
   (req.headers.cookie || '').split(';').forEach(c => {
     const parts = c.trim().split('=');
@@ -91,7 +92,7 @@ app.use((req, res, next) => {
   const p = decoded.slice(colon + 1);
 
   if (u === user && p === pass) {
-    // Valid -- set cookie for 12 hours so no re-prompt today
+    // Set cookie for 12 hours
     res.set('Set-Cookie', 'ccb_auth=' + expectedToken + '; Path=/; Max-Age=43200; HttpOnly; SameSite=Strict');
     return next();
   }
