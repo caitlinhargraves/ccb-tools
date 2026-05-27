@@ -543,7 +543,7 @@ const PENDING_GROUP = 'group_mm2wb7r2';
 
 // All Monday calls go through the server proxy -- API key never in browser
 async function mondayMutation(query){
-  const res=await fetch('https://api.monday.com/v2',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0OTQ0NjE4NywiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMjNUMTU6Mzc6MTkuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.6FPYgwwTj-05GWXHxxq5lSstcJTGfVOqATNhk5FQBic','API-Version':'2024-01'},body:JSON.stringify({query})});
+  const res=await fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});
   const data=await res.json();
   if(data.errors)throw new Error(data.errors[0].message);
   return data.data;
@@ -863,7 +863,7 @@ async function mondayQuery(query){
   const timeout=setTimeout(()=>controller.abort(),25000);
   let res;
   try{
-    res=await fetch('https://api.monday.com/v2',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0OTQ0NjE4NywiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMjNUMTU6Mzc6MTkuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.6FPYgwwTj-05GWXHxxq5lSstcJTGfVOqATNhk5FQBic','API-Version':'2024-01'},body:JSON.stringify({query}),signal:controller.signal});
+    res=await fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});
   }catch(e){
     if(e.name==='AbortError')throw new Error('Request timed out. Try refreshing.');
     throw e;
@@ -876,10 +876,36 @@ async function mondayQuery(query){
 async function load(attempt=1){
   try{
     document.getElementById('lastUpdated').innerHTML=`⏳ Loading orders...`;
-    const q=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:500){items{id name created_at updated_at group{id}column_values{id text value}subitems{id name column_values{id text value}}}}}}`;
+
+    // Step 1: fetch parent items + subitem IDs only (no subitem column_values)
+    // This avoids the FIELD_LIMIT_EXCEEDED / 429 that hits when fetching
+    // column_values on hundreds of subitems inline with parent items
+    const q=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:500){items{id name created_at updated_at group{id}column_values{id text value}subitems{id name}}}}}`;
     const data=await mondayQuery(q);
     const items=data?.boards?.[0]?.items_page?.items||[];
     if(!items.length){showAlert('No orders found.');document.getElementById('lastUpdated').innerHTML='';return;}
+
+    // Step 2: collect all subitem IDs, fetch their column values in batches of 100
+    const allSubIds=[];
+    items.forEach(item=>(item.subitems||[]).forEach(s=>allSubIds.push(s.id)));
+    const subColMap={};
+    if(allSubIds.length){
+      const BATCH=100;
+      for(let i=0;i<allSubIds.length;i+=BATCH){
+        const batch=allSubIds.slice(i,i+BATCH);
+        const sq=`{items(ids:[${batch.join(',')}]){id column_values{id text value}}}`;
+        const sd=await mondayQuery(sq);
+        (sd?.data?.items||[]).forEach(s=>{subColMap[s.id]=s.column_values||[];});
+      }
+    }
+
+    // Merge subitem column_values back onto parent items
+    items.forEach(item=>{
+      (item.subitems||[]).forEach(s=>{
+        if(subColMap[s.id])s.column_values=subColMap[s.id];
+      });
+    });
+
     all=items.map(parseOrder);
     const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
     document.getElementById('lastUpdated').innerHTML=`Updated <strong>${t}</strong>`;
@@ -894,6 +920,7 @@ async function load(attempt=1){
     document.getElementById('lastUpdated').innerHTML='';
   }
 }
+
 async function manualRefresh(){const btn=document.getElementById('refreshBtn');btn.classList.add('loading');
   try{await load();}catch{showAlert('Refresh failed.');}
   btn.classList.remove('loading');}
@@ -1690,6 +1717,7 @@ async function saveOrderEdits(){
       if(pPoDateE)subCols['date_mm26mc76']={date:pPoDateE};
       if(pTypeE)subCols['color_mm2dd6d5']={label:pTypeE==='In House'?'In House Decoration':pTypeE};
       if(pProductStatusE)subCols['color_mm25v786']={label:pProductStatusE};
+      const artUploadErrors=[];
       const artworkFilesE={};
       for(let dId=1;dId<=3;dId++){
         const styleEl=document.getElementById(`p${pid}-d${dId}-style`);
@@ -1726,9 +1754,14 @@ async function saveOrderEdits(){
             fd.append('itemId',resolvedSubId);
             fd.append('columnId',artFileColsE[dId]);
             await fetch('/api/upload-file',{method:'POST',body:fd});
-          }catch(e){console.warn('Artwork upload failed:',e);}
+          }catch(e){console.warn('Artwork upload failed:',e);artUploadErrors.push(e.message||'Upload failed');}
         }
       }
+    }
+
+    // Warn if any artwork uploads failed (but don't block the save)
+    if(artUploadErrors.length){
+      document.getElementById('modalStatus').textContent='⚠️ Order saved but '+artUploadErrors.length+' artwork file(s) failed to upload. Please try re-uploading.';
     }
 
     // Update in-memory cache
@@ -1957,7 +1990,7 @@ async function submitOrder(){
               fd.append('itemId',subId);
               fd.append('columnId',artFileCols[dId]);
               await fetch('/api/upload-file',{method:'POST',body:fd});
-            }catch(e){console.warn('Artwork upload failed:',e);}
+            }catch(e){console.warn('Artwork upload failed:',e);artUploadErrors.push(e.message||'Upload failed');}
           }
         }
       }
