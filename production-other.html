@@ -342,10 +342,6 @@ async function resolveAssets(ids){
 }
 
 // Extract asset IDs from a file column value string
-function extractAssetIds(val){
-  if(!val)return[];
-  try{const p=JSON.parse(val);return(p.files||[]).map(f=>f.assetId).filter(Boolean);}catch(e){return[];}
-}
 
 
 async function saveDecoFields(subId) {
