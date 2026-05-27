@@ -1948,6 +1948,7 @@ async function submitOrder(){
 
         // Gather deco spots
         const artworkFiles={};
+        const artUploadErrors=[];
         for(let dId=1;dId<=3;dId++){
           const styleEl=document.getElementById(`p${pid}-d${dId}-style`);
           if(!styleEl)continue;
