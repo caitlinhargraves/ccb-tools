@@ -342,6 +342,30 @@ async function resolveAssets(ids){
 }
 
 // Extract asset IDs from a file column value string
+
+async function downloadArtworkZip(assetIds, zipName) {
+  if (!assetIds || !assetIds.length) return;
+  const btn = event?.currentTarget;
+  const origText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Zipping...'; }
+  try {
+    const res = await fetch('/api/download-zip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assetIds: assetIds.map(String), filename: zipName || 'artwork.zip' })
+    });
+    if (!res.ok) throw new Error('Zip failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = zipName || 'artwork.zip'; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch(e) {
+    alert('Download failed: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = origText; }
+  }
+}
 function extractAssetIds(val){
   if(!val)return[];
   try{const p=JSON.parse(val);return(p.files||[]).map(f=>f.assetId).filter(Boolean);}catch(e){return[];}
@@ -480,7 +504,7 @@ function openProductModal(subId,section){
       html+=`<div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Decoration ${slot.num||''}</div>`;
       if(_place)html+=`<div style="font-size:12px;margin-bottom:3px"><span style="color:var(--text3)">Placement:</span> ${_place}</div>`;
       if(_desc)html+=`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--text3)">Artwork:</span> ${_desc}</div>`;
-      if(_artAssets.length){html+=_artAssets.map(a=>`<div class="modal-file-row"><span class="modal-file-name">${a.name||'Art file'}</span><a class="modal-download-btn" href="${a.publicUrl||a.url}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(a.url)?'Open PDF':'Download'}</a></div>`).join('');}
+      if(_artAssets.length){const _zids=_artIds.map(String);html+=`<div class="modal-file-row"><button type="button" class="modal-download-btn" style="cursor:pointer" onclick="downloadArtworkZip([${_zids.join(',')}],'artwork-deco${slot?.num||''}.zip')"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${_artAssets.length>1?'Download All ('+_artAssets.length+' files)':'Download Artwork'}</button></div>`+_artAssets.map(a=>`<div style="font-size:10px;color:var(--text3);margin-top:2px;padding-left:4px">📎 ${a.name||''}</div>`).join('');}
       else if(_fallbackArtUrl)html+=`<div class="modal-file-row"><span class="modal-file-name">${getFilename(_fallbackArtUrl)||'Art file'}</span><a class="modal-download-btn" href="${_fallbackArtUrl}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>Download</a></div>`;
       html+=`</div>`;
       return html;
@@ -493,7 +517,7 @@ function openProductModal(subId,section){
   if(!p.mySlots||!p.mySlots.length){
     const _allArtAssets=p.artworkAssetIds.map(id=>assetCache[id]).filter(Boolean);
     if(_allArtAssets.length){
-      artworkHtml=`<div class="modal-section-title">Artwork Files</div>${_allArtAssets.map(a=>`<div class="modal-file-row"><span class="modal-file-name">${a.name}</span><a class="modal-download-btn" href="${a.publicUrl||a.url}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(a.url)?'Open PDF':'Download'}</a></div>`).join('')}`;
+      const _fbZids=p.artworkAssetIds.map(String);artworkHtml=`<div class="modal-section-title">Artwork Files</div><div class="modal-file-row"><button type="button" class="modal-download-btn" style="cursor:pointer" onclick="downloadArtworkZip([${_fbZids.join(',')}],'${p.ccbNum||'artwork'}-artwork.zip')"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${_allArtAssets.length>1?'Download All ('+_allArtAssets.length+' files)':'Download Artwork'}</button></div>${_allArtAssets.map(a=>`<div style="font-size:10px;color:var(--text3);margin-top:2px;padding-left:4px">📎 ${a.name}</div>`).join('')}`;
     } else if(p.artworkUrl){
       const fname=getFilename(p.artworkUrl);
       artworkHtml=`<div class="modal-section-title">Artwork Files</div><div class="modal-file-row"><span class="modal-file-name">${fname}</span><a class="modal-download-btn" href="${p.artworkUrl}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(p.artworkUrl)?'Open PDF':'Download'}</a></div>`;
@@ -529,10 +553,9 @@ function buildCardView(p,section,mode){
     )
     :`<div class="mockup-placeholder" title="No mockup" onclick="openProductModal('${p.id}','${section}')" style="cursor:pointer"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
 
-  const _artCached=p.artworkAssetIds.length?p.artworkAssetIds.map(id=>assetCache[id]).filter(Boolean):[];
-  const _artUrl=_artCached.length?_artCached[0].url:(p.artworkUrl||null);
-  const artworkBtn=_artUrl
-    ?`<a class="media-btn" href="${_artUrl}" target="_blank" onclick="event.stopPropagation()" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>Artwork</a>`:'';
+  const _artZipIds=p.artworkAssetIds.map(String);
+  const artworkBtn=_artZipIds.length
+    ?`<button type="button" class="media-btn" onclick="event.stopPropagation();downloadArtworkZip([${_artZipIds.join(',')}],'${p.ccbNum||'artwork'}-artwork.zip')"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>Artwork</button>`:'';
   
   const shelfChip=p.shelf?`<span class="chip shelf">📍 ${p.shelf}</span>`:'';
 
@@ -623,9 +646,9 @@ function buildTableRow(p,section){
       :`<img src="${_tmUrl}" style="width:36px;height:36px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer;vertical-align:middle" onclick="openProductModal('${p.id}','${section}')" alt="Mockup" onerror="this.style.display='none'">`
     )
     :`<span style="color:var(--text3);font-size:11px">—</span>`;
-  const _taUrl=p.artworkAssetIds.length?p.artworkAssetIds.map(id=>assetCache[id]).filter(Boolean)[0]?.url:(p.artworkUrl||null);
-  const artworkCell=_taUrl
-    ?`<a class="media-btn" href="${_taUrl}" target="_blank" download onclick="event.stopPropagation()"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>File</a>`
+  const _taZipIds=p.artworkAssetIds.map(String);
+  const artworkCell=_taZipIds.length
+    ?`<button type="button" class="media-btn" onclick="event.stopPropagation();downloadArtworkZip([${_taZipIds.join(',')}],'${p.ccbNum||'artwork'}-artwork.zip')"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>File</button>`
     :`<span style="color:var(--text3);font-size:11px">—</span>`;
   return `<tr id="tr-${p.id}" onclick="openProductModal('${p.id}','${section}')">
     <td><div class="pname" title="${p.name}">${p.name}</div><div style="font-size:10px;color:var(--text3);font-family:'Inter',monospace;margin-top:1px">${p.ccbNum} · ${p.orderName}</div></td>
@@ -720,6 +743,30 @@ function parseProduct(item,sub){
   };
 }
 
+
+async function downloadArtworkZip(assetIds, zipName) {
+  if (!assetIds || !assetIds.length) return;
+  const btn = event?.currentTarget;
+  const origText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Zipping...'; }
+  try {
+    const res = await fetch('/api/download-zip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assetIds: assetIds.map(String), filename: zipName || 'artwork.zip' })
+    });
+    if (!res.ok) throw new Error('Zip failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = zipName || 'artwork.zip'; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch(e) {
+    alert('Download failed: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = origText; }
+  }
+}
 function extractAssetIds(val){
   if(!val)return[];
   try{const p=JSON.parse(val);return(p.files||[]).map(f=>String(f.assetId)).filter(Boolean);}catch(e){return[];}
