@@ -1158,44 +1158,103 @@ function openEditModal(orderId){
             }catch(e){}
           });
         });
-        // Now inject view buttons into already-rendered product blocks
+           // Inject file previews inline under the file inputs
         document.querySelectorAll('.product-block[data-subitem-id]').forEach(pb=>{
           const sid=pb.dataset.subitemId;
           const files=fileMap[sid];
           if(!files)return;
-          // Mockup + Proof buttons on the product block header
+
+          // ── Mockup thumbnails ── inject under the mockup file input
           const mockupIds=files['file_mm26e29h']||[];
-          const proofIds=files['file_mm25ph2d']||[];
-          if(mockupIds.length||proofIds.length){
-            // Remove any previously injected file row to avoid duplicates
-            pb.querySelectorAll('.injected-file-row').forEach(el=>el.remove());
-            const headerEl=pb.querySelector('.product-block-header');
-            if(headerEl){
-              const fileRow=document.createElement('div');
-              fileRow.className='injected-file-row';
-              fileRow.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin:4px 0 2px;padding:6px 0 4px;border-top:1px solid var(--border)';
-              fileRow.innerHTML=
-                (mockupIds.length?'<span style="font-size:10px;color:var(--muted);font-weight:600;margin-right:4px">MOCKUP:</span>'+mockupIds.map((aid,i)=>`<button type="button" onclick="viewAsset(${aid})" class="file-view-btn">${mockupIds.length>1?'Mockup '+(i+1):'Mockup'}</button>`).join(''): '')+
-                (proofIds.length?'<span style="font-size:10px;color:var(--muted);font-weight:600;margin-right:4px;margin-left:'+(mockupIds.length?'12px':'0')+'">PROOF:</span>'+proofIds.map((aid,i)=>`<button type="button" onclick="viewAsset(${aid})" class="file-view-btn">${proofIds.length>1?'Proof '+(i+1):'Proof'}</button>`).join(''): '');
-              headerEl.insertAdjacentElement('afterend',fileRow);
-            }
+          if(mockupIds.length){
+            const pid=pb.id.replace('product-','');
+            // Find the first deco block's mockup preview div
+            const decoBlocks=pb.querySelectorAll('.deco-spot-block');
+            decoBlocks.forEach((decoBlock,i)=>{
+              const dId=i+1;
+              const previewDiv=decoBlock.querySelector('.mockup-preview');
+              if(!previewDiv||previewDiv.dataset.injected)return;
+              previewDiv.dataset.injected='1';
+              previewDiv.innerHTML='';
+              // Heading
+              const lbl=document.createElement('div');
+              lbl.style.cssText='font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px;margin-top:6px';
+              lbl.textContent='ON FILE:';
+              previewDiv.appendChild(lbl);
+              // Thumbnail grid
+              const grid=document.createElement('div');
+              grid.style.cssText='display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px';
+              mockupIds.forEach((aid,idx)=>{
+                const thumb=document.createElement('div');
+                thumb.style.cssText='width:56px;height:56px;border-radius:6px;border:1px solid var(--border);overflow:hidden;cursor:pointer;position:relative;background:var(--bg);display:flex;align-items:center;justify-content:center';
+                thumb.title='Click to view';
+                thumb.onclick=()=>viewAsset(aid);
+                const img=document.createElement('img');
+                img.src='/api/file-proxy?assetId='+aid;
+                img.style.cssText='width:100%;height:100%;object-fit:cover';
+                img.onerror=function(){
+                  this.style.display='none';
+                  thumb.innerHTML='<svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--muted);fill:none;stroke-width:1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+                };
+                thumb.appendChild(img);
+                grid.appendChild(thumb);
+              });
+              previewDiv.appendChild(grid);
+            });
           }
-          // Artwork buttons on each deco block
+
+          // ── Artwork filenames ── inject under the artwork file input
           const artCols={1:'file_mm2y1yem',2:'file_mm2ya55c',3:'file_mm2yjme2'};
           [1,2,3].forEach(dId=>{
             const artIds=files[artCols[dId]]||[];
             if(!artIds.length)return;
-            // Find the deco block by looking for the nth deco-spot-block inside this product block
             const decoBlocks=pb.querySelectorAll('.deco-spot-block');
             const decoBlock=decoBlocks[dId-1];
             if(!decoBlock)return;
-            decoBlock.querySelectorAll('.injected-file-row').forEach(el=>el.remove());
-            const artRow=document.createElement('div');
-            artRow.className='injected-file-row';
-            artRow.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)';
-            artRow.innerHTML='<span style="font-size:10px;color:var(--muted);font-weight:600;margin-right:4px">ARTWORK ON FILE:</span>'+
-              `<button type="button" class="file-view-btn" onclick="downloadArtworkZip([${artIds.join(',')}],'artwork-deco${dId}.zip')">${artIds.length>1?'Download All ('+artIds.length+' files)':'Download Artwork'}</button>`;
-            decoBlock.appendChild(artRow);
+            const artNameDiv=decoBlock.querySelector('[id$="-artwork-name"]');
+            if(!artNameDiv||artNameDiv.dataset.injected)return;
+            artNameDiv.dataset.injected='1';
+            artNameDiv.innerHTML='';
+            // Label
+            const lbl=document.createElement('div');
+            lbl.style.cssText='font-size:10px;font-weight:600;color:var(--muted);margin-bottom:3px;margin-top:4px';
+            lbl.textContent='ON FILE:';
+            artNameDiv.appendChild(lbl);
+            // Fetch asset names then show pills + zip button
+            fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({query:'{assets(ids:['+artIds.join(',')+']){id name}}'})})
+              .then(r=>r.json())
+              .then(d=>{
+                const assets=d?.data?.assets||[];
+                const pill=document.createElement('div');
+                pill.style.cssText='display:flex;flex-direction:column;gap:2px';
+                assets.forEach(a=>{
+                  const row=document.createElement('div');
+                  row.style.cssText='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)';
+                  row.innerHTML='<span style="font-size:13px">📎</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+a.name+'">'+a.name+'</span>';
+                  pill.appendChild(row);
+                });
+                if(assets.length){
+                  const dlBtn=document.createElement('button');
+                  dlBtn.type='button';
+                  dlBtn.className='file-view-btn';
+                  dlBtn.style.cssText='margin-top:4px;width:fit-content';
+                  dlBtn.textContent=assets.length>1?'Download All ('+assets.length+' files)':'Download Artwork';
+                  dlBtn.onclick=function(){downloadArtworkZip(artIds,'artwork-deco'+dId+'.zip');};
+                  pill.appendChild(dlBtn);
+                }
+                artNameDiv.appendChild(pill);
+              })
+              .catch(()=>{
+                // Fallback: just show count and download button
+                const dlBtn=document.createElement('button');
+                dlBtn.type='button';
+                dlBtn.className='file-view-btn';
+                dlBtn.style.cssText='margin-top:4px';
+                dlBtn.textContent=artIds.length>1?'Download All ('+artIds.length+' files)':'Download Artwork';
+                dlBtn.onclick=function(){downloadArtworkZip(artIds,'artwork-deco'+dId+'.zip');};
+                artNameDiv.appendChild(dlBtn);
+              });
           });
         });
       })
