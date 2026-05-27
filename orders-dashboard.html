@@ -1156,7 +1156,7 @@ function openEditModal(orderId){
             artRow.className='injected-file-row';
             artRow.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)';
             artRow.innerHTML='<span style="font-size:10px;color:var(--muted);font-weight:600;margin-right:4px">ARTWORK ON FILE:</span>'+
-              artIds.map((aid,i)=>`<button type="button" onclick="viewAsset(${aid})" class="file-view-btn">${artIds.length>1?'Artwork '+(i+1):'View Artwork'}</button>`).join('');
+              `<button type="button" class="file-view-btn" onclick="downloadArtworkZip([${artIds.join(',')}],'artwork-deco${dId}.zip')">${artIds.length>1?'Download All ('+artIds.length+' files)':'Download Artwork'}</button>`;
             decoBlock.appendChild(artRow);
           });
         });
@@ -1165,6 +1165,30 @@ function openEditModal(orderId){
   }
 }
 
+
+async function downloadArtworkZip(assetIds, zipName) {
+  if (!assetIds || !assetIds.length) return;
+  const btn = event?.currentTarget;
+  const origText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Zipping...'; }
+  try {
+    const res = await fetch('/api/download-zip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assetIds: assetIds.map(String), filename: zipName || 'artwork.zip' })
+    });
+    if (!res.ok) throw new Error('Zip failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = zipName || 'artwork.zip'; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch(e) {
+    alert('Download failed: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = origText; }
+  }
+}
 function closeModal(){
   document.getElementById('modalOverlay').classList.remove('open');
   document.body.style.overflow='';
@@ -1503,7 +1527,7 @@ async function saveOrderEdits(){
     if(email)colVals['email_mm22ap28']={email:email,text:email};
     if(phone)colVals['phone_mm22ertc']={phone:phone,countryShortName:'US'};
     if(ihd)colVals['date_mm22wpk2']={date:ihd};
-    if(shipto)colVals['text_mm26gtxp']=shipto;
+    colVals['text_mm26gtxp']=shipto;
     if(notes)colVals['long_text_mm225vbf']={text:notes};
     if(salesId)colVals['dropdown_mm22w5rr']={ids:[salesId]};
     if(imprintId)colVals['dropdown_mm276wtz']={ids:[parseInt(imprintId)]};
@@ -1630,7 +1654,7 @@ async function saveOrderEdits(){
     document.getElementById('successNum').textContent=o?.ccbNum?`Order ${o.ccbNum}`:'';
     document.querySelector('#modalSuccess .success-title').textContent='Changes Saved!';
     document.querySelector('#modalSuccess .success-sub').textContent='The order has been updated in Monday.';
-    fetch(`${API}/api/refresh`).then(()=>load()).catch(()=>{});
+    setTimeout(()=>{ fetch(`${API}/api/refresh`).then(()=>load()).catch(()=>load()); }, 2500);
 
   }catch(err){
     btn.classList.remove('loading');
@@ -1707,7 +1731,7 @@ async function submitOrder(){
     if(ihd)colVals['date_mm22wpk2']={date:ihd};
     if(ccbOrderNum)colVals['text_mm29djkk']=ccbOrderNum;
     if(phone)colVals['phone_mm22ertc']={phone:phone,countryShortName:'US'};
-    if(shipto)colVals['text_mm26gtxp']=shipto;
+    colVals['text_mm26gtxp']=shipto;
     if(payment)colVals['text_mm22t49y']=payment;
     if(notes)colVals['long_text_mm225vbf']={text:notes};
     if(salesId)colVals['dropdown_mm22w5rr']={ids:[salesId]};
