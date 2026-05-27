@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 const fetch = require('node-fetch');
 const multer = require('multer');
 const FormData = require('form-data');
+const archiver = require('archiver');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -549,6 +550,60 @@ app.get('/api/file-proxy', async (req, res) => {
     fileRes.body.pipe(res);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ============================================================
+// POST /api/download-zip
+// Body: { assetIds: [id, id, ...], filename: 'CCB-00123-artwork.zip' }
+// Fetches all assets from Monday, streams them into a zip, returns it
+// ============================================================
+app.post('/api/download-zip', async (req, res) => {
+  const { assetIds, filename } = req.body;
+  if (!assetIds || !assetIds.length) return res.status(400).json({ error: 'assetIds required' });
+
+  try {
+    // Fetch all asset metadata in one query
+    const q = `{assets(ids:[${assetIds.join(',')}]){id name public_url}}`;
+    const apiRes = await fetch('https://api.monday.com/v2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': MONDAY_API_KEY, 'API-Version': '2024-01' },
+      body: JSON.stringify({ query: q })
+    });
+    const data = await apiRes.json();
+    const assets = data?.data?.assets || [];
+    if (!assets.length) return res.status(404).json({ error: 'No assets found' });
+
+    const zipName = filename || 'artwork.zip';
+    res.set('Content-Type', 'application/zip');
+    res.set('Content-Disposition', `attachment; filename="${zipName}"`);
+
+    const archive = archiver('zip', { zlib: { level: 6 } });
+    archive.on('error', err => { console.error('Archiver error:', err); });
+    archive.pipe(res);
+
+    // Fetch each file and append to zip, deduplicating names
+    const usedNames = {};
+    for (const asset of assets) {
+      const fileRes = await fetch(asset.public_url);
+      if (!fileRes.ok) continue;
+      // Deduplicate filenames
+      let name = asset.name || `file_${asset.id}`;
+      if (usedNames[name]) {
+        const dot = name.lastIndexOf('.');
+        const base = dot > 0 ? name.slice(0, dot) : name;
+        const ext = dot > 0 ? name.slice(dot) : '';
+        name = `${base}_${usedNames[name]}${ext}`;
+      }
+      usedNames[asset.name || `file_${asset.id}`] = (usedNames[asset.name || `file_${asset.id}`] || 1) + 1;
+      archive.append(fileRes.body, { name });
+    }
+
+    await archive.finalize();
+  } catch (err) {
+    console.error('Zip error:', err);
+    if (!res.headersSent) res.status(500).json({ error: err.message });
   }
 });
 
