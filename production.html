@@ -240,6 +240,30 @@ const STATION_URLS={Embroidery:'production-embroidery.html',Screenprint:'product
 const assetCache={};
 
 async function mq(q){const r=await fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});const d=await r.json();if(d.errors)throw new Error(d.errors[0].message);return d.data;}
+
+async function downloadArtworkZip(assetIds, zipName) {
+  if (!assetIds || !assetIds.length) return;
+  const btn = event?.currentTarget;
+  const origText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Zipping...'; }
+  try {
+    const res = await fetch('/api/download-zip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assetIds: assetIds.map(String), filename: zipName || 'artwork.zip' })
+    });
+    if (!res.ok) throw new Error('Zip failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = zipName || 'artwork.zip'; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch(e) {
+    alert('Download failed: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = origText; }
+  }
+}
 function extractAssetIds(val){if(!val)return[];try{const p=JSON.parse(val);return(p.files||[]).map(f=>String(f.assetId)).filter(Boolean);}catch(e){return[];}}
 async function resolveAssets(ids){const missing=ids.filter(id=>id&&!assetCache[id]);if(!missing.length)return;try{const data=await mq(`{assets(ids:[${missing.join(',')}]){id name url public_url}}`);for(const a of(data.assets||[])){assetCache[a.id]={url:`/api/file-proxy?assetId=${a.id}`,name:a.name,publicUrl:a.public_url||a.url};}}catch(e){}}
 function isPdfUrl(url){if(!url)return false;return url.split('?')[0].toLowerCase().endsWith('.pdf');}
@@ -301,7 +325,7 @@ function openProductModal(subId,section){
       html+=`<div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px"><span style="color:${DECO_TC[_styleTxt]||'var(--text3)'}">Decoration ${slot.num} — ${_styleTxt}</span></div>`;
       if(_place)html+=`<div style="font-size:12px;margin-bottom:3px"><span style="color:var(--text3)">Placement:</span> ${_place}</div>`;
       if(_desc)html+=`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--text3)">Artwork:</span> ${_desc}</div>`;
-      if(_artAssets.length){html+=_artAssets.map(a=>`<div class="modal-file-row"><span class="modal-file-name">${a.name||'Art file'}</span><a class="modal-download-btn" href="${a.publicUrl||a.url}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(a.url)?'Open PDF':'Download'}</a></div>`).join('');}
+      if(_artAssets.length){const _zids=_artIds.map(String);html+=`<div class="modal-file-row"><button type="button" class="modal-download-btn" style="cursor:pointer" onclick="downloadArtworkZip([${_zids.join(',')}],'artwork-deco${slot?.num||''}.zip')"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${_artAssets.length>1?'Download All ('+_artAssets.length+' files)':'Download Artwork'}</button></div>`+_artAssets.map(a=>`<div style="font-size:10px;color:var(--text3);margin-top:2px;padding-left:4px">📎 ${a.name||''}</div>`).join('');}
       html+=`</div>`;return html;
     }).join('');
     if(decoSlotsHtml)decoSlotsHtml=`<div class="modal-section-title">Decoration Details</div>`+decoSlotsHtml;
