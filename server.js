@@ -53,8 +53,14 @@ async function sendEmail(subject, html, attachments) {
 // ============================================================
 let cache = { orders: [], lastUpdated: null, isLoading: false };
 
-// Serve static files
-// Basic Auth middleware -- protects HTML pages but not API endpoints
+// ── Auth middleware ─────────────────────────────────────────────────────────
+// Cookie-based: browser only prompts once per 12 hours instead of every page.
+const crypto = require('crypto');
+
+function makeAuthToken(user, pass) {
+  return crypto.createHash('sha256').update(user + ':' + pass + ':ccb-tools').digest('hex');
+}
+
 app.use((req, res, next) => {
   const user = process.env.BASIC_AUTH_USER;
   const pass = process.env.BASIC_AUTH_PASS;
@@ -62,14 +68,33 @@ app.use((req, res, next) => {
   // Skip auth if env vars not set (dev mode)
   if (!user || !pass) return next();
 
-  // Always allow API endpoints -- they're called by the pages themselves
+  // Always allow API endpoints
   if (req.path.startsWith('/api/')) return next();
 
+  const expectedToken = makeAuthToken(user, pass);
+
+  // Check cookie -- already authenticated
+  const cookies = {};
+  (req.headers.cookie || '').split(';').forEach(c => {
+    const parts = c.trim().split('=');
+    const k = parts.shift();
+    if (k) cookies[k] = parts.join('=');
+  });
+  if (cookies['ccb_auth'] === expectedToken) return next();
+
+  // Fall back to Basic Auth prompt
   const authHeader = req.headers['authorization'] || '';
   const b64 = authHeader.startsWith('Basic ') ? authHeader.slice(6) : '';
-  const [u, p] = Buffer.from(b64, 'base64').toString().split(':');
+  const decoded = Buffer.from(b64, 'base64').toString();
+  const colon = decoded.indexOf(':');
+  const u = decoded.slice(0, colon);
+  const p = decoded.slice(colon + 1);
 
-  if (u === user && p === pass) return next();
+  if (u === user && p === pass) {
+    // Valid -- set cookie for 12 hours so no re-prompt today
+    res.set('Set-Cookie', 'ccb_auth=' + expectedToken + '; Path=/; Max-Age=43200; HttpOnly; SameSite=Strict');
+    return next();
+  }
 
   res.set('WWW-Authenticate', 'Basic realm="CCB Tools"');
   res.status(401).send('Authentication required');
