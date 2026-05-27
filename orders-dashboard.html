@@ -1679,6 +1679,7 @@ async function saveOrderEdits(){
     const decoColorColsE={1:'text_mm2y2y6a',2:'text_mm2y5vn6',3:'text_mm2y8bg8'};
     const artFileColsE={1:'file_mm2y1yem',2:'file_mm2ya55c',3:'file_mm2yjme2'};
     const productBlocksE=document.querySelectorAll('.product-block');
+    const artUploadErrors=[];
     for(const pb of productBlocksE){
       const pid=pb.id.replace('product-','');
       const subitemId=pb.dataset.subitemId||null;
@@ -1717,7 +1718,6 @@ async function saveOrderEdits(){
       if(pPoDateE)subCols['date_mm26mc76']={date:pPoDateE};
       if(pTypeE)subCols['color_mm2dd6d5']={label:pTypeE==='In House'?'In House Decoration':pTypeE};
       if(pProductStatusE)subCols['color_mm25v786']={label:pProductStatusE};
-      const artUploadErrors=[];
       const artworkFilesE={};
       for(let dId=1;dId<=3;dId++){
         const styleEl=document.getElementById(`p${pid}-d${dId}-style`);
