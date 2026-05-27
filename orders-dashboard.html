@@ -596,6 +596,18 @@ function decoLabel(v){if(!v)return null;const val=typeof v==='string'?JSON.parse
 function buildCard(sub){
   const name=sub.name||'Product',qty=sCol(sub,'numeric_mm22crjt'),color=sCol(sub,'text_mm2276wz'),
     size=sCol(sub,'text_mm22yw8s'),sn=sCol(sub,'text_mm22fv7y'),sup=sCol(sub,'text_mm22qdag'),ps=sCol(sub,'color_mm25v786');
+  const price=parseFloat(sCol(sub,'numeric_mm2299qw'))||0;
+  const cost=parseFloat(sCol(sub,'numeric_mm266zz9'))||0;
+  const qtyNum=parseFloat(qty)||1;
+  const totalRev=price*qtyNum;
+  const totalCost=cost*qtyNum;
+  const margin=totalRev>0?((totalRev-totalCost)/totalRev*100):null;
+  const marginColor=margin===null?'var(--text3)':margin>=40?'#16a34a':margin>=20?'#D97706':'#DC2626';
+  const marginHTML=(price||cost)?`<div style="display:flex;gap:10px;margin-top:7px;padding-top:7px;border-top:1px solid var(--border);font-size:11px;flex-wrap:wrap">
+    ${price?`<span style="color:var(--text2)">💰 <strong>$${totalRev.toFixed(2)}</strong> rev</span>`:''}
+    ${cost?`<span style="color:var(--text2)">📦 <strong>$${totalCost.toFixed(2)}</strong> cost</span>`:''}
+    ${margin!==null?`<span style="color:${marginColor};font-weight:700">${margin.toFixed(1)}% margin</span>`:''}
+  </div>`:'';
   const tags=[qty?`<span class="ptag">Qty: ${qty}</span>`:'',color?`<span class="ptag">${color}</span>`:'',
     size?`<span class="ptag">${size}</span>`:'',sn?`<span class="ptag">${sn}</span>`:'',
     sup?`<span class="ptag">${sup}</span>`:'',ps?`<span class="ptag" style="background:#FFFBEB;color:#D97706">${ps}</span>`:''].filter(Boolean).join('');
@@ -612,7 +624,7 @@ function buildCard(sub){
     const lbl=decoLabel(d.sv);
     return`<span class="deco-pill">${lbl}</span>`;
   }).join('')}</div>`:'';
-  return`<div class="product-card"><div class="product-card-name">${name}</div><div class="product-tags">${tags}</div>${decoSummary}${decoHTML}</div>`;
+  return`<div class="product-card"><div class="product-card-name">${name}</div><div class="product-tags">${tags}</div>${decoSummary}${decoHTML}${marginHTML}</div>`;
 }
 
 function buildProductSummaryLines(subitems){
@@ -698,6 +710,29 @@ function render(){
       if(isEx)rows.push(`<tr class="subrow"><td colspan="10"><div class="subrow-inner">
         <div class="subrow-heading">Products · ${o.subitems.length} item${o.subitems.length!==1?'s':''} — full detail</div>
         <div class="product-cards">${o.subitems.map(buildCard).join('')}</div>
+        ${(()=>{
+          let totRev=0,totCost=0,hasData=false;
+          o.subitems.forEach(sub=>{
+            const p=parseFloat(sCol(sub,'numeric_mm2299qw'))||0;
+            const c=parseFloat(sCol(sub,'numeric_mm266zz9'))||0;
+            const q=parseFloat(sCol(sub,'numeric_mm22crjt'))||1;
+            if(p||c){hasData=true;totRev+=p*q;totCost+=c*q;}
+          });
+          if(!hasData)return '';
+          const otherCh=parseFloat(o.otherCharges)||0;
+          totRev+=otherCh;
+          const totProfit=totRev-totCost;
+          const totMargin=totRev>0?(totProfit/totRev*100):null;
+          const mc=totMargin===null?'var(--text3)':totMargin>=40?'#16a34a':totMargin>=20?'#D97706':'#DC2626';
+          return \`<div style="display:flex;gap:20px;align-items:center;margin-top:10px;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;flex-wrap:wrap">
+            <span style="font-weight:700;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Order Total</span>
+            <span>💰 Revenue: <strong>$\${totRev.toFixed(2)}</strong></span>
+            <span>📦 Cost: <strong>$\${totCost.toFixed(2)}</strong></span>
+            <span>📈 Profit: <strong style="color:\${mc}">$\${totProfit.toFixed(2)}</strong></span>
+            \${totMargin!==null?\`<span style="color:\${mc};font-weight:700;font-size:13px">\${totMargin.toFixed(1)}% margin</span>\`:''}
+            \${otherCh?\`<span style="color:var(--text3);font-size:10px">(incl. $\${otherCh.toFixed(2)} other charges)</span>\`:''}
+          </div>\`;
+        })()}
         ${(o.notes||o.shippingTo||o.tracking)?`<div class="order-extras">${o.shippingTo?`<span>📦 Ships to: ${o.shippingTo}</span>`:''}${o.notes?`<span>📝 ${o.notes}</span>`:''}${o.tracking?`<a href="${o.tracking}" target="_blank">🔗 Track</a>`:''}</div>`:''}
       </div></td></tr>`);
     });
@@ -1156,7 +1191,7 @@ function openEditModal(orderId){
             artRow.className='injected-file-row';
             artRow.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)';
             artRow.innerHTML='<span style="font-size:10px;color:var(--muted);font-weight:600;margin-right:4px">ARTWORK ON FILE:</span>'+
-              `<button type="button" class="file-view-btn" onclick="downloadArtworkZip([${artIds.join(',')}],'artwork-deco${dId}.zip')">${artIds.length>1?'Download All ('+artIds.length+' files)':'Download Artwork'}</button>`;
+              artIds.map((aid,i)=>`<button type="button" onclick="viewAsset(${aid})" class="file-view-btn">${artIds.length>1?'Artwork '+(i+1):'View Artwork'}</button>`).join('');
             decoBlock.appendChild(artRow);
           });
         });
@@ -1165,30 +1200,6 @@ function openEditModal(orderId){
   }
 }
 
-
-async function downloadArtworkZip(assetIds, zipName) {
-  if (!assetIds || !assetIds.length) return;
-  const btn = event?.currentTarget;
-  const origText = btn ? btn.textContent : '';
-  if (btn) { btn.disabled = true; btn.textContent = 'Zipping...'; }
-  try {
-    const res = await fetch('/api/download-zip', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ assetIds: assetIds.map(String), filename: zipName || 'artwork.zip' })
-    });
-    if (!res.ok) throw new Error('Zip failed');
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = zipName || 'artwork.zip'; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-  } catch(e) {
-    alert('Download failed: ' + e.message);
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = origText; }
-  }
-}
 function closeModal(){
   document.getElementById('modalOverlay').classList.remove('open');
   document.body.style.overflow='';
@@ -1527,7 +1538,7 @@ async function saveOrderEdits(){
     if(email)colVals['email_mm22ap28']={email:email,text:email};
     if(phone)colVals['phone_mm22ertc']={phone:phone,countryShortName:'US'};
     if(ihd)colVals['date_mm22wpk2']={date:ihd};
-    colVals['text_mm26gtxp']=shipto;
+    if(shipto)colVals['text_mm26gtxp']=shipto;
     if(notes)colVals['long_text_mm225vbf']={text:notes};
     if(salesId)colVals['dropdown_mm22w5rr']={ids:[salesId]};
     if(imprintId)colVals['dropdown_mm276wtz']={ids:[parseInt(imprintId)]};
@@ -1654,7 +1665,7 @@ async function saveOrderEdits(){
     document.getElementById('successNum').textContent=o?.ccbNum?`Order ${o.ccbNum}`:'';
     document.querySelector('#modalSuccess .success-title').textContent='Changes Saved!';
     document.querySelector('#modalSuccess .success-sub').textContent='The order has been updated in Monday.';
-    setTimeout(()=>{ fetch(`${API}/api/refresh`).then(()=>load()).catch(()=>load()); }, 2500);
+    fetch(`${API}/api/refresh`).then(()=>load()).catch(()=>{});
 
   }catch(err){
     btn.classList.remove('loading');
@@ -1731,7 +1742,7 @@ async function submitOrder(){
     if(ihd)colVals['date_mm22wpk2']={date:ihd};
     if(ccbOrderNum)colVals['text_mm29djkk']=ccbOrderNum;
     if(phone)colVals['phone_mm22ertc']={phone:phone,countryShortName:'US'};
-    colVals['text_mm26gtxp']=shipto;
+    if(shipto)colVals['text_mm26gtxp']=shipto;
     if(payment)colVals['text_mm22t49y']=payment;
     if(notes)colVals['long_text_mm225vbf']={text:notes};
     if(salesId)colVals['dropdown_mm22w5rr']={ids:[salesId]};
