@@ -495,8 +495,10 @@ function renderContent(){
   else{for(const p of filtUp){try{html+=buildCard(p,'upcoming')}catch(e){html+=`<div class="error-box"><strong>Error:</strong> ${e.message}</div>`;}}}
   html+=`</div>`;
   document.getElementById('content').innerHTML=html;
-  document.getElementById('sec-count-ac').textContent=filtAc.length;
-  document.getElementById('sec-count-up').textContent=filtUp.length;
+  const _nac=document.getElementById('sec-count-ac')||document.getElementById('nav-count-ac');
+  const _nup=document.getElementById('sec-count-up')||document.getElementById('nav-count-up');
+  if(_nac)_nac.textContent=filtAc.length;
+  if(_nup)_nup.textContent=filtUp.length;
 }
 
 async function loadData(){
