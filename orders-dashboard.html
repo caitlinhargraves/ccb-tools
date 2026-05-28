@@ -1623,7 +1623,7 @@ function calcQty(id){
   totalEl.textContent=total>0?total:' — ';
 }
 
-function escGql(s){return(s||'').replace(/\\/g,'\\\\').replace(/"/g,'\\"');}
+function escGql(s){return(s||'').replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/'/g,"\\'").replace(/\n/g,' ').replace(/\r/g,'');}
 function v(id){const el=document.getElementById(id);return el?el.value.trim():'';}
 async function saveOrderEdits(){
   const btn=document.getElementById('submitBtn');
@@ -1790,7 +1790,7 @@ async function saveOrderEdits(){
     btn.classList.remove('loading');
     btn.textContent='Save Changes';
     document.getElementById('modalStatus').textContent='';
-    alert('Error saving: '+err.message);
+    alert('Error saving: '+(err.message?.includes('invalid value')?'One or more fields has an invalid value -- check for special characters.':err.message||'Unknown error'));
   }
 }
 
@@ -1828,7 +1828,10 @@ async function submitOrder(){
     // Auto-assign CCB Order Number
     let ccbOrderNum='';
     try{
-      const nr=await fetch('/api/next-order-number');
+      const ctrl=new AbortController();
+      const t=setTimeout(()=>ctrl.abort(),8000);
+      const nr=await fetch('/api/next-order-number',{signal:ctrl.signal});
+      clearTimeout(t);
       const nd=await nr.json();
       ccbOrderNum=nd.orderNumber||'';
     }catch(e){console.warn('Could not get order number:',e);}
@@ -1877,7 +1880,7 @@ async function submitOrder(){
 
     const targetGroup=toPipeline?PENDING_GROUP:ACTIVE_GROUP;
     const colValsStr=JSON.stringify(JSON.stringify(colVals));
-    const companyName=v('f-company').replace(/"/g,'\\"');
+    const companyName=escGql(v('f-company'));
 
     // Create parent order
     const parentResult=await mondayMutation(`
@@ -1908,7 +1911,7 @@ async function submitOrder(){
       const productBlocks=document.querySelectorAll('.product-block');
       for(const pb of productBlocks){
         const pid=pb.id.replace('product-','');
-        const pName=v(`p${pid}-name`).replace(/"/g,'\\"');
+        const pName=escGql(v(`p${pid}-name`));
         const pStyle=v(`p${pid}-style`);
         const pColor=v(`p${pid}-color`);
         const pSize=v(`p${pid}-size`);
@@ -2016,7 +2019,7 @@ async function submitOrder(){
     btn.classList.remove('loading');
     btn.textContent='Create Order';
     document.getElementById('modalStatus').textContent='';
-    alert('Error creating order: '+err.message);
+    alert('Error creating order: '+(err.message?.includes('invalid value')?'One or more fields has an invalid value -- check for special characters in names or dates.':err.message?.includes('not found')||err.message?.includes('403')?'Monday.com connection issue -- please try again.':err.message||'Unknown error'));
   }
 }
 
