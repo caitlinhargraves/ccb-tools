@@ -895,7 +895,7 @@ async function load(attempt=1){
         const batch=allSubIds.slice(i,i+BATCH);
         const sq=`{items(ids:[${batch.join(',')}]){id column_values{id text value}}}`;
         const sd=await mondayQuery(sq);
-        (sd?.data?.items||[]).forEach(s=>{subColMap[s.id]=s.column_values||[];});
+        (sd?.items||[]).forEach(s=>{subColMap[s.id]=s.column_values||[];});
       }
     }
 
