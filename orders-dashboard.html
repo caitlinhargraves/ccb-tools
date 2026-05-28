@@ -1784,7 +1784,7 @@ async function saveOrderEdits(){
     document.getElementById('successNum').textContent=o?.ccbNum?`Order ${o.ccbNum}`:'';
     document.querySelector('#modalSuccess .success-title').textContent='Changes Saved!';
     document.querySelector('#modalSuccess .success-sub').textContent='The order has been updated in Monday.';
-    setTimeout(()=>{ fetch(`${API}/api/refresh`).then(()=>load()).catch(()=>load()); }, 2500);
+    setTimeout(()=>{ load(); }, 5000);
 
   }catch(err){
     btn.classList.remove('loading');
