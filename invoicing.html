@@ -357,8 +357,9 @@ async function loadOrders() {
     }
 
     allOrders.sort((a, b) => {
-      const order = { 'not-invoiced': 0, 'invoice-sent': 1 };
-      return (order[a.invoiceStatus] ?? 2) - (order[b.invoiceStatus] ?? 2);
+      const numA = parseInt((a.ccb || '').replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt((b.ccb || '').replace(/\D/g, ''), 10) || 0;
+      return numA - numB;
     });
 
     allOrdersSnapshot = [...allOrders];
@@ -799,8 +800,9 @@ async function undoPaid(orderId) {
     entry.netsuite = '';
     allOrders.push(entry);
     allOrders.sort((a, b) => {
-      const order = { 'not-invoiced': 0, 'invoice-sent': 1 };
-      return (order[a.invoiceStatus] ?? 2) - (order[b.invoiceStatus] ?? 2);
+      const numA = parseInt((a.ccb || '').replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt((b.ccb || '').replace(/\D/g, ''), 10) || 0;
+      return numA - numB;
     });
     updateTabCounts();
     showToast('Reverted', false);
@@ -891,3 +893,4 @@ function ihdChip(dateStr) {
 </script>
 </body>
 </html>
+
