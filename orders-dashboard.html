@@ -886,6 +886,15 @@ async function load(attempt=1){
     if(!items.length){showAlert('No orders found.');document.getElementById('lastUpdated').innerHTML='';return;}
 
     // Step 2: collect all subitem IDs, fetch their column values in batches of 100
+    // Split into two queries per batch to avoid FIELD_LIMIT_EXCEEDED on accounts with many columns
+    const MAIN_COLS=['text_mm22qdag','text_mm22fv7y','text_mm2276wz','text_mm22yw8s','text_mm226hzf',
+      'numeric_mm22crjt','numeric_mm2299qw','numeric_mm266zz9','color_mm25v786','color_mm2dd6d5',
+      'boolean_mm268w27','boolean_mm28gwt6','boolean_mm27779w','long_text_mm27e9c4',
+      'text_mm27ns9d','date_mm26mc76','link_mm26rzea','file_mm26e29h','file_mm25ph2d','file_mm221c09'];
+    const DECO_COLS=['dropdown_mm2y4w39','text_mm2y6g62','text_mm2y3mb9','numeric_mm2yn2nb','boolean_mm2y62fz',
+      'dropdown_mm2yaxxz','text_mm2yge79','text_mm2ymf5k','numeric_mm2ynqby','boolean_mm2yty7y',
+      'dropdown_mm2ygyew','text_mm2y1j6j','text_mm2yjq0z','numeric_mm2y55qh','boolean_mm2y8jm6',
+      'file_mm2y1yem','file_mm2ya55c','file_mm2yjme2'];
     const allSubIds=[];
     items.forEach(item=>(item.subitems||[]).forEach(s=>allSubIds.push(s.id)));
     const subColMap={};
@@ -893,9 +902,17 @@ async function load(attempt=1){
       const BATCH=100;
       for(let i=0;i<allSubIds.length;i+=BATCH){
         const batch=allSubIds.slice(i,i+BATCH);
-        const sq=`{items(ids:[${batch.join(',')}]){id column_values{id text value}}}`;
-        const sd=await mondayQuery(sq);
-        (sd?.items||[]).forEach(s=>{subColMap[s.id]=s.column_values||[];});
+        // Query 1: main product columns
+        const sq1=`{items(ids:[${batch.join(',')}]){id column_values(ids:${JSON.stringify(MAIN_COLS)}){id text value}}}`;
+        const sd1=await mondayQuery(sq1);
+        (sd1?.items||[]).forEach(s=>{subColMap[s.id]=s.column_values||[];});
+        // Query 2: decoration columns
+        const sq2=`{items(ids:[${batch.join(',')}]){id column_values(ids:${JSON.stringify(DECO_COLS)}){id text value}}}`;
+        const sd2=await mondayQuery(sq2);
+        (sd2?.items||[]).forEach(s=>{
+          if(subColMap[s.id])subColMap[s.id]=[...subColMap[s.id],...(s.column_values||[])];
+          else subColMap[s.id]=s.column_values||[];
+        });
       }
     }
 
