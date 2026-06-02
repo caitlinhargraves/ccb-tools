@@ -514,7 +514,10 @@
     </div>
 
     <div class="modal-footer" id="modalFooter">
-      <div style="font-size:12px;color:var(--subtle)" id="modalStatus"></div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <div style="font-size:13px;color:var(--text,#1B2A4A);font-weight:500" id="orderTotals">0 products &middot; 0 pcs &middot; $0.00</div>
+        <div style="font-size:12px;color:var(--subtle)" id="modalStatus"></div>
+      </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-ghost" id="deleteOrderBtn" onclick="deleteOrder()" style="display:none;color:#DC2626;border-color:#FCA5A5">
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h9M5 3V2h3v1M4 3l.5 7.5h4L9 3"/></svg>
@@ -1078,15 +1081,10 @@ function openEditModal(orderId){
             <label class="form-label">Color</label>
             <input type="text" class="form-input" id="p${id}-color" placeholder="Navy" value="${pColor.replace(/"/g,'&quot;')}">
           </div>
-          <div class="form-group">
-            <label class="form-label">Sizes & Quantities</label>
-            <input type="text" class="form-input" id="p${id}-size" placeholder="S/4, M/6, L/3" value="${pSize.replace(/"/g,'&quot;')}" oninput="calcQty(${id})">
-            <div class="form-hint">Size/Qty format. Total: <strong id="p${id}-qtytotal">—</strong></div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Qty <span style="font-size:10px;color:var(--subtle);font-weight:400">(no sizes)</span></label>
-            <input type="number" class="form-input" id="p${id}-qty" placeholder="e.g. 24" min="1" step="1" value="${pQtyDirect}">
-            <div class="form-hint">For items without sizes</div>
+          <div class="form-group" style="grid-column:span 2">
+            <label class="form-label">Sizes & quantities</label>
+            <input type="text" class="form-input" id="p${id}-size" placeholder="S/12, M/24, L/8  —  or just 48" value="${(pSize||pQtyDirect||'').replace(/"/g,'&quot;')}" oninput="calcQty(${id});recalcOrderTotals()">
+            <div class="form-hint">Sizes or a plain number for no-size items (golf balls, etc). Total: <strong id="p${id}-qtytotal">—</strong></div>
           </div>
         </div>
         <div class="form-row cols-2">
@@ -1096,7 +1094,7 @@ function openEditModal(orderId){
           </div>
           <div class="form-group">
             <label class="form-label">Price / Item ($)</label>
-            <input type="number" step="0.01" class="form-input" id="p${id}-price" placeholder="0.00" value="${pPrice}">
+            <input type="number" step="0.01" class="form-input" id="p${id}-price" placeholder="0.00" value="${pPrice}" oninput="recalcOrderTotals()">
           </div>
           <div class="form-group">
             <label class="form-label">Our Cost / Item ($)</label>
@@ -1176,6 +1174,7 @@ function openEditModal(orderId){
       }
     });
   }
+  recalcOrderTotals();
 
   document.getElementById('modalOverlay').classList.add('open');
   document.body.style.overflow='hidden';
@@ -1456,15 +1455,10 @@ function addProduct(){
         <label class="form-label">Color</label>
         <input type="text" class="form-input" id="p${id}-color" placeholder="Navy">
       </div>
-      <div class="form-group">
-        <label class="form-label">Sizes & Quantities</label>
-        <input type="text" class="form-input" id="p${id}-size" placeholder="S/4, M/6, L/3" oninput="calcQty(${id})">
-        <div class="form-hint">Size/Qty format. Total: <strong id="p${id}-qtytotal">—</strong></div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Qty <span style="font-size:10px;color:var(--subtle);font-weight:400">(no sizes)</span></label>
-        <input type="number" class="form-input" id="p${id}-qty" placeholder="e.g. 24" min="1" step="1">
-        <div class="form-hint">For items without sizes (golf balls, etc.)</div>
+      <div class="form-group" style="grid-column:span 2">
+        <label class="form-label">Sizes & quantities</label>
+        <input type="text" class="form-input" id="p${id}-size" placeholder="S/12, M/24, L/8  —  or just 48" oninput="calcQty(${id});recalcOrderTotals()">
+        <div class="form-hint">Sizes or a plain number for no-size items (golf balls, etc). Total: <strong id="p${id}-qtytotal">—</strong></div>
       </div>
     </div>
     <div class="form-row cols-2">
@@ -1474,7 +1468,7 @@ function addProduct(){
       </div>
       <div class="form-group">
         <label class="form-label">Price / Item ($)</label>
-        <input type="number" step="0.01" class="form-input" id="p${id}-price" placeholder="0.00">
+        <input type="number" step="0.01" class="form-input" id="p${id}-price" placeholder="0.00" oninput="recalcOrderTotals()">
       </div>
       <div class="form-group">
         <label class="form-label">Our Cost / Item ($)</label>
@@ -1524,11 +1518,13 @@ function addProduct(){
     </button>
   `;
   document.getElementById('productsList').appendChild(div);
+  recalcOrderTotals();
 }
 
 function removeProduct(id){
   const el=document.getElementById(`product-${id}`);
   if(el)el.remove();
+  recalcOrderTotals();
 }
 
 let decoCounters={};
@@ -1634,6 +1630,22 @@ function calcQty(id){
   const total=parseQtyFromSize(sizeVal);
   totalEl.textContent=total>0?total:' — ';
 }
+function recalcOrderTotals(){
+  const el=document.getElementById('orderTotals');
+  if(!el)return;
+  const blocks=document.querySelectorAll('.product-block');
+  let pcs=0,dollars=0,n=0;
+  blocks.forEach(b=>{
+    const id=(b.id||'').replace('product-','');
+    const size=document.getElementById(`p${id}-size`)?.value||'';
+    const qty=parseQtyFromSize(size);
+    const price=parseFloat(document.getElementById(`p${id}-price`)?.value||'')||0;
+    const name=(document.getElementById(`p${id}-name`)?.value||'').trim();
+    if(name||size||price)n++;
+    pcs+=qty;dollars+=qty*price;
+  });
+  el.textContent=`${n} product${n===1?'':'s'} · ${pcs} pc${pcs===1?'':'s'} · $${dollars.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+}
 
 function escGql(s){return JSON.stringify(s==null?'':String(s)).slice(1,-1);}
 function v(id){const el=document.getElementById(id);return el?el.value.trim():'';}
@@ -1732,7 +1744,7 @@ async function saveOrderEdits(){
       let subCols={};
       if(pStyle)subCols['text_mm22fv7y']=pStyle;
       if(pColor)subCols['text_mm2276wz']=pColor;
-      if(pSize)subCols['text_mm22yw8s']=pSize;
+      if(pSize){const _plain=/^\d+$/.test(pSize.trim());subCols['text_mm22yw8s']=_plain?'':pSize;}
       if(pQtyDirect){
         subCols['numeric_mm22crjt']=parseFloat(pQtyDirect);
       } else { const _q=parseQtyFromSize(pSize); if(_q>0)subCols['numeric_mm22crjt']=_q; }
@@ -1961,7 +1973,7 @@ async function submitOrder(){
         let subCols={};
         if(pStyle)subCols['text_mm22fv7y']=pStyle;
         if(pColor)subCols['text_mm2276wz']=pColor;
-        if(pSize)subCols['text_mm22yw8s']=pSize;
+        if(pSize){const _plain=/^\d+$/.test(pSize.trim());subCols['text_mm22yw8s']=_plain?'':pSize;}
         if(pSupplier)subCols['text_mm22qdag']=pSupplier;
         if(pPrice)subCols['numeric_mm2299qw']=parseFloat(pPrice);
         if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
