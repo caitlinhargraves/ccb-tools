@@ -392,18 +392,18 @@ function setView(v){currentView=v;localStorage.setItem(VIEW_KEY,v);document.getE
 function scrollToSection(id,btn){const el=document.getElementById(id);if(el){const off=56+40;const top=el.getBoundingClientRect().top+window.scrollY-off-8;window.scrollTo({top,behavior:'smooth'});}document.querySelectorAll('.sec-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');}
 
 function escAttr(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
-function buildOrderGroups(prods,section){
+function buildOrderGroups(prods){
   if(!prods.length)return'';
   const groups=new Map();
   for(const p of prods){if(!groups.has(p.orderId))groups.set(p.orderId,[]);groups.get(p.orderId).push(p);}
   const ordered=[...groups.values()].sort((a,b)=>{const da=a[0].inHands,db=b[0].inHands;if(!da&&!db)return 0;if(!da)return 1;if(!db)return-1;return new Date(da)-new Date(db);});
-  return ordered.map(list=>buildOrderGroup(list,section)).join('');
+  return ordered.map(list=>buildOrderGroup(list)).join('');
 }
-function buildOrderGroup(list,section){
+function buildOrderGroup(list){
   const o=list[0];
   const missingMock=list.filter(p=>!(p.mockupAssetIds||[]).length).length;
   const missFlag=missingMock?`<span style="font-size:12px;font-weight:500;color:var(--amber);background:var(--amber-bg);padding:3px 9px;border-radius:6px">${missingMock} missing mockup</span>`:'';
-  const rows=list.map(p=>buildProductRow(p,section)).join('');
+  const rows=list.map(p=>buildProductRow(p,p._section||'active')).join('');
   return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -462,10 +462,13 @@ function buildProductRow(p,section){
   const decBtn=section==='active'?`<button id="dec-btn-${p.id}" onclick="markDecorated('${p.id}','${p.orderId}',this)" style="font-size:14px;font-weight:600;padding:14px 10px;background:var(--green);color:#fff;border:none;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.2"><svg viewBox="0 0 10 8" style="width:22px;height:22px;stroke:#fff;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round"><polyline points="1 4 4 7 9 1"/></svg>Mark decorated</button>`:'';
   const rightCol=`<div style="display:flex;flex-direction:column;gap:8px;align-items:stretch;flex-shrink:0;width:128px">${decBtn}${dlBtn}</div>`;
 
+  const statusPill=section==='active'
+    ?`<span style="font-size:10px;font-weight:600;color:var(--green);background:var(--green-bg);border:1px solid var(--green-border);padding:1px 7px;border-radius:20px">In house</span>`
+    :`<span style="font-size:10px;font-weight:600;color:var(--amber);background:var(--amber-bg);border:1px solid var(--amber-border);padding:1px 7px;border-radius:20px">Ordered</span>`;
   return `<div id="card-${p.id}" style="display:flex;align-items:flex-start;gap:16px;padding:16px;border-bottom:1px solid var(--border2)">
     ${mockBox}
     <div style="flex:1;min-width:0">
-      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px">${p.name}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap"><span style="font-size:14px;font-weight:600;color:var(--text)">${p.name}</span>${statusPill}</div>
       <div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--text2);margin-bottom:8px">
         <span>Size <b style="color:var(--text);font-weight:600">${p.size||'—'}</b></span>
         <span>Qty <b style="color:var(--text);font-weight:600">${p.qty||'—'}</b></span>
@@ -653,13 +656,10 @@ function renderContent(){
     </a>`;
   }
   html+=`</div>`;
-  html+=`<div id="sec-active" style="scroll-margin-top:100px"><div class="section-header" style="margin-top:0"><span class="section-label">Active — All Stations</span><span class="section-count">${filtAc.length}</span><div class="section-line"></div></div>`;
-  if(filtAc.length===0)html+=`<p class="empty-msg">${searchQuery?'No results for "'+searchQuery+'"':'No active products in production.'}</p>`;
-  else{try{html+=buildOrderGroups(filtAc,'active')}catch(e){html+=`<div class="error-box"><strong>Error:</strong> ${e.message}</div>`;}}
-  html+=`</div>`;
-  html+=`<div id="sec-upcoming" style="scroll-margin-top:100px"><div class="section-header"><span class="section-label">Upcoming — Product Ordered</span><span class="section-count">${filtUp.length}</span><div class="section-line"></div></div>`;
-  if(filtUp.length===0)html+=`<p class="empty-msg">${searchQuery?'No results for "'+searchQuery+'"':'No upcoming products.'}</p>`;
-  else{try{html+=buildOrderGroups(filtUp,'upcoming')}catch(e){html+=`<div class="error-box"><strong>Error:</strong> ${e.message}</div>`;}}
+  const combined=[...filtAc,...filtUp];
+  html+=`<div id="sec-active" style="scroll-margin-top:100px"><div class="section-header" style="margin-top:0"><span class="section-label">Orders in Production</span><span class="section-count">${combined.length}</span><div class="section-line"></div></div>`;
+  if(combined.length===0)html+=`<p class="empty-msg">${searchQuery?'No results for "'+searchQuery+'"':'No products in production.'}</p>`;
+  else{try{html+=buildOrderGroups(combined)}catch(e){html+=`<div class="error-box"><strong>Error:</strong> ${e.message}</div>`;}}
   html+=`</div>`;
   document.getElementById('content').innerHTML=html;
   const _nac=document.getElementById('sec-count-ac')||document.getElementById('nav-count-ac');
@@ -695,8 +695,8 @@ async function loadData(){
         const subType=(sc[S_TYPE]?.text||'').toLowerCase();
         if(subType!=='in house decoration')continue;
         const p=parseProduct(item,sub);
-        if(subStatus==='product ordered')allUpcoming.push(p);
-        else if(subStatus==='in house')allActive.push(p);
+        if(subStatus==='product ordered'){p._section='upcoming';allUpcoming.push(p);}
+        else if(subStatus==='in house'){p._section='active';allActive.push(p);}
       }
     }
     cachedData=true;cacheTime=Date.now();
