@@ -1631,17 +1631,28 @@ function calcQty(id){
   const sizeVal=document.getElementById(`p${id}-size`)?.value||'';
   const totalEl=document.getElementById(`p${id}-qtytotal`);
   if(!totalEl)return;
-  if(!sizeVal.includes('/')){totalEl.textContent='—';return;}
-  let total=0;
-  sizeVal.split(',').forEach(part=>{
-    const m=part.trim().match(/\/(\d+)/);
-    if(m)total+=parseInt(m[1]);
-  });
+  const total=parseQtyFromSize(sizeVal);
   totalEl.textContent=total>0?total:' — ';
 }
 
 function escGql(s){return(s||'').replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/'/g,"\\'").replace(/\n/g,' ').replace(/\r/g,'');}
 function v(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+// Smart size/qty parser. Handles comma-separated parts in any of:
+//   size/qty (S/12), qty/size (12/S), size-qty (M-10), qty-size (10-M),
+//   "S x 12", "12 S", or a plain number (48). Sizes with digits (2XL, 3XL) are
+//   treated as the size token because they contain letters; the pure-integer
+//   token is the quantity. Returns the summed total.
+function parseQtyFromSize(sizeStr){
+  if(!sizeStr) return 0;
+  let total=0;
+  sizeStr.split(',').forEach(part=>{
+    const tokens=part.trim().split(/[\/\-\s]+/).filter(Boolean);
+    const ints=tokens.filter(t=>/^\d+$/.test(t));
+    if(ints.length===1) total+=parseInt(ints[0]);                 // one qty + optional size token
+    else if(ints.length>=2) total+=parseInt(ints[ints.length-1]); // ambiguous (e.g. numeric size): take last int as qty
+  });
+  return total;
+}
 async function saveOrderEdits(){
   const btn=document.getElementById('submitBtn');
   btn.classList.add('loading');
@@ -1724,10 +1735,7 @@ async function saveOrderEdits(){
       if(pSize)subCols['text_mm22yw8s']=pSize;
       if(pQtyDirect){
         subCols['numeric_mm22crjt']=parseFloat(pQtyDirect);
-      } else if(pSize&&pSize.includes('/')){
-        let total=0;pSize.split(',').forEach(part=>{const m=part.trim().match(/\/(\d+)/);if(m)total+=parseInt(m[1]);});
-        if(total>0)subCols['numeric_mm22crjt']=total;
-      } else if(pSize&&!isNaN(parseFloat(pSize))&&!pSize.includes(',')){ subCols['numeric_mm22crjt']=parseFloat(pSize); }
+      } else { const _q=parseQtyFromSize(pSize); if(_q>0)subCols['numeric_mm22crjt']=_q; }
       if(pSupplier)subCols['text_mm22qdag']=pSupplier;
       if(pPrice)subCols['numeric_mm2299qw']=parseFloat(pPrice);
       if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
@@ -1736,6 +1744,7 @@ async function saveOrderEdits(){
       if(pTypeE)subCols['color_mm2dd6d5']={label:pTypeE==='In House'?'In House Decoration':pTypeE};
       if(pProductStatusE)subCols['color_mm25v786']={label:pProductStatusE};
       const artworkFilesE={};
+      const mockupFilesE=[];
       for(let dId=1;dId<=3;dId++){
         const styleEl=document.getElementById(`p${pid}-d${dId}-style`);
         if(!styleEl)continue;
@@ -1753,6 +1762,8 @@ async function saveOrderEdits(){
         if(pNotes)subCols['long_text_mm27e9c4']={text:pNotes};
         const artInput=document.getElementById(`p${pid}-d${dId}-artwork`);
         if(artInput?.files?.[0])artworkFilesE[dId]=artInput.files[0];
+        const mockInput=document.getElementById(`p${pid}-d${dId}-mockups`);
+        if(mockInput?.files?.length)mockupFilesE.push(...Array.from(mockInput.files));
       }
       let resolvedSubId=subitemId;
       if(subitemId){
@@ -1772,6 +1783,17 @@ async function saveOrderEdits(){
             fd.append('columnId',artFileColsE[dId]);
             await fetch('/api/upload-file',{method:'POST',body:fd});
           }catch(e){console.warn('Artwork upload failed:',e);artUploadErrors.push(e.message||'Upload failed');}
+        }
+      }
+      if(resolvedSubId&&mockupFilesE.length){
+        for(const file of mockupFilesE){
+          try{
+            const fd=new FormData();
+            fd.append('file',file,file.name);
+            fd.append('itemId',resolvedSubId);
+            fd.append('columnId','file_mm26e29h');
+            await fetch('/api/upload-file',{method:'POST',body:fd});
+          }catch(e){console.warn('Mockup upload failed:',e);artUploadErrors.push(e.message||'Mockup upload failed');}
         }
       }
     }
@@ -1957,10 +1979,7 @@ async function submitOrder(){
         const pQtyDirect=v(`p${pid}-qty`);
         if(pQtyDirect){
           subCols['numeric_mm22crjt']=parseFloat(pQtyDirect);
-        } else if(pSize&&pSize.includes('/')){
-          let total=0;pSize.split(',').forEach(part=>{const m=part.trim().match(/\/(\d+)/);if(m)total+=parseInt(m[1]);});
-          if(total>0)subCols['numeric_mm22crjt']=total;
-        }
+        } else { const _q=parseQtyFromSize(pSize); if(_q>0)subCols['numeric_mm22crjt']=_q; }
         if(pPoNum)subCols['text_mm27ns9d']=pPoNum;
         if(pPoDate)subCols['date_mm26mc76']={date:pPoDate};
         if(pType)subCols['color_mm2dd6d5']={label:pType==='In House'?'In House Decoration':pType};
@@ -1968,6 +1987,7 @@ async function submitOrder(){
 
         // Gather deco spots
         const artworkFiles={};
+        const mockupFiles=[];
         const artUploadErrors=[];
         for(let dId=1;dId<=3;dId++){
           const styleEl=document.getElementById(`p${pid}-d${dId}-style`);
@@ -1987,6 +2007,8 @@ async function submitOrder(){
           // Collect artwork files to upload after subitem is created
           const artInput=document.getElementById(`p${pid}-d${dId}-artwork`);
           if(artInput?.files?.[0])artworkFiles[dId]=artInput.files[0];
+          const mockInput=document.getElementById(`p${pid}-d${dId}-mockups`);
+          if(mockInput?.files?.length)mockupFiles.push(...Array.from(mockInput.files));
         }
 
         const subColsStr=JSON.stringify(JSON.stringify(subCols));
@@ -2012,6 +2034,19 @@ async function submitOrder(){
               fd.append('columnId',artFileCols[dId]);
               await fetch('/api/upload-file',{method:'POST',body:fd});
             }catch(e){console.warn('Artwork upload failed:',e);artUploadErrors.push(e.message||'Upload failed');}
+          }
+        }
+        // Upload mockups to the mockup column (supports multiple)
+        if(subId&&mockupFiles.length){
+          document.getElementById('modalStatus').textContent=`Uploading mockups for ${pName}...`;
+          for(const file of mockupFiles){
+            try{
+              const fd=new FormData();
+              fd.append('file',file,file.name);
+              fd.append('itemId',subId);
+              fd.append('columnId','file_mm26e29h');
+              await fetch('/api/upload-file',{method:'POST',body:fd});
+            }catch(e){console.warn('Mockup upload failed:',e);artUploadErrors.push(e.message||'Mockup upload failed');}
           }
         }
       }
