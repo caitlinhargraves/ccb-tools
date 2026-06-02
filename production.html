@@ -300,17 +300,35 @@ async function moveStation(subId,newStyleId,selectEl){
   catch(err){showToast('Error: '+err.message,false);hideToast(3000);}
 }
 
+function mkNav(cid,dir){
+  const c=document.getElementById(cid);if(!c)return;
+  const slides=[...c.querySelectorAll('.mk-slide')];const total=slides.length;if(!total)return;
+  let cur=slides.findIndex(s=>s.style.display!=='none');if(cur<0)cur=0;
+  const next=(cur+dir+total)%total;
+  slides.forEach((s,i)=>{s.style.display=i===next?'block':'none';});
+  const cnt=document.getElementById(cid+'-count');if(cnt)cnt.textContent=(next+1)+' / '+total;
+}
 function openProductModal(subId,section){
   const p=[...allActive,...allUpcoming].find(x=>x.id===subId);if(!p)return;
   document.getElementById('modal-title').textContent=p.name;
-  const _mCached=p.mockupAssetId?assetCache[p.mockupAssetId]:null;
-  const _mUrl=_mCached?.url||null;
+  const _mAssets=(p.mockupAssetIds||[]).map(id=>assetCache[id]).filter(Boolean);
   let mockupHtml='';
-  if(_mUrl){
-    const fname=_mCached?.name||getFilename(_mUrl);
-    if(isPdfUrl(_mUrl)){mockupHtml=`<div class="modal-mockup"><div style="background:var(--red-bg);border:1px solid var(--red-border);border-radius:8px;padding:20px;text-align:center;margin-bottom:12px"><svg viewBox="0 0 24 24" style="width:40px;height:40px;stroke:var(--red);stroke-width:1.5;fill:none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div style="font-size:12px;color:var(--red);margin-top:6px;font-weight:500">${fname}</div></div><div style="text-align:right"><a href="${_mUrl}" target="_blank" class="modal-download-btn"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>Open PDF Mockup</a></div></div>`;}
-    else{mockupHtml=`<div class="modal-mockup"><img src="${_mUrl}" alt="Mockup" onclick="window.open('${_mUrl}','_blank')" style="width:100%;border-radius:8px;cursor:pointer" onerror="this.style.display='none'"><div style="text-align:right;margin-top:8px"><a href="${_mUrl}" target="_blank" class="modal-download-btn"><svg viewBox='0 0 12 12'><path d='M6 1v7M3 5l3 3 3-3'/><path d='M1 10h10'/></svg>Download Mockup</a></div></div>`;}
-  } else {mockupHtml='<div class="modal-mockup"><div class="no-img">No mockup attached</div></div>';}
+  if(_mAssets.length){
+    const cid='mk-'+p.id;
+    const slides=_mAssets.map((a,i)=>{
+      const u=a.url||'';const fn=a.name||getFilename(u);const pdf=isPdfUrl(u);
+      const body=pdf
+        ?`<div style="background:var(--red-bg);border:1px solid var(--red-border);border-radius:8px;padding:20px;text-align:center"><svg viewBox="0 0 24 24" style="width:40px;height:40px;stroke:var(--red);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div style="font-size:12px;color:var(--red);margin-top:6px;font-weight:500">${fn}</div></div>`
+        :`<img src="${u}" alt="Mockup" onclick="window.open('${u}','_blank')" title="Click to open full size" style="width:100%;border-radius:8px;display:block;cursor:pointer" onerror="this.style.opacity=.3">`;
+      return `<div class="mk-slide" style="display:${i===0?'block':'none'}">${body}<div style="text-align:right;margin-top:8px"><a href="${u}" target="_blank" class="modal-download-btn"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${pdf?'Open PDF':'Download'}</a></div></div>`;
+    }).join('');
+    const nav=_mAssets.length>1
+      ?`<div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-top:6px"><button type="button" onclick="mkNav('${cid}',-1)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:16px;line-height:1;color:var(--text2)">&#8249;</button><span id="${cid}-count" style="font-size:12px;color:var(--text3);min-width:46px;text-align:center">1 / ${_mAssets.length}</span><button type="button" onclick="mkNav('${cid}',1)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:16px;line-height:1;color:var(--text2)">&#8250;</button></div>`
+      :'';
+    mockupHtml=`<div class="modal-mockup" id="${cid}">${slides}${nav}</div>`;
+  } else {
+    mockupHtml='<div class="modal-mockup"><div class="no-img">No mockup attached</div></div>';
+  }
   const fields=[['Order',p.orderName],['CCB #',p.ccbNum],['Contact',p.contact],['In Hands',p.inHands||'—'],['Shelf',p.shelf||'—'],['Qty',p.qty||'—'],['Color',p.color||'—'],['Size',p.size||'—'],['Style #',p.style||'—']].filter(([,v])=>v&&v!=='—').map(([l,v])=>`<div class="modal-cell"><div class="modal-lbl">${l}</div><div class="modal-val">${v}</div></div>`).join('');
   let decoSlotsHtml='';
   if(p.allSlots&&p.allSlots.length){
@@ -412,12 +430,14 @@ function parseProduct(item,sub){
   const _slotDecoId=allSlots.length?parseInt(JSON.parse(sc[allSlots[0].style]?.value||'{}')?.ids?.[0]||0):0;
   const primaryDecoId=_slotDecoId||_oldDecoId;
   const primaryDecoDisplay=DECO_DISPLAY[primaryDecoId]||sc[S_DECO]?.text||'Other';
-  const mockupAssetId=extractAssetIds(sc[S_MOCKUP]?.value)[0]||null;
+  const _mockupAllIds=extractAssetIds(sc[S_MOCKUP]?.value);
+  const mockupAssetId=_mockupAllIds[0]||null;
+  const mockupAssetIds=_mockupAllIds;
   const _slotArtIds=allSlots.flatMap(slot=>extractAssetIds(sc[slot.art]?.value));
   const artworkAssetIds=_slotArtIds.length?_slotArtIds:extractAssetIds(sc[S_ARTWORK]?.value);
   const primaryPlacement=allSlots.length>0?sc[allSlots[0].place]?.text||'':sc[S_PLACEMENT]?.text||'';
   const primaryDesc=allSlots.length>0?sc[allSlots[0].desc]?.text||'':sc[S_ARTWORK_DESC]?.text||'';
-  return{id:sub.id,name:sub.name,orderId:item.id,orderName:item.name,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',inHands:cv[O_INHAND]?.text||'',shelf:cv[O_SHELF]?.text||'',salesperson:cv[O_SALES]?.text||'',qty:sc[S_QTY]?.text||'',color:sc[S_COLOR]?.text||'',size:sc[S_SIZE]?.text||'',style:sc[S_STYLE]?.text||'',primaryDecoId,primaryDecoDisplay,placement:primaryPlacement,artworkDesc:primaryDesc,prodNotes:sc[S_PROD_NOTES]?.text||'',mockupAssetId,artworkAssetIds,allSlots,_sc:sc};
+  return{id:sub.id,name:sub.name,orderId:item.id,orderName:item.name,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',inHands:cv[O_INHAND]?.text||'',shelf:cv[O_SHELF]?.text||'',salesperson:cv[O_SALES]?.text||'',qty:sc[S_QTY]?.text||'',color:sc[S_COLOR]?.text||'',size:sc[S_SIZE]?.text||'',style:sc[S_STYLE]?.text||'',primaryDecoId,primaryDecoDisplay,placement:primaryPlacement,artworkDesc:primaryDesc,prodNotes:sc[S_PROD_NOTES]?.text||'',mockupAssetId,mockupAssetIds,artworkAssetIds,allSlots,_sc:sc};
 }
 
 function sortByDate(arr){return arr.sort((a,b)=>{if(!a.inHands&&!b.inHands)return 0;if(!a.inHands)return 1;if(!b.inHands)return-1;return new Date(a.inHands)-new Date(b.inHands);});}
@@ -535,7 +555,7 @@ async function loadData(){
     cachedData=true;cacheTime=Date.now();
     sortByDate(allUpcoming);sortByDate(allActive);
     const allProds=[...allUpcoming,...allActive];
-    const allAssetIds=[...new Set(allProds.flatMap(p=>[p.mockupAssetId,...p.artworkAssetIds].filter(Boolean)))];
+    const allAssetIds=[...new Set(allProds.flatMap(p=>[...(p.mockupAssetIds||[]),...p.artworkAssetIds].filter(Boolean)))];
     if(allAssetIds.length)await resolveAssets(allAssetIds).catch(()=>{});
     updateStats();renderContent();
     document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
