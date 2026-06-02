@@ -232,11 +232,11 @@ const DECO_SLOTS=[
   {style:D3_STYLE,place:D3_PLACE,desc:D3_DESC,art:D3_ART,screens:D3_SCREENS,colors:D3_COLORS,notes:D3_NOTES,num:3},
 ];
 const S_PLACEMENT='text_mm226hzf';const S_ARTWORK_DESC='text_mm2521d5';const S_PROD_NOTES='long_text_mm27e9c4';const S_MOCKUP='file_mm26e29h';const S_ARTWORK='file_mm221c09';const S_PROOF='file_mm25ph2d';
-const DECO_STYLES={1:'Embroidery',2:'Screenprint',3:'DTG',4:'DTF',5:'Engrave',6:'Other'};
-const DECO_DISPLAY={1:'Embroidery',2:'Screenprint',3:'DTG / DTF',4:'DTG / DTF',5:'Engrave',6:'Other'};
-const DECO_BG={'Embroidery':'#dbeafe','Screenprint':'#fef3c7','DTG / DTF':'#e8f5ee','DTG':'#e8f5ee','DTF':'#e8f5ee','Engrave':'#f3e8ff','Other':'#F3F5FA'};
-const DECO_TC={'Embroidery':'#1e3a5f','Screenprint':'#92400e','DTG / DTF':'#2d6a4f','DTG':'#2d6a4f','DTF':'#2d6a4f','Engrave':'#6b21a8','Other':'#6B7280'};
-const STATION_URLS={Embroidery:'production-embroidery.html',Screenprint:'production-screenprint.html','DTG / DTF':'production-dtgdtf.html',Engrave:'production-engrave.html',Other:'production-other.html'};
+const DECO_STYLES={1:'Embroidery',2:'Screenprint',3:'DTG',4:'DTF',5:'Engrave',6:'Other',7:'Sublimated',8:'UV Print'};
+const DECO_DISPLAY={1:'Embroidery',2:'Screenprint',3:'DTG / DTF',4:'DTG / DTF',5:'Engrave',6:'Other',7:'Sublimated',8:'UV Print'};
+const DECO_BG={'Embroidery':'#dbeafe','Screenprint':'#fef3c7','DTG / DTF':'#e8f5ee','DTG':'#e8f5ee','DTF':'#e8f5ee','Engrave':'#f3e8ff','UV Print':'#e0e7ff','Sublimated':'#fef2f2','Other':'#F3F5FA'};
+const DECO_TC={'Embroidery':'#1e3a5f','Screenprint':'#92400e','DTG / DTF':'#2d6a4f','DTG':'#2d6a4f','DTF':'#2d6a4f','Engrave':'#6b21a8','UV Print':'#3730a3','Sublimated':'#b91c1c','Other':'#6B7280'};
+const STATION_URLS={Embroidery:'production-embroidery.html',Screenprint:'production-screenprint.html','DTG / DTF':'production-dtgdtf.html',Engrave:'production-engrave.html','UV Print':'production-engrave.html',Sublimated:'production-other.html',Other:'production-other.html'};
 const assetCache={};
 
 async function mq(q){const r=await fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});const d=await r.json();if(d.errors)throw new Error(d.errors[0].message);return d.data;}
@@ -531,7 +531,7 @@ function buildCard(p,section){
       ?`<div class="card-mockup-placeholder" style="cursor:pointer;background:var(--red-bg)" onclick="openProductModal('${p.id}','${section}')" title="PDF mockup"><svg viewBox="0 0 24 24" style="stroke:var(--red)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
       :`<img class="card-mockup-thumb" src="${_mockupUrl}" alt="Mockup" title="Click to view" onclick="openProductModal('${p.id}','${section}')" onerror="this.style.display='none'">`)
     :`<div class="card-mockup-placeholder" style="cursor:pointer" onclick="openProductModal('${p.id}','${section}')" title="No mockup"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
-  const opts=[[1,'Embroidery'],[2,'Screenprint'],[3,'DTG'],[4,'DTF'],[5,'Engrave'],[6,'Other']];
+  const opts=[[1,'Embroidery'],[2,'Screenprint'],[3,'DTG'],[4,'DTF'],[5,'Engrave'],[6,'Other'],[8,'UV Print']];
   const decoSel=`<select class="deco-select" onchange="moveStation('${p.id}',this.value,this)">${opts.map(([id,name])=>`<option value="${id}" ${p.primaryDecoId===id?'selected':''}>${name}</option>`).join('')}</select>`;
   // Primary placement/desc from first slot
   const primaryPlacement=p.allSlots.length>0?(p._sc?.[p.allSlots[0].place]?.text||p.placement||'—'):p.placement||'—';
@@ -636,11 +636,12 @@ function renderContent(){
     {name:'Embroidery',bg:'#dbeafe',tc:'#1e3a5f',url:'production-embroidery.html'},
     {name:'Screenprint',bg:'#fef3c7',tc:'#92400e',url:'production-screenprint.html'},
     {name:'DTG / DTF',bg:'#e8f5ee',tc:'#2d6a4f',url:'production-dtgdtf.html'},
-    {name:'Engrave',bg:'#f3e8ff',tc:'#6b21a8',url:'production-engrave.html'},
+    {name:'Engraving / UV Print',keys:['Engrave','UV Print'],bg:'#f3e8ff',tc:'#6b21a8',url:'production-engrave.html'},
     {name:'Other',bg:'#F3F5FA',tc:'#6B7280',url:'production-other.html'},
   ];
   for(const s of stationDefs){
-    const up=upCounts[s.name]||0;const ac=acCounts[s.name]||0;
+    const _keys=s.keys||[s.name];
+    const up=_keys.reduce((n,k)=>n+(upCounts[k]||0),0);const ac=_keys.reduce((n,k)=>n+(acCounts[k]||0),0);
     html+=`<a class="station-card" href="${s.url}">
       <div class="station-card-header">
         <div class="station-name" style="color:${s.tc}">${s.name}</div>

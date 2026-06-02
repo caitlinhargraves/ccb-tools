@@ -558,7 +558,7 @@ let editingOrderId=null;
 const collapsedGroups=new Set(['group_mm26j0hj','group_mm2dtmde','group_mm2wg547','group_mm2wb7r2','group_mm2cavn']);
 const salesMap={1:'Chaz Lucius',2:'Bailey McGraw',3:'Jess Miller',4:'Nick Miller',5:'George Miller',6:'Web Order',7:'Caitlin Hargraves'};
 const impMap={1:'CCB Imprint',2:'CCB Insight'};
-const decoMap={1:'Embroidery',2:'Screenprint',3:'DTG',4:'DTF',5:'Engrave',6:'Other'};
+const decoMap={1:'Embroidery',2:'Screenprint',3:'DTG',4:'DTF',5:'Engrave',6:'Other',7:'Sublimated',8:'UV Print'};
 const salesIdMap={'Chaz Lucius':1,'Bailey McGraw':2,'Jess Miller':3,'Nick Miller':4,'George Miller':5,'Web Order':6,'Caitlin Hargraves':7};
 
 function col(o,id){return o.column_values?.find(c=>c.id===id)?.text||'';}
@@ -894,9 +894,9 @@ async function load(attempt=1){
       'numeric_mm22crjt','numeric_mm2299qw','numeric_mm266zz9','color_mm25v786','color_mm2dd6d5',
       'boolean_mm268w27','boolean_mm28gwt6','boolean_mm27779w','long_text_mm27e9c4',
       'text_mm27ns9d','date_mm26mc76','link_mm26rzea','file_mm26e29h','file_mm25ph2d','file_mm221c09'];
-    const DECO_COLS=['dropdown_mm2y4w39','text_mm2y6g62','text_mm2y3mb9','numeric_mm2yn2nb','boolean_mm2y62fz',
-      'dropdown_mm2yaxxz','text_mm2yge79','text_mm2ymf5k','numeric_mm2ynqby','boolean_mm2yty7y',
-      'dropdown_mm2ygyew','text_mm2y1j6j','text_mm2yjq0z','numeric_mm2y55qh','boolean_mm2y8jm6',
+    const DECO_COLS=['dropdown_mm2y4w39','text_mm2y6g62','text_mm2y3mb9','numeric_mm2yn2nb','boolean_mm2y62fz','text_mm2y2y6a',
+      'dropdown_mm2yaxxz','text_mm2yge79','text_mm2ymf5k','numeric_mm2ynqby','boolean_mm2yty7y','text_mm2y5vn6',
+      'dropdown_mm2ygyew','text_mm2y1j6j','text_mm2yjq0z','numeric_mm2y55qh','boolean_mm2y8jm6','text_mm2y8bg8',
       'file_mm2y1yem','file_mm2ya55c','file_mm2yjme2'];
     const allSubIds=[];
     items.forEach(item=>(item.subitems||[]).forEach(s=>allSubIds.push(s.id)));
@@ -967,7 +967,7 @@ function openModal(){
   },300);
 }
 
-function openEditModal(orderId){
+async function openEditModal(orderId){
   const o=all.find(x=>x.id===orderId);
   if(!o){alert('Order not found in cache. Try refreshing.');return;}
 
@@ -1030,6 +1030,38 @@ function openEditModal(orderId){
   // Hide "Add Another Order" button in edit mode
   const addAnotherBtn=document.querySelector('#modalSuccess .btn-ghost');
   if(addAnotherBtn)addAnotherBtn.style.display='none';
+
+  // Live-refresh subitem product + decoration columns before rendering.
+  // The in-memory cache is frequently stale immediately after a save (the same
+  // reason the file columns are re-fetched further below), which caused freshly
+  // entered products and decorations to show up blank when reopening an order.
+  try{
+    const _subIds=(o.subitems||[]).map(s=>s.id).filter(Boolean);
+    if(_subIds.length){
+      const REFRESH_MAIN=['text_mm22qdag','text_mm22fv7y','text_mm2276wz','text_mm22yw8s',
+        'numeric_mm22crjt','numeric_mm2299qw','numeric_mm266zz9','color_mm25v786','color_mm2dd6d5',
+        'text_mm27ns9d','date_mm26mc76','long_text_mm27e9c4'];
+      const REFRESH_DECO=['dropdown_mm2y4w39','text_mm2y6g62','text_mm2y3mb9','numeric_mm2yn2nb','text_mm2y2y6a',
+        'dropdown_mm2yaxxz','text_mm2yge79','text_mm2ymf5k','numeric_mm2ynqby','text_mm2y5vn6',
+        'dropdown_mm2ygyew','text_mm2y1j6j','text_mm2yjq0z','numeric_mm2y55qh','text_mm2y8bg8'];
+      const _live={};
+      const _merge=arr=>{(arr||[]).forEach(it=>{if(!_live[it.id])_live[it.id]={name:it.name,cols:[]};if(it.name)_live[it.id].name=it.name;_live[it.id].cols.push(...(it.column_values||[]));});};
+      const _ids=_subIds.join(',');
+      // Two queries (main + deco) mirror the batched load() pattern to avoid FIELD_LIMIT_EXCEEDED
+      const _d1=await mondayQuery(`{items(ids:[${_ids}]){id name column_values(ids:${JSON.stringify(REFRESH_MAIN)}){id text value}}}`);
+      _merge(_d1?.items);
+      const _d2=await mondayQuery(`{items(ids:[${_ids}]){id column_values(ids:${JSON.stringify(REFRESH_DECO)}){id text value}}}`);
+      _merge(_d2?.items);
+      const _refreshed=new Set([...REFRESH_MAIN,...REFRESH_DECO]);
+      (o.subitems||[]).forEach(s=>{
+        const lv=_live[s.id];
+        if(!lv)return;
+        const kept=(s.column_values||[]).filter(c=>!_refreshed.has(c.id));
+        s.column_values=[...kept,...lv.cols];
+        if(lv.name)s.name=lv.name;
+      });
+    }
+  }catch(_e){console.warn('Subitem live-refresh failed; using cached data.',_e);}
 
   // Populate products section in edit mode with editable fields
   const productsSection=document.getElementById('products-form-section');
@@ -1551,6 +1583,7 @@ function addDeco(productId){
           <option value="1">Embroidery</option><option value="2">Screenprint</option>
           <option value="3">DTG</option><option value="4">DTF</option>
           <option value="5">Engrave</option><option value="6">Other</option>
+          <option value="8">UV Print</option>
         </select>
       </div>
       <div class="form-group">

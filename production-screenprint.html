@@ -309,8 +309,8 @@ function getMyDecoSlots(sc){
   });
 }
 const S_PLACEMENT='text_mm226hzf';const S_ARTWORK_DESC='text_mm2521d5';const S_PROD_NOTES='long_text_mm27e9c4';const S_MOCKUP='file_mm26e29h';const S_ARTWORK='file_mm221c09';
-const DECO_BG={Embroidery:'#dbeafe',Screenprint:'#fef3c7','DTG / DTF':'#e8f5ee',DTG:'#e8f5ee',DTF:'#e8f5ee',Engrave:'#f3e8ff',Other:'#F3F5FA'};
-const DECO_TC={Embroidery:'#1e3a5f',Screenprint:'#92400e','DTG / DTF':'#2d6a4f',DTG:'#2d6a4f',DTF:'#2d6a4f',Engrave:'#6b21a8',Other:'#6B7280'};
+const DECO_BG={Embroidery:'#dbeafe',Screenprint:'#fef3c7','DTG / DTF':'#e8f5ee',DTG:'#e8f5ee',DTF:'#e8f5ee',Engrave:'#f3e8ff','UV Print':'#e0e7ff',Sublimated:'#fef2f2',Other:'#F3F5FA'};
+const DECO_TC={Embroidery:'#1e3a5f',Screenprint:'#92400e','DTG / DTF':'#2d6a4f',DTG:'#2d6a4f',DTF:'#2d6a4f',Engrave:'#6b21a8','UV Print':'#3730a3',Sublimated:'#b91c1c',Other:'#6B7280'};
 const STATION_IDS=[2];
 const VIEW_KEY='ccb_prod_view';
 let currentView=localStorage.getItem(VIEW_KEY)||'card';
@@ -526,7 +526,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModalDirect();}
 function buildCardView(p,section,mode){
   const grouped=(mode==='grouped');
   const bg=DECO_BG[p.decoStyleDisplay]||'#F3F5FA';const tc=DECO_TC[p.decoStyleDisplay]||'#6B7280';
-  const opts=[[1,'Embroidery'],[2,'Screenprint'],[3,'DTG'],[4,'DTF'],[5,'Engrave'],[6,'Other']];
+  const opts=[[1,'Embroidery'],[2,'Screenprint'],[3,'DTG'],[4,'DTF'],[5,'Engrave'],[6,'Other'],[8,'UV Print']];
   const decoSel=`<select class="deco-select" onclick="event.stopPropagation()" onchange="moveStation('${p.id}',this.value,this)">${opts.map(([id,n])=>`<option value="${id}" ${p.decoStyleId===id?'selected':''}>${n}</option>`).join('')}</select>`;
   
   const _mockupCached=p.mockupAssetId?assetCache[p.mockupAssetId]:null;
