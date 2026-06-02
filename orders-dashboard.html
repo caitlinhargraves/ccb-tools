@@ -1635,7 +1635,7 @@ function calcQty(id){
   totalEl.textContent=total>0?total:' — ';
 }
 
-function escGql(s){return(s||'').replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/'/g,"\\'").replace(/\n/g,' ').replace(/\r/g,'');}
+function escGql(s){return JSON.stringify(s==null?'':String(s)).slice(1,-1);}
 function v(id){const el=document.getElementById(id);return el?el.value.trim():'';}
 // Smart size/qty parser. Handles comma-separated parts in any of:
 //   size/qty (S/12), qty/size (12/S), size-qty (M-10), qty-size (10-M),
