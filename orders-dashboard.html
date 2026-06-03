@@ -109,6 +109,7 @@
   .inv-sent{background:#FAF5FF;color:#7C3AED;}
   .inv-paid{background:#ECFDF5;color:#059669;}
   .inv-overdue{background:#FFF0F8;color:var(--magenta);font-weight:700;}
+  .inv-select{font-family:inherit;font-size:11px;font-weight:600;padding:3px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;}
   .salesperson{font-size:12px;color:var(--muted);font-weight:500;}
   .product-count{font-size:12px;color:var(--muted);}
   .product-count strong{color:var(--navy);font-weight:700;}
@@ -300,8 +301,8 @@
   </select>
   <select class="filter-select" id="invoiceFilter" onchange="applyFilters()">
     <option value="">All Invoice Status</option>
-    <option>Not Invoiced</option><option>Invoice Created</option>
-    <option>Invoice Sent</option><option>Paid</option><option>Overdue</option>
+    <option>Not Invoiced</option>
+    <option>Invoice Sent</option><option>Paid</option>
   </select>
   <select class="filter-select" id="statusDropFilter" onchange="applyFilters()">
     <option value="">All Order Statuses</option>
@@ -570,7 +571,7 @@ function parseOrder(o){
   const sv=colV(o,'dropdown_mm22w5rr'),iv=colV(o,'dropdown_mm276wtz');
   return{id:o.id,orderNum:col(o,'pulse_id_mm27vwa5')||o.id,ccbNum:col(o,'text_mm29djkk'),name:o.name,
     status:col(o,'color_mm27qyta')||'New',sales:sv?.ids?.map(i=>salesMap[i]).filter(Boolean).join(', ')||'',
-    ihd:col(o,'date_mm22wpk2'),contact:col(o,'text_mm221kg3'),invoice:col(o,'color_mm282b4b')||'Not Invoiced',
+    ihd:col(o,'date_mm22wpk2'),contact:col(o,'text_mm221kg3'),invoice:normInvoice(col(o,'color_mm282b4b')),
     imprint:iv?.ids?.map(i=>impMap[i]).filter(Boolean).join(', ')||'',
     tracking:colV(o,'link_mm22d8ca')?.url||'',notes:col(o,'long_text_mm225vbf'),
     shippingTo:col(o,'text_mm26gtxp'),address:col(o,'location_mm2682nc'),email:colV(o,'email_mm22ap28')?.email||'',phone:col(o,'phone_mm22ertc'),
@@ -587,6 +588,32 @@ function statusBadge(s){
 function invBadge(s){
   const m={'Not Invoiced':'inv-none','Invoice Created':'inv-created','Invoice Sent':'inv-sent','Paid':'inv-paid','Overdue':'inv-overdue'};
   return`<span class="inv ${m[s]||'inv-none'}">${s||'—'}</span>`;
+}
+function normInvoice(s){
+  const t=(s||'').toLowerCase().trim();
+  if(t==='invoice sent')return'Invoice Sent';
+  if(t==='paid')return'Paid';
+  return'Not Invoiced';
+}
+const INV_CLS={'Not Invoiced':'inv-none','Invoice Sent':'inv-sent','Paid':'inv-paid'};
+const INV_IDX={'Not Invoiced':5,'Invoice Sent':2,'Paid':3};
+function invSelect(o){
+  return`<select class="inv-select ${INV_CLS[o.invoice]||'inv-none'}" data-prev="${o.invoice}" onclick="event.stopPropagation()" onchange="setInvoiceStatus('${o.id}',this.value,this)">`+
+    ['Not Invoiced','Invoice Sent','Paid'].map(op=>`<option ${o.invoice===op?'selected':''}>${op}</option>`).join('')+`</select>`;
+}
+async function setInvoiceStatus(orderId,label,el){
+  const idx=INV_IDX[label];
+  if(idx===undefined)return;
+  const prev=el?el.dataset.prev:null;
+  try{
+    const cv=JSON.stringify(JSON.stringify({color_mm282b4b:{index:idx}}));
+    await mondayMutation(`mutation{change_multiple_column_values(board_id:${ORDERS_BOARD},item_id:${orderId},column_values:${cv}){id}}`);
+    const o=all.find(x=>x.id===orderId);if(o)o.invoice=label;
+    if(el){el.className='inv-select '+(INV_CLS[label]||'inv-none');el.dataset.prev=label;}
+  }catch(e){
+    alert('Could not update invoice status: '+e.message);
+    if(el&&prev){el.value=prev;}
+  }
 }
 function dateDisplay(d){
   if(!d)return'<span class="date-val" style="color:var(--subtle)">—</span>';
@@ -702,7 +729,7 @@ function render(){
         <td>${dateDisplay(o.ihd)}</td>
         <td style="min-width:180px;max-width:240px">${buildProductSummaryLines(o.subitems)}</td>
         <td><span class="salesperson">${o.sales||'—'}</span></td>
-        <td>${invBadge(o.invoice)}</td>
+        <td>${invSelect(o)}</td>
         <td>${pill}</td>
         <td onclick="event.stopPropagation()">
           <button class="edit-order-btn" onclick="openEditModal('${o.id}')">
@@ -758,7 +785,7 @@ function render(){
         <td>${dateDisplay(o.ihd)}</td>
         <td style="min-width:180px;max-width:240px">${buildProductSummaryLines(o.subitems)}</td>
         <td><span class="salesperson">${o.sales||'—'}</span></td>
-        <td>${invBadge(o.invoice)}</td>
+        <td>${invSelect(o)}</td>
         <td>${pill}</td>
         <td onclick="event.stopPropagation()">
           <button class="edit-order-btn" onclick="openEditModal('${o.id}')">
