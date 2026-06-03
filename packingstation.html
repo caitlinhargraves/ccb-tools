@@ -485,12 +485,13 @@ async function loadQueue() {
               "boolean_mm22xdfn","text_mm253t97","long_text_mm225vbf","text_mm221kg3",
               "email_mm22ap28","dropdown_mm22w5rr"
             ]) { id text value }
+            subitems { column_values(ids: ["color_mm2dd6d5"]) { id text } }
           }
         }
       }
     }`;
     const data = await gql(q);
-    allOrders = data?.data?.boards?.[0]?.items_page?.items || [];
+    allOrders = (data?.data?.boards?.[0]?.items_page?.items || []).filter(o => !isAllPromo(o));
     renderQueue();
   } catch(e) {
     document.getElementById('queue-body').innerHTML = `<tr class="empty-row"><td colspan="8">Error: ${e.message}</td></tr>`;
@@ -499,6 +500,9 @@ async function loadQueue() {
 
 function cvText(item, id) { return item.column_values?.find(c => c.id === id)?.text || ''; }
 function cvVal(item, id) { try { return JSON.parse(item.column_values?.find(c => c.id === id)?.value || 'null'); } catch { return null; } }
+function isPromoSub(s) { return ((s.column_values?.find(c => c.id === 'color_mm2dd6d5')?.text) || '').toLowerCase().includes('promo'); }
+function isAllPromo(o) { const subs = o.subitems || []; return subs.length > 0 && subs.every(isPromoSub); }
+function nonPromoSubs(o) { return (o?.subitems || []).filter(s => !isPromoSub(s)); }
 
 function renderQueue() {
   const search = document.getElementById('search-input').value.toLowerCase();
@@ -638,7 +642,7 @@ async function openOrder(id) {
           column_values(ids: [
             "file_mm26e29h","text_mm22fv7y","numeric_mm22crjt","text_mm2276wz",
             "text_mm22yw8s","text_mm22qdag","dropdown_mm22dn1f","long_text_mm27e9c4",
-            "lookup_mm2ea35","boolean_mm2cxhrz","color_mm25v786","text_mm2521d5","text_mm226hzf"
+            "lookup_mm2ea35","boolean_mm2cxhrz","color_mm25v786","text_mm2521d5","text_mm226hzf","color_mm2dd6d5"
           ]) { id text value }
         }
       }
@@ -710,7 +714,7 @@ function renderDetail() {
 function renderDetailItems() {
   const container = document.getElementById('d-items-list');
   container.innerHTML = '';
-  const subs = currentOrder?.subitems || [];
+  const subs = nonPromoSubs(currentOrder);
   document.getElementById('d-total-n').textContent = subs.length;
 
   subs.forEach(sub => {
@@ -779,7 +783,7 @@ function togglePick(id) {
 }
 
 function updateProgress() {
-  const subs = currentOrder?.subitems || [];
+  const subs = nonPromoSubs(currentOrder);
   const total = subs.length, picked = Object.values(pickedState).filter(Boolean).length;
   const pct = total > 0 ? Math.round(picked / total * 100) : 0;
   document.getElementById('d-prog-fill').style.width = pct + '%';
@@ -838,7 +842,7 @@ function buildSlipHTML(order) {
   }
   const addr = v('location_mm2682nc');
   const spec = v('boolean_mm22xdfn');
-  const subs = order.subitems || [];
+  const subs = nonPromoSubs(order);
 
   const headerBrand = isInsight ? 'CCB INSIGHT' : 'CCB IMPRINT';
   const contactLine = isInsight ? '' : `<div class="slip-contact">ccbimprint.com &nbsp;·&nbsp; (855) 458-0381 &nbsp;·&nbsp; orders@ccbimprint.com</div>`;
@@ -958,7 +962,7 @@ async function printSelectedSlips() {
             id name
             column_values(ids: [
               "text_mm22fv7y","numeric_mm22crjt","text_mm2276wz","text_mm22yw8s",
-              "dropdown_mm22dn1f","lookup_mm2ea35"
+              "dropdown_mm22dn1f","lookup_mm2ea35","color_mm2dd6d5"
             ]) { id text value }
           }
         }

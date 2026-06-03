@@ -202,6 +202,7 @@ async function loadOrders() {
               "${COL_ORDER_NUM}","${COL_ORDER_STATUS}","${COL_CONTACT}",
               "${COL_SHIP_TO}","${COL_SHIP_ADDR}","${COL_IN_HANDS}","${COL_TRACKING}"
             ]) { id text value }
+            subitems { column_values(ids: ["color_mm2dd6d5"]) { id text } }
           }
         }
       }
@@ -220,8 +221,10 @@ async function loadOrders() {
       const cv = {};
       for (const c of item.column_values) cv[c.id] = c;
       const statusText = (cv[COL_ORDER_STATUS]?.text || '').toLowerCase().trim();
+      const _subs = item.subitems || [];
+      const _allPromo = _subs.length > 0 && _subs.every(s => ((s.column_values?.find(c => c.id === 'color_mm2dd6d5')?.text) || '').toLowerCase().includes('promo'));
 
-      if (statusText === 'ready for shipping') {
+      if (statusText === 'ready for shipping' && !_allPromo) {
         readyOrders.push({
           id: item.id,
           name: item.name,
