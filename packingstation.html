@@ -838,7 +838,6 @@ function buildSlipHTML(order) {
   }
   const addr = v('location_mm2682nc');
   const spec = v('boolean_mm22xdfn');
-  const notes = t('long_text_mm225vbf');
   const subs = order.subitems || [];
 
   const headerBrand = isInsight ? 'CCB INSIGHT' : 'CCB IMPRINT';
@@ -862,9 +861,6 @@ function buildSlipHTML(order) {
 
   const specBox = spec?.checked
     ? `<div class="spec-box-print"><strong>⚠️ SPECIALIZED PACKAGING REQUIRED</strong>${t('text_mm253t97') || ''}</div>`
-    : '';
-  const notesBox = notes
-    ? `<div class="slip-notes"><strong>Notes: </strong>${notes}</div>`
     : '';
 
   return `<div class="slip-page" data-order-id="${order.id}">
@@ -911,7 +907,6 @@ function buildSlipHTML(order) {
         </thead>
         <tbody>${rows}</tbody>
       </table>
-      ${notesBox}
     </div>
     <div class="slip-status-bar">
       <div style="font-size:13px;color:var(--text2);"><strong style="color:var(--navy);">${order.name}</strong> &nbsp;·&nbsp; ${num}</div>
