@@ -475,7 +475,7 @@
         <div class="form-row" id="order-status-row">
           <div class="form-group">
             <label class="form-label">Order Status <span style="font-size:10px;color:var(--subtle);font-weight:400">(leave blank for New)</span></label>
-            <select class="form-select" id="f-status">
+            <select class="form-select" id="f-status" onchange="syncPromoFromOrderStatus()">
               <option value="">New</option>
               <option>In House</option>
               <option>Products Ordered</option>
@@ -1156,7 +1156,7 @@ async function openEditModal(orderId){
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Product Status</label>
-            <select class="form-select" id="p${id}-productstatus">
+            <select class="form-select" id="p${id}-productstatus" onchange="syncPromoFromProductStatus('${id}')">
               <option value="">No change</option>
               <option ${pProductStatus==="In House"?"selected":""}>In House</option>
               <option ${pProductStatus==="Product Ordered"?"selected":""}>Product Ordered</option>
@@ -1461,6 +1461,18 @@ function resetModal(){
   if(btn)btn.style.display='';
 }
 
+function syncPromoFromOrderStatus(){
+  const os=document.getElementById('f-status');
+  if(!os||os.value!=='Promo Code')return;
+  document.querySelectorAll('select[id^="p"][id$="-type"]').forEach(sel=>{
+    if([...sel.options].some(o=>(o.value||o.text)==='Promo Code'))sel.value='Promo Code';
+  });
+}
+function syncPromoFromProductStatus(pid){
+  const ps=document.getElementById('p'+pid+'-productstatus');
+  const ty=document.getElementById('p'+pid+'-type');
+  if(ps&&ty&&ps.value==='Promo Code'&&[...ty.options].some(o=>(o.value||o.text)==='Promo Code'))ty.value='Promo Code';
+}
 function addProduct(){
   productCount++;
   const id=productCount;
@@ -1530,7 +1542,7 @@ function addProduct(){
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Product Status</label>
-        <select class="form-select" id="p${id}-productstatus">
+        <select class="form-select" id="p${id}-productstatus" onchange="syncPromoFromProductStatus('${id}')">
           <option value="">No status</option>
           <option>In House</option>
           <option>Product Ordered</option>
