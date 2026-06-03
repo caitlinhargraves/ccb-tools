@@ -559,7 +559,10 @@ function buildCardView(p,section,mode){
       </div>
       <div class="card-media">
         ${mockupThumb}
-        ${artworkBtn?`<div style="margin-top:6px;text-align:center">${artworkBtn}</div>`:''}
+        <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;align-items:center">
+          ${artworkBtn||`<span style="font-size:10px;font-weight:600;color:var(--red);background:var(--red-bg);border:1px solid var(--red-border);padding:2px 8px;border-radius:20px;white-space:nowrap">No artwork</span>`}
+          ${_mockupUrl?'':`<span style="font-size:10px;font-weight:600;color:var(--red);background:var(--red-bg);border:1px solid var(--red-border);padding:2px 8px;border-radius:20px;white-space:nowrap">No mockup</span>`}
+        </div>
       </div>
     </div>
     <div class="card-body">
