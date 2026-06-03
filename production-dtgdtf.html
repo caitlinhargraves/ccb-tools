@@ -716,7 +716,7 @@ function parseProduct(item,sub){
   const artworkUrl=sc[S_ARTWORK]?.text||null;
   // Collect artwork assetIds from all three deco slot columns, fall back to legacy S_ARTWORK column
   const _slotArtIds=[D1_ART,D2_ART,D3_ART].flatMap(col=>extractAssetIds(sc[col]?.value));
-  const artworkAssetIds=_slotArtIds.length?_slotArtIds:extractAssetIds(sc[S_ARTWORK]?.value);
+  const artworkAssetIds=_slotArtIds;
   const _mockupAllIds=extractAssetIds(sc[S_MOCKUP]?.value);
   const mockupAssetId=_mockupAllIds[0]||null;
   const mockupAssetIds=_mockupAllIds;

@@ -587,7 +587,7 @@ function parseProduct(item,sub){
   const mockupAssetId=_mockupAllIds[0]||null;
   const mockupAssetIds=_mockupAllIds;
   const _slotArtIds=allSlots.flatMap(slot=>extractAssetIds(sc[slot.art]?.value));
-  const artworkAssetIds=_slotArtIds.length?_slotArtIds:extractAssetIds(sc[S_ARTWORK]?.value);
+  const artworkAssetIds=_slotArtIds;
   const primaryPlacement=allSlots.length>0?sc[allSlots[0].place]?.text||'':sc[S_PLACEMENT]?.text||'';
   const primaryDesc=allSlots.length>0?sc[allSlots[0].desc]?.text||'':sc[S_ARTWORK_DESC]?.text||'';
   return{id:sub.id,name:sub.name,orderId:item.id,orderName:item.name,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',inHands:cv[O_INHAND]?.text||'',shelf:cv[O_SHELF]?.text||'',salesperson:cv[O_SALES]?.text||'',qty:sc[S_QTY]?.text||'',color:sc[S_COLOR]?.text||'',size:sc[S_SIZE]?.text||'',style:sc[S_STYLE]?.text||'',primaryDecoId,primaryDecoDisplay,placement:primaryPlacement,artworkDesc:primaryDesc,prodNotes:sc[S_PROD_NOTES]?.text||'',mockupAssetId,mockupAssetIds,artworkAssetIds,allSlots,_sc:sc};
