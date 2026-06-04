@@ -5,6 +5,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <meta charset="UTF-8">
+<script>if(window.self!==window.top){document.documentElement.classList.add('embedded');}</script>
+<style>.embedded header{display:none!important;}.embedded .topbar{display:none!important;}.embedded main{padding-top:14px!important;}</style>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CCB Shipping</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -338,7 +340,7 @@ async function markShipped(orderId) {
     await mondayQuery(`mutation {
       change_multiple_column_values(
         board_id: ${BOARD_ID}, item_id: ${orderId},
-        column_values: "{\\"color_mm27qyta\\": {\\"label\\": \\"Shipped\\"}, \\"color_mm29xat9\\": {\\"label\\": \\"Shipped\\"}}"
+        column_values: "{\\"color_mm27qyta\\": {\\"label\\": \\"Shipped\\"}}"
       ) { id }
     }`);
     const order = readyOrders.find(o => o.id === orderId);

@@ -357,6 +357,7 @@
         <th onclick="sortBy('name')" data-col="name">Company <span class="sort-arrow">↕</span></th>
         <th onclick="sortBy('status')" data-col="status">Status <span class="sort-arrow">↕</span></th>
         <th onclick="sortBy('ihd')" data-col="ihd">In Hands <span class="sort-arrow">↕</span></th>
+        <th onclick="sortBy('placed')" data-col="placed">Placed <span class="sort-arrow">↕</span></th>
         <th>Products</th>
         <th onclick="sortBy('sales')" data-col="sales">Sales Rep <span class="sort-arrow">↕</span></th>
         <th onclick="sortBy('invoice')" data-col="invoice">Invoice <span class="sort-arrow">↕</span></th>
@@ -365,7 +366,7 @@
       </tr>
     </thead>
     <tbody id="tableBody">
-      <tr><td colspan="10"><div class="empty-state"><div class="icon">⏳</div><p>Loading orders...</p></div></td></tr>
+      <tr><td colspan="11"><div class="empty-state"><div class="icon">⏳</div><p>Loading orders...</p></div></td></tr>
     </tbody>
   </table>
 </div>
@@ -571,7 +572,7 @@ function parseOrder(o){
   const sv=colV(o,'dropdown_mm22w5rr'),iv=colV(o,'dropdown_mm276wtz');
   return{id:o.id,orderNum:col(o,'pulse_id_mm27vwa5')||o.id,ccbNum:col(o,'text_mm29djkk'),name:o.name,
     status:col(o,'color_mm27qyta')||'New',sales:sv?.ids?.map(i=>salesMap[i]).filter(Boolean).join(', ')||'',
-    ihd:col(o,'date_mm22wpk2'),contact:col(o,'text_mm221kg3'),invoice:normInvoice(col(o,'color_mm282b4b')),
+    ihd:col(o,'date_mm22wpk2'),placed:col(o,'date4')||'',created:o.created_at||'',contact:col(o,'text_mm221kg3'),invoice:normInvoice(col(o,'color_mm282b4b')),
     imprint:iv?.ids?.map(i=>impMap[i]).filter(Boolean).join(', ')||'',
     tracking:colV(o,'link_mm22d8ca')?.url||'',notes:col(o,'long_text_mm225vbf'),
     shippingTo:col(o,'text_mm26gtxp'),address:col(o,'location_mm2682nc'),email:colV(o,'email_mm22ap28')?.email||'',phone:col(o,'phone_mm22ertc'),
@@ -620,6 +621,12 @@ function dateDisplay(d){
   const date=new Date(d),diff=(date-new Date())/86400000;
   const cls=diff<0?'date-past':diff<=2?'date-urgent':diff<=7?'date-soon':'date-ok';
   return`<span class="date-val ${cls}">${date.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>`;
+}
+function placedDisplay(d){
+  if(!d)return'<span class="date-val" style="color:var(--subtle)">—</span>';
+  const date=new Date(d);
+  if(isNaN(date))return'<span class="date-val" style="color:var(--subtle)">—</span>';
+  return`<span class="date-val" style="color:var(--text2)">${date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'})}</span>`;
 }
 function decoLabel(v){if(!v)return null;const val=typeof v==='string'?JSON.parse(v):v;return val?.ids?.map(i=>decoMap[i]).filter(Boolean).join(', ')||null;}
 
@@ -675,7 +682,7 @@ function buildProductSummaryLines(subitems){
 
 function render(){
   const tb=document.getElementById('tableBody');
-  if(!filtered.length){tb.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="icon">🔍</div><p>No orders match your filters.</p></div></td></tr>`;return;}
+  if(!filtered.length){tb.innerHTML=`<tr><td colspan="11"><div class="empty-state"><div class="icon">🔍</div><p>No orders match your filters.</p></div></td></tr>`;return;}
 
   // Group definitions - map group IDs to display info
   const groupDefs=[
@@ -709,7 +716,7 @@ function render(){
     // Group header row -- Completed collapsed by default
     const gKey=g.ids[0]==='topics'?'topics':g.ids[0]==='group_mm2dtmde'?'events':g.ids[0]==='group_mm2wg547'?'birthdays':g.ids[0]==='group_mm26j0hj'?'completed':'pending';
     const isCollapsed=collapsedGroups.has(gKey);
-    rows.push(`<tr class="group-header-row" id="group-row-${gKey}"><td colspan="10"><div class="group-header ${isCollapsed?'collapsed':''}" onclick="toggleGroup('${gKey}')">
+    rows.push(`<tr class="group-header-row" id="group-row-${gKey}"><td colspan="11"><div class="group-header ${isCollapsed?'collapsed':''}" onclick="toggleGroup('${gKey}')">
       <span class="group-icon">${g.icon}</span>
       <span class="group-name">${g.label}</span>
       <span class="group-count">${groupOrders.length}</span>
@@ -727,6 +734,7 @@ function render(){
         <td><div class="company-name">${o.name}</div>${o.contact?`<div class="contact-name">${o.contact}</div>`:''}</td>
         <td>${statusBadge(o.status)}</td>
         <td>${dateDisplay(o.ihd)}</td>
+        <td>${placedDisplay(o.placed||o.created)}</td>
         <td style="min-width:180px;max-width:240px">${buildProductSummaryLines(o.subitems)}</td>
         <td><span class="salesperson">${o.sales||'—'}</span></td>
         <td>${invSelect(o)}</td>
@@ -738,7 +746,7 @@ function render(){
           </button>
         </td>
       </tr>`);
-      if(isEx)rows.push(`<tr class="subrow"><td colspan="10"><div class="subrow-inner">
+      if(isEx)rows.push(`<tr class="subrow"><td colspan="11"><div class="subrow-inner">
         <div class="subrow-heading">Products · ${o.subitems.length} item${o.subitems.length!==1?'s':''} — full detail</div>
         <div class="product-cards">${o.subitems.map(buildCard).join('')}</div>
         ${(function(){
@@ -773,7 +781,7 @@ function render(){
 
   // Any ungrouped
   if(ungrouped.length){
-    rows.push(`<tr class="group-header-row"><td colspan="10"><div class="group-header"><span class="group-icon">📌</span><span class="group-name">Other</span><span class="group-count">${ungrouped.length}</span></div></td></tr>`);
+    rows.push(`<tr class="group-header-row"><td colspan="11"><div class="group-header"><span class="group-icon">📌</span><span class="group-name">Other</span><span class="group-count">${ungrouped.length}</span></div></td></tr>`);
     ungrouped.forEach(o=>{
       const isEx=expanded.has(o.id);
       const pill=o.imprint?`<span class="company-pill ${o.imprint==='CCB Imprint'?'pill-imprint':'pill-insight'}">${o.imprint}</span>`:'—';
@@ -783,6 +791,7 @@ function render(){
         <td><div class="company-name">${o.name}</div>${o.contact?`<div class="contact-name">${o.contact}</div>`:''}</td>
         <td>${statusBadge(o.status)}</td>
         <td>${dateDisplay(o.ihd)}</td>
+        <td>${placedDisplay(o.placed||o.created)}</td>
         <td style="min-width:180px;max-width:240px">${buildProductSummaryLines(o.subitems)}</td>
         <td><span class="salesperson">${o.sales||'—'}</span></td>
         <td>${invSelect(o)}</td>
@@ -860,6 +869,7 @@ function doSort(){
     return (ai-bi)*m;
   }
   else if(sort.col==='ihd'){va=a.ihd;vb=b.ihd;}
+  else if(sort.col==='placed'){va=a.placed||a.created;vb=b.placed||b.created;}
   else if(sort.col==='sales'){va=a.sales;vb=b.sales;}
   else if(sort.col==='invoice'){va=a.invoice;vb=b.invoice;}
   return va<vb?-m:va>vb?m:0;});

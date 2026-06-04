@@ -221,7 +221,7 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 <script>
 
 const ORDERS_BOARD='18407165363';const SUBS_BOARD='18407165552';
-const O_NUM='pulse_id_mm27vwa5';const O_STATUS='color_mm27qyta';const O_INHAND='date_mm22wpk2';const O_CONTACT='text_mm221kg3';const O_SHELF='text_mm2ngkpv';const O_SALES='dropdown_mm22w5rr';
+const O_NUM='pulse_id_mm27vwa5';const O_STATUS='color_mm27qyta';const O_INHAND='date_mm22wpk2';const O_CONTACT='text_mm221kg3';const O_SHELF='text_mm2ngkpv';const O_SALES='dropdown_mm22w5rr';const O_PLACED='date4';
 const S_STATUS='color_mm25v786';const S_TYPE='color_mm2dd6d5';const S_QTY='numeric_mm22crjt';const S_COLOR='text_mm2276wz';const S_SIZE='text_mm22yw8s';const S_STYLE='text_mm22fv7y';const S_DECO='dropdown_mm22dn1f';
 const D1_STYLE='dropdown_mm2y4w39';const D1_PLACE='text_mm2y6g62';const D1_DESC='text_mm2y3mb9';const D1_ART='file_mm2y1yem';const D1_SCREENS='numeric_mm2yn2nb';const D1_COLORS='text_mm2y2y6a';const D1_NOTES='long_text_mm3yw3sd';
 const D2_STYLE='dropdown_mm2yaxxz';const D2_PLACE='text_mm2yge79';const D2_DESC='text_mm2ymf5k';const D2_ART='file_mm2ya55c';const D2_SCREENS='numeric_mm2ynqby';const D2_COLORS='text_mm2y5vn6';const D2_NOTES='long_text_mm3yxdjc';
@@ -270,6 +270,7 @@ function isPdfUrl(url){if(!url)return false;return url.split('?')[0].toLowerCase
 function getFilename(url){if(!url)return'File';try{return decodeURIComponent(url.split('/').pop().split('?')[0]);}catch(e){return'File';}}
 function duechip(d){if(!d)return'<span class="chip">No date</span>';const due=new Date(d+'T00:00:00');const t=new Date();t.setHours(0,0,0,0);const diff=Math.round((due-t)/86400000);const fmt=due.toLocaleDateString('en-US',{month:'short',day:'numeric'});if(diff<0)return`<span class="chip overdue">Due ${fmt}</span>`;if(diff===0)return`<span class="chip due-soon">Due Today</span>`;if(diff<=3)return`<span class="chip due-soon">Due ${fmt}</span>`;return`<span class="chip ok">Due ${fmt}</span>`;}
 function fdatestr(d){if(!d)return'—';const due=new Date(d+'T00:00:00');const t=new Date();t.setHours(0,0,0,0);const diff=Math.round((due-t)/86400000);const fmt=due.toLocaleDateString('en-US',{month:'short',day:'numeric'});if(diff<0)return`<span style="color:var(--red);font-weight:500">${fmt} (${Math.abs(diff)}d late)</span>`;if(diff===0)return`<span style="color:var(--amber);font-weight:500">Today</span>`;if(diff<=3)return`<span style="color:var(--amber);font-weight:500">${fmt}</span>`;return`<span style="color:var(--green)">${fmt}</span>`;}
+function placedchip(placed,created){const raw=placed||created;if(!raw)return'';const d=placed?new Date(placed+'T00:00:00'):new Date(created);if(isNaN(d))return'';const fmt=d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'});return`<span class="chip" title="Order placed">Placed ${fmt}</span>`;}
 function countdownStr(d){if(!d)return'';const due=new Date(d+'T00:00:00');const t=new Date();t.setHours(0,0,0,0);const diff=Math.round((due-t)/86400000);if(diff<0)return`${Math.abs(diff)}d late`;if(diff===0)return'today';if(diff===1)return'1 day';return`${diff} days`;}
 function inHandsChip(d){if(!d)return'<span style="font-size:12px;color:var(--text3)">No in-hands date</span>';const due=new Date(d+'T00:00:00');const t=new Date();t.setHours(0,0,0,0);const diff=Math.round((due-t)/86400000);const fmt=due.toLocaleDateString('en-US',{month:'short',day:'numeric'});let bg='var(--green-bg)',c='var(--green)';if(diff<0||diff===0){bg='var(--red-bg)';c='var(--red)';}else if(diff<=3){bg='var(--amber-bg)';c='var(--amber)';}return`<span style="font-size:12px;font-weight:500;color:${c};background:${bg};padding:3px 9px;border-radius:6px;white-space:nowrap">In hands ${fmt} &middot; ${countdownStr(d)}</span>`;}
 const _saveTimers={};
@@ -547,6 +548,7 @@ function buildCard(p,section){
           <span class="chip" style="font-family:'Inter',monospace">${p.ccbNum}</span>
           <span class="chip">${p.orderName}</span>
           ${duechip(p.inHands)}
+          ${placedchip(p.placed,p.created)}
           ${decoBadgesHtml}
         </div>
       </div>
@@ -590,7 +592,7 @@ function parseProduct(item,sub){
   const artworkAssetIds=_slotArtIds;
   const primaryPlacement=allSlots.length>0?sc[allSlots[0].place]?.text||'':sc[S_PLACEMENT]?.text||'';
   const primaryDesc=allSlots.length>0?sc[allSlots[0].desc]?.text||'':sc[S_ARTWORK_DESC]?.text||'';
-  return{id:sub.id,name:sub.name,orderId:item.id,orderName:item.name,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',inHands:cv[O_INHAND]?.text||'',shelf:cv[O_SHELF]?.text||'',salesperson:cv[O_SALES]?.text||'',qty:sc[S_QTY]?.text||'',color:sc[S_COLOR]?.text||'',size:sc[S_SIZE]?.text||'',style:sc[S_STYLE]?.text||'',primaryDecoId,primaryDecoDisplay,placement:primaryPlacement,artworkDesc:primaryDesc,prodNotes:sc[S_PROD_NOTES]?.text||'',mockupAssetId,mockupAssetIds,artworkAssetIds,allSlots,_sc:sc};
+  return{id:sub.id,name:sub.name,orderId:item.id,orderName:item.name,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',inHands:cv[O_INHAND]?.text||'',placed:cv[O_PLACED]?.text||'',created:item.created_at||'',shelf:cv[O_SHELF]?.text||'',salesperson:cv[O_SALES]?.text||'',qty:sc[S_QTY]?.text||'',color:sc[S_COLOR]?.text||'',size:sc[S_SIZE]?.text||'',style:sc[S_STYLE]?.text||'',primaryDecoId,primaryDecoDisplay,placement:primaryPlacement,artworkDesc:primaryDesc,prodNotes:sc[S_PROD_NOTES]?.text||'',mockupAssetId,mockupAssetIds,artworkAssetIds,allSlots,_sc:sc};
 }
 
 function sortByDate(arr){return arr.sort((a,b)=>{if(!a.inHands&&!b.inHands)return 0;if(!a.inHands)return 1;if(!b.inHands)return-1;return new Date(a.inHands)-new Date(b.inHands);});}
@@ -677,7 +679,7 @@ async function loadData(){
   window._forceRefresh=false;
   const btn=document.getElementById('refresh-btn');btn.disabled=true;btn.classList.add('spinning');
   try{
-    const q1=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:500,query_params:{rules:[{column_id:"group",compare_value:["topics"]}]}){items{id name column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHELF}","${O_SALES}"]){id text value}subitems{id name}}}}}`;
+    const q1=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:500,query_params:{rules:[{column_id:"group",compare_value:["topics"]}]}){items{id name created_at column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHELF}","${O_SALES}","${O_PLACED}"]){id text value}subitems{id name}}}}}`;
     const data1=await mq(q1);
     const rawItems=data1.boards[0].items_page.items;
     const allSubIds=[];
