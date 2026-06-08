@@ -133,6 +133,23 @@ tbody tr:hover td { background: var(--surface2); }
 .undo-btn:hover { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
 .undo-timer { font-size: 10px; font-family: 'Inter', monospace; color: var(--text3); min-width: 24px; text-align: right; }
 
+.paid-section { margin-top: 32px; border-top: 1px solid var(--border); padding-top: 16px; }
+.paid-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; padding: 6px 2px; }
+.paid-toggle:hover .paid-toggle-label { color: var(--text); }
+.paid-caret { font-size: 10px; color: var(--text3); transition: transform 0.15s; display: inline-block; }
+.paid-section.open .paid-caret { transform: rotate(90deg); }
+.paid-toggle-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); transition: color 0.15s; }
+.paid-toggle-count { font-size: 11px; font-family: 'Inter', monospace; color: var(--text3); background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1px 8px; }
+.paid-list { display: none; margin-top: 10px; }
+.paid-section.open .paid-list { display: block; }
+.paid-row { display: grid; grid-template-columns: 90px 1fr auto auto auto; align-items: center; gap: 12px; padding: 9px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 5px; opacity: 0.85; }
+.paid-row:hover { opacity: 1; }
+.paid-row .pr-ccb { font-family: 'Inter', monospace; font-size: 12px; color: var(--text3); }
+.paid-row .pr-name { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.paid-row .pr-inv { font-size: 11px; font-family: 'Inter', monospace; color: var(--text2); }
+.paid-row .pr-amt { font-size: 12px; font-family: 'Inter', monospace; color: var(--text); }
+.paid-row .pr-date { font-size: 11px; font-family: 'Inter', monospace; color: var(--text3); }
+
 .toast { position: fixed; bottom: 20px; right: 20px; background: var(--text); color: white; font-size: 13px; padding: 10px 16px; border-radius: var(--radius); display: flex; align-items: center; gap: 8px; opacity: 0; transform: translateY(8px); transition: all 0.2s; pointer-events: none; z-index: 999; }
 .toast.visible { opacity: 1; transform: translateY(0); }
 .toast-spinner { width: 14px; height: 14px; border: 1.5px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
@@ -183,6 +200,7 @@ tbody tr:hover td { background: var(--surface2); }
   <button class="nav-btn active" onclick="scrollToInvSection('sec-not-invoiced', this)">Not Invoiced <span class="nav-count" id="nav-count-ni">—</span></button>
   <button class="nav-btn" onclick="scrollToInvSection('sec-invoice-sent', this)">Invoice Sent <span class="nav-count" id="nav-count-is">—</span></button>
   <button class="nav-btn" onclick="scrollToInvSection('sec-recently-paid', this)">Recently Paid <span class="nav-count" id="nav-count-rp">—</span></button>
+  <button class="nav-btn" onclick="scrollToInvSection('sec-paid', this)">Paid <span class="nav-count" id="nav-count-paid">—</span></button>
 </div>
 
 <div class="search-wrap" style="padding-bottom:12px">
@@ -245,8 +263,10 @@ const INVOICE_STATUS_LABELS = { 'not-invoiced': 'Not Invoiced', 'invoice-sent': 
 
 
 let allOrders = [];
+let paidOrders = [];
 let currentTab = 'imprint';
 const recentlyPaid = [];
+let paidExpanded = false;
 const UNDO_WINDOW = 30;
 
 async function mondayQuery(query) {
@@ -298,6 +318,7 @@ async function loadOrders() {
     const items = data.boards[0].items_page.items;
 
     allOrders = [];
+    paidOrders = [];
     for (const item of items) {
       // Only include Active Orders and Completed Orders groups
       if (!ALLOWED_GROUPS.includes(item.group?.id)) continue;
@@ -308,9 +329,6 @@ async function loadOrders() {
       // Get invoice status by text
       const invoiceStatusText = (cv[COL_INVOICE_STATUS]?.text || '').toLowerCase().trim();
       const invoiceStatus = INVOICE_STATUS_MAP_TEXT[invoiceStatusText] || 'not-invoiced';
-
-      // Skip paid orders only
-      if (invoiceStatus === 'paid') continue;
 
       const company = cv[COL_COMPANY]?.text || '';
       const companyKey = company.toLowerCase().includes('insight') ? 'insight' : 'imprint';
@@ -330,7 +348,7 @@ async function loadOrders() {
         };
       });
 
-      allOrders.push({
+      const orderObj = {
         id: item.id,
         name: item.name,
         ccb: cv[COL_ORDER_NUM]?.text || '',
@@ -353,7 +371,13 @@ async function loadOrders() {
         company,
         companyKey,
         subitems
-      });
+      };
+
+      if (invoiceStatus === 'paid') {
+        paidOrders.push(orderObj);
+      } else {
+        allOrders.push(orderObj);
+      }
     }
 
     allOrders.sort((a, b) => {
@@ -362,7 +386,15 @@ async function loadOrders() {
       return numA - numB;
     });
 
+    // Paid newest-first (highest CCB number on top)
+    paidOrders.sort((a, b) => {
+      const numA = parseInt((a.ccb || '').replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt((b.ccb || '').replace(/\D/g, ''), 10) || 0;
+      return numB - numA;
+    });
+
     allOrdersSnapshot = [...allOrders];
+    paidOrdersSnapshot = [...paidOrders];
     updateTabCounts();
     renderTab();
 
@@ -393,11 +425,8 @@ function switchTab(tab) {
 function renderTab() {
   const main = document.getElementById('main');
   const orders = allOrders.filter(o => o.companyKey === currentTab);
-
-  if (orders.length === 0 && recentlyPaid.filter(r => r.companyKey === currentTab).length === 0) {
-    main.innerHTML = '<div class="empty-state">No orders pending invoicing.</div>';
-    return;
-  }
+  const paidForTab = paidOrders.filter(o => o.companyKey === currentTab);
+  const recentForTab = recentlyPaid.filter(r => r.companyKey === currentTab);
 
   const groups = { 'not-invoiced': [], 'invoice-sent': [] };
   for (const o of orders) {
@@ -409,10 +438,11 @@ function renderTab() {
   // Update nav counts
   const niCount = groups['not-invoiced'].length;
   const isCount = groups['invoice-sent'].length;
-  const rpCount = recentlyPaid.filter(r => r.companyKey === currentTab).length;
+  const rpCount = recentForTab.length;
   document.getElementById('nav-count-ni').textContent = niCount;
   document.getElementById('nav-count-is').textContent = isCount;
   document.getElementById('nav-count-rp').textContent = rpCount;
+  document.getElementById('nav-count-paid').textContent = paidForTab.length;
 
   for (const [status, label, anchorId] of [['not-invoiced', 'Not Invoiced', 'sec-not-invoiced'], ['invoice-sent', 'Invoice Sent', 'sec-invoice-sent']]) {
     const grp = groups[status];
@@ -425,20 +455,56 @@ function renderTab() {
     html += grp.map(o => buildOrderCard(o)).join('');
   }
 
-  // Recently paid section
-  const paid = recentlyPaid.filter(r => r.companyKey === currentTab);
-  if (paid.length > 0) {
+  // No pending orders message (only when nothing pending and nothing recently paid)
+  if (orders.length === 0 && recentForTab.length === 0) {
+    html += '<div class="empty-state">No orders pending invoicing.</div>';
+  }
+
+  // Recently paid section (session undo list)
+  if (recentForTab.length > 0) {
     html += `<div id="sec-recently-paid" style="max-width:100%;margin-top:32px">
       <div class="recently-section">
         <div class="recently-header">Recently paid</div>
         <div id="recently-paid-list-${currentTab}">
-          ${paid.map(r => buildRecentPaidItem(r)).join('')}
+          ${recentForTab.map(r => buildRecentPaidItem(r)).join('')}
         </div>
       </div>
     </div>`;
   }
 
+  // All paid invoices (collapsed archive)
+  if (paidForTab.length > 0) {
+    html += `<div id="sec-paid" class="paid-section${paidExpanded ? ' open' : ''}">
+      <div class="paid-toggle" onclick="togglePaidSection()">
+        <span class="paid-caret">▶</span>
+        <span class="paid-toggle-label">Paid</span>
+        <span class="paid-toggle-count">${paidForTab.length}</span>
+      </div>
+      <div class="paid-list">
+        ${paidForTab.map(o => buildPaidRow(o)).join('')}
+      </div>
+    </div>`;
+  }
+
   main.innerHTML = html;
+}
+
+function buildPaidRow(o) {
+  const paidDate = o.invoiceSentDate || o.invoiceDate || '';
+  const amt = o.invoicedAmount ? '$' + o.invoicedAmount : '—';
+  return `<div class="paid-row">
+    <span class="pr-ccb">${o.ccb || '—'}</span>
+    <span class="pr-name" title="${o.name}">${o.name}</span>
+    <span class="pr-inv">${o.invoiceNum || '—'}</span>
+    <span class="pr-amt">${amt}</span>
+    <span class="pr-date">${paidDate || '—'}</span>
+  </div>`;
+}
+
+function togglePaidSection() {
+  paidExpanded = !paidExpanded;
+  const sec = document.getElementById('sec-paid');
+  if (sec) sec.classList.toggle('open', paidExpanded);
 }
 
 function buildOrderCard(order) {
@@ -669,6 +735,11 @@ async function saveNetsuite(orderId) {
     if (order) {
       addToRecentlyPaid(order);
       allOrders = allOrders.filter(o => o.id !== orderId);
+      // Add to the paid archive
+      const paidEntry = { ...order, invoiceStatus: 'paid', netsuite: val, invoiceSentDate: today };
+      paidOrders.unshift(paidEntry);
+      paidOrdersSnapshot = [...paidOrders];
+      allOrdersSnapshot = allOrdersSnapshot.filter(o => o.id !== orderId);
       updateTabCounts();
       const card = document.getElementById('card-' + orderId);
       if (card) {
@@ -798,12 +869,16 @@ async function undoPaid(orderId) {
     await mondayQuery(mutation);
     entry.invoiceStatus = 'invoice-sent';
     entry.netsuite = '';
+    // Pull it back out of the paid archive
+    paidOrders = paidOrders.filter(o => o.id !== orderId);
+    paidOrdersSnapshot = paidOrdersSnapshot.filter(o => o.id !== orderId);
     allOrders.push(entry);
     allOrders.sort((a, b) => {
       const numA = parseInt((a.ccb || '').replace(/\D/g, ''), 10) || 0;
       const numB = parseInt((b.ccb || '').replace(/\D/g, ''), 10) || 0;
       return numA - numB;
     });
+    allOrdersSnapshot = [...allOrders];
     updateTabCounts();
     showToast('Reverted', false);
     hideToast();
@@ -827,15 +902,19 @@ function scrollToInvSection(id, btn) {
 
 
 let allOrdersSnapshot = [];
+let paidOrdersSnapshot = [];
 
 function applySearch() {
   const q = document.getElementById('search-input').value.toLowerCase().trim();
   if (!q) {
     allOrders = [...allOrdersSnapshot];
+    paidOrders = [...paidOrdersSnapshot];
   } else {
-    allOrders = allOrdersSnapshot.filter(o =>
-      [o.name, o.ccb, o.contact, o.email, o.salesperson, o.shipTo].join(' ').toLowerCase().includes(q)
-    );
+    const match = o => [o.name, o.ccb, o.contact, o.email, o.salesperson, o.shipTo, o.invoiceNum].join(' ').toLowerCase().includes(q);
+    allOrders = allOrdersSnapshot.filter(match);
+    paidOrders = paidOrdersSnapshot.filter(match);
+    // Auto-expand the paid archive when a search matches paid invoices
+    if (paidOrders.length > 0) paidExpanded = true;
   }
   updateTabCounts();
   renderTab();
