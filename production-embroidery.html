@@ -82,9 +82,9 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 .chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
 .chip.shelf{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-border);font-family:'Inter',monospace;letter-spacing:.03em}
 .card-media{display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0}
-.mockup-thumb{width:96px;height:96px;border-radius:8px;object-fit:cover;border:2px solid var(--border);cursor:pointer;transition:opacity .15s,box-shadow .15s;display:block;box-shadow:0 2px 8px rgba(0,0,0,.08)}.mockup-thumb:hover{opacity:.9;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.mockup-thumb{width:128px;height:128px;border-radius:8px;object-fit:cover;border:2px solid var(--border);cursor:pointer;transition:opacity .15s,box-shadow .15s;display:block;box-shadow:0 2px 8px rgba(0,0,0,.08)}.mockup-thumb:hover{opacity:.9;box-shadow:0 4px 16px rgba(0,0,0,.15)}
 .mockup-thumb:hover{opacity:.85}
-.mockup-placeholder{width:96px;height:96px;border-radius:8px;border:2px dashed var(--border2);background:var(--surface2);display:flex;align-items:center;justify-content:center}
+.mockup-placeholder{width:128px;height:128px;border-radius:8px;border:2px dashed var(--border2);background:var(--surface2);display:flex;align-items:center;justify-content:center}
 .mockup-placeholder svg{width:20px;height:20px;stroke:var(--text3);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .media-links{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
 .media-btn{font-size:11px;padding:4px 9px;background:#EFF6FF;color:#2563EB;border:1px solid #93C5FD;border-radius:6px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px;transition:all .15s;font-weight:500}
@@ -128,7 +128,7 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 .recent-table tr:last-child td{border-bottom:none}
 .done-badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:4px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
 .empty-msg{font-size:13px;color:var(--text2);padding:20px 0}
-.pdf-thumb{width:64px;height:64px;border-radius:6px;border:1px solid var(--border);background:var(--red-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:3px;flex-shrink:0}.pdf-thumb svg{width:22px;height:22px;stroke:var(--red);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}.pdf-thumb span{font-size:9px;font-weight:600;color:var(--red);letter-spacing:.05em}.pdf-thumb-sm{width:36px;height:36px;border-radius:4px;border:1px solid var(--border);background:var(--red-bg);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;vertical-align:middle}.pdf-thumb-sm svg{width:16px;height:16px;stroke:var(--red);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.pdf-thumb{width:128px;height:128px;border-radius:6px;border:1px solid var(--border);background:var(--red-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:3px;flex-shrink:0}.pdf-thumb svg{width:22px;height:22px;stroke:var(--red);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}.pdf-thumb span{font-size:9px;font-weight:600;color:var(--red);letter-spacing:.05em}.pdf-thumb-sm{width:36px;height:36px;border-radius:4px;border:1px solid var(--border);background:var(--red-bg);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;vertical-align:middle}.pdf-thumb-sm svg{width:16px;height:16px;stroke:var(--red);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
 /* TOAST */
 .toast{position:fixed;bottom:20px;right:20px;background:var(--text);color:white;font-size:13px;padding:10px 16px;border-radius:50px;display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;z-index:999}
 .toast.visible{opacity:1;transform:translateY(0)}
@@ -336,7 +336,7 @@ async function resolveAssets(ids){
   try{
     const data=await mq(`{assets(ids:[${missing.join(',')}]){id name url public_url}}`);
     for(const a of (data.assets||[])){
-      assetCache[a.id]={url:`/api/file-proxy?assetId=${a.id}`,name:a.name,publicUrl:a.public_url||a.url};
+      assetCache[a.id]={url:`/api/file-proxy?assetId=${a.id}`,name:a.name,publicUrl:a.public_url||a.url,isPdf:/\.pdf$/i.test(a.name||'')};
     }
   }catch(e){}
 }
@@ -446,7 +446,7 @@ function openProductModal(subId,section){
   if(_mAssets.length){
     const cid='mk-'+p.id;
     const slides=_mAssets.map((a,i)=>{
-      const u=a.url||'';const fn=a.name||getFilename(u);const pdf=isPdfUrl(u);
+      const u=a.url||'';const fn=a.name||getFilename(u);const pdf=!!a.isPdf;
       const body=pdf
         ?`<div style="background:var(--red-bg);border:1px solid var(--red-border);border-radius:8px;padding:20px;text-align:center"><svg viewBox="0 0 24 24" style="width:40px;height:40px;stroke:var(--red);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div style="font-size:12px;color:var(--red);margin-top:6px;font-weight:500">${fn}</div></div>`
         :`<img src="${u}" alt="Mockup" onclick="window.open('${u}','_blank')" title="Click to open full size" style="width:100%;border-radius:8px;display:block;cursor:pointer" onerror="this.style.opacity=.3">`;
@@ -489,7 +489,7 @@ function openProductModal(subId,section){
       html+=`<div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Decoration ${slot.num||''}</div>`;
       if(_place)html+=`<div style="font-size:12px;margin-bottom:3px"><span style="color:var(--text3)">Placement:</span> ${_place}</div>`;
       if(_desc)html+=`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--text3)">Artwork:</span> ${_desc}</div>`;
-      if(_artAssets.length){const _zids=_artIds.map(String);const _athumbs=_artAssets.map(a=>{const u=a.url||'';return isPdfUrl(u)?'':`<img src="${u}" onclick="window.open('${u}','_blank')" title="${(a.name||'artwork').replace(/"/g,'')}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;margin:0 5px 5px 0" onerror="this.style.display='none'">`;}).join('');html+=(_athumbs?`<div style="display:flex;flex-wrap:wrap;margin-bottom:6px">${_athumbs}</div>`:'')+`<div class="modal-file-row"><button type="button" class="modal-download-btn" style="cursor:pointer" onclick="downloadArtworkZip([${_zids.join(',')}],'artwork-deco${slot?.num||''}.zip')"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${_artAssets.length>1?'Download All ('+_artAssets.length+' files)':'Download Artwork'}</button></div>`+_artAssets.map(a=>`<div style="font-size:10px;color:var(--text3);margin-top:2px;padding-left:4px">📎 ${a.name||''}</div>`).join('');}
+      if(_artAssets.length){const _zids=_artIds.map(String);const _athumbs=_artAssets.map(a=>{const u=a.url||'';return a.isPdf?'':`<img src="${u}" onclick="window.open('${u}','_blank')" title="${(a.name||'artwork').replace(/"/g,'')}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;margin:0 5px 5px 0" onerror="this.style.display='none'">`;}).join('');html+=(_athumbs?`<div style="display:flex;flex-wrap:wrap;margin-bottom:6px">${_athumbs}</div>`:'')+`<div class="modal-file-row"><button type="button" class="modal-download-btn" style="cursor:pointer" onclick="downloadArtworkZip([${_zids.join(',')}],'artwork-deco${slot?.num||''}.zip')"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${_artAssets.length>1?'Download All ('+_artAssets.length+' files)':'Download Artwork'}</button></div>`+_artAssets.map(a=>`<div style="font-size:10px;color:var(--text3);margin-top:2px;padding-left:4px">📎 ${a.name||''}</div>`).join('');}
       else if(_fallbackArtUrl)html+=`<div class="modal-file-row"><span class="modal-file-name">${getFilename(_fallbackArtUrl)||'Art file'}</span><a class="modal-download-btn" href="${_fallbackArtUrl}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>Download</a></div>`;
       html+=`</div>`;
       return html;
@@ -502,7 +502,7 @@ function openProductModal(subId,section){
   if(!p.mySlots||!p.mySlots.length){
     const _allArtAssets=p.artworkAssetIds.map(id=>assetCache[id]).filter(Boolean);
     if(_allArtAssets.length){
-      const _fbZids=p.artworkAssetIds.map(String);const _fbthumbs=_allArtAssets.map(a=>{const u=a.url||'';return isPdfUrl(u)?'':`<img src="${u}" onclick="window.open('${u}','_blank')" title="${(a.name||'artwork').replace(/"/g,'')}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;margin:0 5px 5px 0" onerror="this.style.display='none'">`;}).join('');artworkHtml=`<div class="modal-section-title">Artwork Files</div>${_fbthumbs?`<div style="display:flex;flex-wrap:wrap;margin:6px 0">${_fbthumbs}</div>`:''}<div class="modal-file-row"><button type="button" class="modal-download-btn" style="cursor:pointer" onclick="downloadArtworkZip([${_fbZids.join(',')}],'${p.ccbNum||'artwork'}-artwork.zip')"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${_allArtAssets.length>1?'Download All ('+_allArtAssets.length+' files)':'Download Artwork'}</button></div>${_allArtAssets.map(a=>`<div style="font-size:10px;color:var(--text3);margin-top:2px;padding-left:4px">📎 ${a.name}</div>`).join('')}`;
+      const _fbZids=p.artworkAssetIds.map(String);const _fbthumbs=_allArtAssets.map(a=>{const u=a.url||'';return a.isPdf?'':`<img src="${u}" onclick="window.open('${u}','_blank')" title="${(a.name||'artwork').replace(/"/g,'')}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;margin:0 5px 5px 0" onerror="this.style.display='none'">`;}).join('');artworkHtml=`<div class="modal-section-title">Artwork Files</div>${_fbthumbs?`<div style="display:flex;flex-wrap:wrap;margin:6px 0">${_fbthumbs}</div>`:''}<div class="modal-file-row"><button type="button" class="modal-download-btn" style="cursor:pointer" onclick="downloadArtworkZip([${_fbZids.join(',')}],'${p.ccbNum||'artwork'}-artwork.zip')"><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${_allArtAssets.length>1?'Download All ('+_allArtAssets.length+' files)':'Download Artwork'}</button></div>${_allArtAssets.map(a=>`<div style="font-size:10px;color:var(--text3);margin-top:2px;padding-left:4px">📎 ${a.name}</div>`).join('')}`;
     } else if(p.artworkUrl){
       const fname=getFilename(p.artworkUrl);
       artworkHtml=`<div class="modal-section-title">Artwork Files</div><div class="modal-file-row"><span class="modal-file-name">${fname}</span><a class="modal-download-btn" href="${p.artworkUrl}" target="_blank" download><svg viewBox="0 0 12 12"><path d="M6 1v7M3 5l3 3 3-3"/><path d="M1 10h10"/></svg>${isPdfUrl(p.artworkUrl)?'Open PDF':'Download'}</a></div>`;
@@ -532,9 +532,9 @@ function buildCardView(p,section,mode){
   const _mockupCached=p.mockupAssetId?assetCache[p.mockupAssetId]:null;
   const _mockupUrl=_mockupCached?.url||null;
   const mockupThumb=_mockupUrl
-    ?(isPdfUrl(_mockupUrl)
+    ?(_mockupCached?.isPdf
       ?`<div class="pdf-thumb" onclick="openProductModal('${p.id}','${section}')" title="PDF mockup"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>PDF</span></div>`
-      :`<img class="mockup-thumb" src="${_mockupUrl}" alt="Mockup" title="Click to view" onclick="openProductModal('${p.id}','${section}')" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<div class=mockup-placeholder onclick=openProductModal(\"${p.id}\",\"${section}\")><svg viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><circle cx=\"8.5\" cy=\"8.5\" r=\"1.5\"/><polyline points=\"21 15 16 10 5 21\"/></svg></div>')">`
+      :`<img class="mockup-thumb" src="${_mockupUrl}" alt="Mockup" title="Click to view" onclick="openProductModal('${p.id}','${section}')" onerror="mockupThumbErr(this,'${p.id}','${section}')">`
     )
     :`<div class="mockup-placeholder" title="No mockup" onclick="openProductModal('${p.id}','${section}')" style="cursor:pointer"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
 
@@ -627,9 +627,9 @@ function buildCardView(p,section,mode){
 }
 
 function buildTableRow(p,section){
-  const _tmUrl=p.mockupAssetId?assetCache[p.mockupAssetId]?.url:null;
+  const _tmA=p.mockupAssetId?assetCache[p.mockupAssetId]:null;const _tmUrl=_tmA?.url||null;
   const mockupCell=_tmUrl
-    ?(isPdfUrl(_tmUrl)
+    ?(_tmA?.isPdf
       ?`<div class="pdf-thumb-sm" onclick="openProductModal('${p.id}','${section}')" title="PDF"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
       :`<img src="${_tmUrl}" style="width:36px;height:36px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer;vertical-align:middle" onclick="openProductModal('${p.id}','${section}')" alt="Mockup" onerror="this.style.display='none'">`
     )
@@ -697,6 +697,7 @@ function renderRecentlyDone(){
 
 function isImageUrl(url){if(!url)return false;const ext=url.split('?')[0].split('.').pop().toLowerCase();return['jpg','jpeg','png','gif','webp','svg'].includes(ext);}
 function isPdfUrl(url){if(!url)return false;return url.split('?')[0].toLowerCase().endsWith('.pdf');}
+function mockupThumbErr(img,id,section){img.style.display='none';var d=document.createElement('div');d.className='mockup-placeholder';d.style.cursor='pointer';d.title='Click to view';d.innerHTML='<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';d.onclick=function(){openProductModal(id,section);};img.insertAdjacentElement('afterend',d);}
 function getFilename(url){if(!url)return'File';try{return decodeURIComponent(url.split('/').pop().split('?')[0]);}catch(e){return'File';}}
 function parseProduct(item,sub){
   const cv={};for(const c of item.column_values)cv[c.id]=c;
