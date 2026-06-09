@@ -943,11 +943,11 @@ async function load(attempt=1){
       for(let i=0;i<allSubIds.length;i+=BATCH){
         const batch=allSubIds.slice(i,i+BATCH);
         // Query 1: main product columns
-        const sq1=`{items(ids:[${batch.join(',')}]){id column_values(ids:${JSON.stringify(MAIN_COLS)}){id text value}}}`;
+        const sq1=`{items(ids:[${batch.join(',')}],limit:500){id column_values(ids:${JSON.stringify(MAIN_COLS)}){id text value}}}`;
         const sd1=await mondayQuery(sq1);
         (sd1?.items||[]).forEach(s=>{subColMap[s.id]=s.column_values||[];});
         // Query 2: decoration columns
-        const sq2=`{items(ids:[${batch.join(',')}]){id column_values(ids:${JSON.stringify(DECO_COLS)}){id text value}}}`;
+        const sq2=`{items(ids:[${batch.join(',')}],limit:500){id column_values(ids:${JSON.stringify(DECO_COLS)}){id text value}}}`;
         const sd2=await mondayQuery(sq2);
         (sd2?.items||[]).forEach(s=>{
           if(subColMap[s.id])subColMap[s.id]=[...subColMap[s.id],...(s.column_values||[])];
@@ -1085,9 +1085,9 @@ async function openEditModal(orderId){
       const _merge=arr=>{(arr||[]).forEach(it=>{if(!_live[it.id])_live[it.id]={name:it.name,cols:[]};if(it.name)_live[it.id].name=it.name;_live[it.id].cols.push(...(it.column_values||[]));});};
       const _ids=_subIds.join(',');
       // Two queries (main + deco) mirror the batched load() pattern to avoid FIELD_LIMIT_EXCEEDED
-      const _d1=await mondayQuery(`{items(ids:[${_ids}]){id name column_values(ids:${JSON.stringify(REFRESH_MAIN)}){id text value}}}`);
+      const _d1=await mondayQuery(`{items(ids:[${_ids}],limit:500){id name column_values(ids:${JSON.stringify(REFRESH_MAIN)}){id text value}}}`);
       _merge(_d1?.items);
-      const _d2=await mondayQuery(`{items(ids:[${_ids}]){id column_values(ids:${JSON.stringify(REFRESH_DECO)}){id text value}}}`);
+      const _d2=await mondayQuery(`{items(ids:[${_ids}],limit:500){id column_values(ids:${JSON.stringify(REFRESH_DECO)}){id text value}}}`);
       _merge(_d2?.items);
       const _refreshed=new Set([...REFRESH_MAIN,...REFRESH_DECO]);
       (o.subitems||[]).forEach(s=>{
@@ -1253,7 +1253,7 @@ async function openEditModal(orderId){
   const subitemIds=(o.subitems||[]).map(s=>s.id).filter(Boolean);
   if(subitemIds.length){
     const FILE_COLS=['file_mm26e29h','file_mm25ph2d','file_mm2y1yem','file_mm2ya55c','file_mm2yjme2'];
-    const fileQuery=`{items(ids:[${subitemIds.join(',')}]){id column_values(ids:${JSON.stringify(FILE_COLS)}){id value}}}`;
+    const fileQuery=`{items(ids:[${subitemIds.join(',')}],limit:500){id column_values(ids:${JSON.stringify(FILE_COLS)}){id value}}}`;
     fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:fileQuery})})
       .then(r=>r.json())
       .then(d=>{

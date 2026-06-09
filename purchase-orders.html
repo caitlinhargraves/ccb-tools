@@ -335,7 +335,7 @@ async function loadData(){
     const subColMap={};
     for(let i=0;i<allSubIds.length;i+=100){
       const batch=allSubIds.slice(i,i+100);
-      const q2=`{items(ids:[${batch.join(',')}]){id column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_SUPPLIER}","${S_PO_NUM}","${S_PO_DATE}","${S_TRACKING}","${S_COST}","${S_MOCKUP}","${S_PRICE}"]){id text value}}}`;
+      const q2=`{items(ids:[${batch.join(',')}],limit:500){id column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_SUPPLIER}","${S_PO_NUM}","${S_PO_DATE}","${S_TRACKING}","${S_COST}","${S_MOCKUP}","${S_PRICE}"]){id text value}}}`;
       const data2=await mq(q2);
       for(const sub of(data2.items||[])) subColMap[sub.id]=sub.column_values;
     }
