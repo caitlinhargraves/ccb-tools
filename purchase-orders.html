@@ -234,6 +234,7 @@ const O_CONTACT='text_mm221kg3';
 const O_SHIPTO='text_mm26gtxp';
 const O_SALESPERSON='dropdown_mm22w5rr';
 const O_COMPANY='dropdown_mm276wtz'; // Imprint/Insight
+const O_PLACED='date4'; // order placed date (parent)
 
 const S_STATUS='color_mm25v786';
 const S_TYPE='color_mm2dd6d5';
@@ -247,6 +248,7 @@ const S_PO_DATE='date_mm26mc76';
 const S_TRACKING='link_mm26rzea';
 const S_COST='numeric_mm266zz9';
 const S_MOCKUP='file_mm26e29h';
+const S_ARTWORK='file_mm221c09';
 const S_PRICE='numeric_mm2299qw';
 
 const autoSaveTimers={};
@@ -282,6 +284,24 @@ function duechip(d){
   if(diff===0)return`<span class="chip due-soon">Due Today</span>`;
   if(diff<=5)return`<span class="chip due-soon">Due ${fmt}</span>`;
   return`<span class="chip ok">Due ${fmt}</span>`;
+}
+
+function placedchip(placed,created){
+  const raw=placed||created;
+  if(!raw)return'';
+  const d=placed?new Date(placed+'T00:00:00'):new Date(created);
+  if(isNaN(d))return'';
+  const fmt=d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'});
+  return`<span class="chip" title="Order placed">Placed ${fmt}</span>`;
+}
+
+function missingFlags(products){
+  const missMock=products.filter(p=>!p.hasMockup).length;
+  const missArt=products.filter(p=>!p.hasArtwork).length;
+  let html='';
+  if(missArt)html+=`<span class="chip" style="background:var(--red-bg);color:var(--red);border-color:var(--red-border)" title="Products missing artwork">⚠ ${missArt} missing artwork</span>`;
+  if(missMock)html+=`<span class="chip" style="background:var(--amber-bg);color:var(--amber);border-color:var(--amber)" title="Products missing mockup">⚠ ${missMock} missing mockup</span>`;
+  return html;
 }
 
 function typeBadge(t){
@@ -322,7 +342,7 @@ async function loadData(){
 
   try{
     // Query 1: parent orders + subitem IDs only (no subitem column_values = no concurrency issue)
-    const q1=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200,query_params:{rules:[{column_id:"group",compare_value:["topics"]}]}){items{id name column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHIPTO}","${O_SALESPERSON}","${O_COMPANY}"]){id text value}subitems{id name}}}}}`;
+    const q1=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:200,query_params:{rules:[{column_id:"group",compare_value:["topics"]}]}){items{id name created_at column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHIPTO}","${O_SALESPERSON}","${O_COMPANY}","${O_PLACED}"]){id text value}subitems{id name}}}}}`;
     const data1=await mq(q1);
     const rawItems=data1.boards[0].items_page.items;
 
@@ -335,7 +355,7 @@ async function loadData(){
     const subColMap={};
     for(let i=0;i<allSubIds.length;i+=100){
       const batch=allSubIds.slice(i,i+100);
-      const q2=`{items(ids:[${batch.join(',')}],limit:500){id column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_SUPPLIER}","${S_PO_NUM}","${S_PO_DATE}","${S_TRACKING}","${S_COST}","${S_MOCKUP}","${S_PRICE}"]){id text value}}}`;
+      const q2=`{items(ids:[${batch.join(',')}],limit:500){id column_values(ids:["${S_STATUS}","${S_TYPE}","${S_QTY}","${S_COLOR}","${S_SIZE}","${S_STYLE}","${S_SUPPLIER}","${S_PO_NUM}","${S_PO_DATE}","${S_TRACKING}","${S_COST}","${S_MOCKUP}","${S_ARTWORK}","${S_PRICE}"]){id text value}}}`;
       const data2=await mq(q2);
       for(const sub of(data2.items||[])) subColMap[sub.id]=sub.column_values;
     }
@@ -365,7 +385,9 @@ async function loadData(){
         inHands:cv[O_INHAND]?.text||'',
         salesperson:cv[O_SALESPERSON]?.text||'',
         company:companyText,
-        companyKey:cKey
+        companyKey:cKey,
+        placed:cv[O_PLACED]?.text||'',
+        created:item.created_at||''
       };
 
       for(const sub of(item.subitems||[])){
@@ -386,6 +408,8 @@ async function loadData(){
           poNum:sc[S_PO_NUM]?.text||'',poDate,
           tracking:sc[S_TRACKING]?.text||'',cost:sc[S_COST]?.text||'',price:sc[S_PRICE]?.text||'',
           mockupUrl:ffile(sc[S_MOCKUP]?.value,sc[S_MOCKUP]?.text),
+          hasMockup:!!ffile(sc[S_MOCKUP]?.value,sc[S_MOCKUP]?.text),
+          hasArtwork:!!ffile(sc[S_ARTWORK]?.value,sc[S_ARTWORK]?.text),
           statusIndex,
           companyKey:cKey
         };
@@ -529,7 +553,9 @@ function buildOrderCard(group,section){
           ${o.contact?`<span class="chip">${o.contact}</span>`:''}
           ${o.shipTo?`<span class="chip">${o.shipTo}</span>`:''}
           ${o.salesperson?`<span class="chip" style="background:var(--blue-bg);color:var(--blue);border-color:var(--blue-border)">${o.salesperson}</span>`:''}
+          ${placedchip(o.placed,o.created)}
           ${duechip(o.inHands)}
+          ${missingFlags(group.products)}
         </div>
       </div>
     </div>
@@ -652,12 +678,22 @@ function buildProductCard(p,section){
     </div>`;
   }
 
+  const statusOpts=[[5,'No status'],[0,'In House'],[1,'Product Ordered'],[2,'3rd Party Ordered'],[3,'Promo Code'],[8,'Decorated']];
+  const curIdx=p.statusIndex??5;
+  const statusSelectHtml=(section==='promo')?'':`<div class="po-row" style="margin-bottom:6px">
+      <span class="po-lbl">Status</span>
+      <select class="po-input" style="width:100%" onclick="event.stopPropagation()" onchange="onStatusChange('${p.id}','${p.orderId}',this.value)">
+        ${statusOpts.map(([i,l])=>`<option value="${i}" ${i===curIdx?'selected':''}>${l}</option>`).join('')}
+      </select>
+    </div>`;
+
   return `<div class="product-card" id="row-${p.id}" onclick="openProductDetail('${p.id}')">
     ${mockupHtml}
     <div class="product-card-body">
       <div class="product-card-name">${p.name}</div>
       <div style="margin-bottom:6px">${typeBadge(p.type)}</div>
       <div class="product-card-fields">${fieldsHtml}</div>
+      ${statusSelectHtml}
     </div>
     ${poHtml}${costHtml}
   </div>`;
@@ -694,6 +730,21 @@ function scheduleAutoSave(subId,orderId){
 
 function onDateInput(subId,orderId,val){
   if(val)commitPoEntry(subId,orderId,val);
+}
+
+// Inline status change — lets you advance an item without entering a PO date.
+// Subitem Product Status indices: 5=blank, 0=In House, 1=Product Ordered,
+// 2=3rd Party Ordered, 3=Promo Code, 8=Decorated.
+async function onStatusChange(subId,orderId,index){
+  const idx=parseInt(index,10);
+  showToast('Updating status...');
+  try{
+    const vals={['color_mm25v786']: idx===5?{}:{index:idx}};
+    const valStr=JSON.stringify(JSON.stringify(vals));
+    await mq(`mutation{change_multiple_column_values(board_id:${SUBS_BOARD},item_id:${subId},column_values:${valStr}){id}}`);
+    showToast('Status updated',false);hideToast();
+    await loadData(); // re-pull so buckets reflect the new status
+  }catch(err){showToast('Error: '+err.message,false);hideToast(3000);}
 }
 
 async function commitPoEntry(subId,orderId,explicitDate=null){

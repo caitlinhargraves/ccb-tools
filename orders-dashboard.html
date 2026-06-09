@@ -1173,7 +1173,7 @@ async function openEditModal(orderId){
         <div class="form-row cols-3">
           <div class="form-group">
             <label class="form-label">Product Type</label>
-            <select class="form-select" id="p${id}-type">
+            <select class="form-select" id="p${id}-type" onchange="syncOrderStatusFromProducts()">
               <option value="">Select...</option>
               <option ${(pType==="In House"||pType==="In House Decoration")?"selected":""}>In House</option>
               <option ${pType==="Pre-Decorated"?"selected":""}>Pre-Decorated</option>
@@ -1510,6 +1510,16 @@ function syncPromoFromProductStatus(pid){
   const ty=document.getElementById('p'+pid+'-type');
   if(ps&&ty&&ps.value==='Promo Code'&&[...ty.options].some(o=>(o.value||o.text)==='Promo Code'))ty.value='Promo Code';
 }
+// Reverse guardrail: if EVERY product is Promo Code, flip the order status to Promo Code.
+function syncOrderStatusFromProducts(){
+  const types=[...document.querySelectorAll('select[id^="p"][id$="-type"]')];
+  if(!types.length)return;
+  const allPromo=types.every(t=>(t.value||t.options[t.selectedIndex]?.text)==='Promo Code');
+  if(allPromo){
+    const os=document.getElementById('f-status');
+    if(os&&[...os.options].some(o=>(o.value||o.text)==='Promo Code'))os.value='Promo Code';
+  }
+}
 function addProduct(){
   productCount++;
   const id=productCount;
@@ -1559,7 +1569,7 @@ function addProduct(){
     <div class="form-row cols-3">
       <div class="form-group">
         <label class="form-label">Product Type</label>
-        <select class="form-select" id="p${id}-type">
+        <select class="form-select" id="p${id}-type" onchange="syncOrderStatusFromProducts()">
           <option value="">Select...</option>
           <option>In House</option>
           <option>Pre-Decorated</option>
