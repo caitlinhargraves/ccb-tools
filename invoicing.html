@@ -56,6 +56,12 @@ header { background: var(--surface); border-bottom: 1px solid var(--border); pad
 .nav-btn:hover { color: var(--text); }
 .nav-btn.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
 .nav-count { font-size: 10px; font-family: 'Inter', monospace; background: var(--surface2); border: 0.5px solid var(--border); border-radius: 8px; padding: 0 5px; margin-left: 5px; color: var(--text3); }
+.nav-search { margin-left: auto; display: flex; align-items: center; position: relative; padding: 5px 0 5px 12px; flex-shrink: 0; }
+.nav-search-input { width: 240px; max-width: 38vw; padding: 6px 26px 6px 30px; font-size: 12px; font-family: 'Inter', sans-serif; border: 1px solid var(--border); border-radius: 50px; background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%239b9890' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 11px center; color: var(--text); outline: none; transition: border-color 0.15s, width 0.15s; }
+.nav-search-input:focus { border-color: var(--text2); width: 280px; }
+.nav-search-input::placeholder { color: var(--text3); }
+.nav-search-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; border: none; background: var(--surface2); color: var(--text2); border-radius: 50%; font-size: 13px; line-height: 1; cursor: pointer; padding: 0; }
+.nav-search-clear:hover { color: var(--text); }
 
 main { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
 
@@ -215,11 +221,12 @@ tbody tr:hover td { background: var(--surface2); }
   <button class="nav-btn" onclick="scrollToInvSection('sec-invoice-sent', this)">Invoice Sent <span class="nav-count" id="nav-count-is">—</span></button>
   <button class="nav-btn" onclick="scrollToInvSection('sec-recently-paid', this)">Recently Paid <span class="nav-count" id="nav-count-rp">—</span></button>
   <button class="nav-btn" onclick="scrollToInvSection('sec-paid', this)">Paid <span class="nav-count" id="nav-count-paid">—</span></button>
+  <div class="nav-search">
+    <input class="nav-search-input" id="search-input" type="text" placeholder="Search orders, contact, CCB #, payment..." oninput="applySearch()">
+    <button class="nav-search-clear" id="search-clear" onclick="clearSearch()" title="Clear search" style="display:none">×</button>
+  </div>
 </div>
 
-<div class="search-wrap" style="padding-bottom:12px">
-  <input class="search-input" id="search-input" type="text" placeholder="Search by order, contact, email, CCB #, salesperson..." oninput="applySearch()">
-</div>
 <main id="main">
   <div class="loading-state">
     <div class="spinner"></div>
@@ -541,8 +548,8 @@ function buildOrderCard(order) {
     return `<tr>
       <td><div class="product-name" title="${s.name}">${s.name}</div></td>
       <td>${statusBadge}</td>
-      <td><span class="price-pre">$</span><input class="price-edit" type="number" step="0.01" placeholder="0.00" value="${s.price}" id="price-${s.id}" oninput="recalcOrderTotal('${order.id}')" onblur="savePrice('${order.id}','${s.id}')"></td>
-      <td><span class="price-pre">$</span><input class="price-edit cost" type="number" step="0.01" placeholder="0.00" value="${s.cost}" id="cost-${s.id}" oninput="recalcOrderTotal('${order.id}')" onblur="saveCost('${order.id}','${s.id}')"></td>
+      <td><span class="price-pre">$</span><input class="price-edit" type="text" inputmode="decimal" placeholder="0.00" value="${fmtInput(s.price)}" id="price-${s.id}" oninput="recalcOrderTotal('${order.id}')" onblur="savePrice('${order.id}','${s.id}')"></td>
+      <td><span class="price-pre">$</span><input class="price-edit cost" type="text" inputmode="decimal" placeholder="0.00" value="${fmtInput(s.cost)}" id="cost-${s.id}" oninput="recalcOrderTotal('${order.id}')" onblur="saveCost('${order.id}','${s.id}')"></td>
       <td class="mono">${s.qty || '—'}</td>
       <td class="mono" id="margin-${s.id}">${mg == null ? '—' : marginHtml(mg)}</td>
       <td>${s.color || '—'}</td>
@@ -592,8 +599,8 @@ function buildOrderCard(order) {
       ${invoiceDateHint}
       <div class="input-group">
         <span class="input-lbl">Invoiced Amount</span>
-        <input class="field-input amount" type="number" placeholder="0.00" value="${order.invoicedAmount}"
-          id="inv-amt-${order.id}" onblur="saveField('${order.id}','amount')">
+        <input class="field-input amount" type="text" inputmode="decimal" placeholder="0.00" value="${fmtInput(order.invoicedAmount)}"
+          id="inv-amt-${order.id}" onblur="formatMoneyInput(this);saveField('${order.id}','amount')">
       </div>
       <div class="input-group">
         <span class="input-lbl">Payment Confirmation #</span>
@@ -608,8 +615,8 @@ function buildOrderCard(order) {
       <span class="other-charges-label">⚡ Other Charges</span>
       <div class="input-group">
         <span class="input-lbl">Amount ($)</span>
-        <input class="field-input charges-amt" type="number" placeholder="0.00" step="0.01"
-          value="${order.otherCharges}" id="oc-amt-${order.id}">
+        <input class="field-input charges-amt" type="text" inputmode="decimal" placeholder="0.00"
+          value="${fmtInput(order.otherCharges)}" id="oc-amt-${order.id}" onblur="formatMoneyInput(this)">
       </div>
       <div class="input-group">
         <span class="input-lbl">Details / Description</span>
@@ -685,6 +692,18 @@ function lineMargin(s) {
 function fmtMoney(n) {
   return (n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+function fmtInput(v) {
+  if (v === '' || v == null) return '';
+  const n = parseFloat(v);
+  return isNaN(n) ? '' : n.toFixed(2);
+}
+function formatMoneyInput(el) {
+  if (!el) return;
+  const v = el.value.trim();
+  if (v === '') return;
+  const n = parseFloat(v);
+  if (!isNaN(n)) el.value = n.toFixed(2);
+}
 function marginColor(m) {
   if (m == null) return 'var(--text3)';
   if (m < 0) return 'var(--red)';
@@ -732,13 +751,18 @@ async function saveSubNumber(orderId, subId, inputId, colId, field, label) {
   const input = document.getElementById(inputId + subId);
   if (!input) return;
   const raw = input.value.trim();
+  if (raw !== '' && isNaN(parseFloat(raw))) return;
+  const num = raw === '' ? null : parseFloat(raw);
+  // Normalize the displayed value to dollars ($x.xx)
+  if (num != null) input.value = num.toFixed(2);
   const order = getOrderById(orderId);
   const sub = order && order.subitems.find(x => x.id === subId);
-  if (sub && (sub[field] || '') === raw) return; // no change
-  if (raw !== '' && isNaN(parseFloat(raw))) return;
+  const stored = (sub && sub[field] !== '' && sub[field] != null) ? parseFloat(sub[field]) : null;
+  const changed = (num == null) !== (stored == null) || (num != null && stored != null && Math.abs(num - stored) > 0.0001);
+  if (!changed) { recalcOrderTotal(orderId); return; }
   showToast('Saving ' + label + '...');
   try {
-    const colVal = raw === '' ? '' : String(parseFloat(raw));
+    const colVal = num == null ? '' : String(num);
     const mutation = `mutation {
       change_multiple_column_values(
         board_id: ${SUBITEMS_BOARD_ID}, item_id: ${subId},
@@ -746,7 +770,7 @@ async function saveSubNumber(orderId, subId, inputId, colId, field, label) {
       ) { id }
     }`;
     await mondayQuery(mutation);
-    if (sub) sub[field] = raw;
+    if (sub) sub[field] = colVal;
     recalcOrderTotal(orderId);
     showToast('Saved', false);
     hideToast();
@@ -1057,6 +1081,8 @@ let paidOrdersSnapshot = [];
 
 function applySearch() {
   const q = document.getElementById('search-input').value.toLowerCase().trim();
+  const clearBtn = document.getElementById('search-clear');
+  if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
   if (!q) {
     allOrders = [...allOrdersSnapshot];
     paidOrders = [...paidOrdersSnapshot];
@@ -1069,6 +1095,12 @@ function applySearch() {
   }
   updateTabCounts();
   renderTab();
+}
+
+function clearSearch() {
+  const input = document.getElementById('search-input');
+  if (input) { input.value = ''; input.focus(); }
+  applySearch();
 }
 
 async function saveOtherCharges(orderId) {
