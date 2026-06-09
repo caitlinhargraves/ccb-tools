@@ -109,9 +109,14 @@ main { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
 .price-edit { width: 72px; font-size: 12px; font-family: 'Inter', monospace; padding: 4px 6px; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--surface); color: var(--text); transition: border-color 0.15s; }
 .price-edit:focus { outline: none; border-color: var(--text); }
 .price-edit::placeholder { color: var(--text3); }
-.ptotal-row td { border-top: 1.5px solid var(--border); border-bottom: none; font-size: 13px; color: var(--text); }
-.use-total-btn { font-size: 11px; font-family: 'Inter', sans-serif; font-weight: 500; margin-left: 10px; padding: 3px 9px; background: transparent; color: var(--blue); border: 1px solid var(--blue-border); border-radius: 50px; cursor: pointer; transition: all 0.15s; }
+.products-total-bar { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 12px 12px 2px; flex-wrap: wrap; }
+.pt-metrics { display: flex; align-items: flex-end; gap: 22px; flex-wrap: wrap; }
+.pt-metric { display: flex; flex-direction: column; gap: 2px; }
+.pt-mlabel { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); }
+.pt-value { font-size: 15px; font-weight: 700; font-family: 'Inter', monospace; color: var(--text); }
+.use-total-btn { font-size: 11px; font-family: 'Inter', sans-serif; font-weight: 500; padding: 4px 10px; background: transparent; color: var(--blue); border: 1px solid var(--blue-border); border-radius: 50px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
 .use-total-btn:hover { background: var(--blue-bg); }
+.price-edit.cost { color: var(--text2); }
 
 .products-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
@@ -256,6 +261,7 @@ const ALLOWED_GROUPS = ['topics', 'group_mm26j0hj']; // Active Orders + Complete
 // Subitem column IDs
 const SUB_STATUS = 'color_mm25v786';
 const SUB_PRICE = 'numeric_mm2299qw';
+const SUB_COST = 'numeric_mm266zz9';
 const SUB_QTY = 'numeric_mm22crjt';
 const SUB_COLOR = 'text_mm2276wz';
 const SUB_STYLE = 'text_mm22fv7y';
@@ -316,7 +322,7 @@ async function loadOrders() {
             subitems {
               id name
               column_values(ids: [
-                "${SUB_STATUS}","${SUB_PRICE}","${SUB_QTY}","${SUB_COLOR}","${SUB_STYLE}","${SUB_DECO}"
+                "${SUB_STATUS}","${SUB_PRICE}","${SUB_COST}","${SUB_QTY}","${SUB_COLOR}","${SUB_STYLE}","${SUB_DECO}"
               ]) { id text value }
             }
           }
@@ -351,6 +357,7 @@ async function loadOrders() {
           name: sub.name,
           status: sc[SUB_STATUS]?.text || '',
           price: sc[SUB_PRICE]?.text || '',
+          cost: sc[SUB_COST]?.text || '',
           qty: sc[SUB_QTY]?.text || '',
           color: sc[SUB_COLOR]?.text || '',
           style: sc[SUB_STYLE]?.text || '',
@@ -498,6 +505,9 @@ function renderTab() {
   }
 
   main.innerHTML = html;
+
+  // Populate cost/profit/margin summaries for the rendered orders
+  for (const o of orders) recalcOrderTotal(o.id);
 }
 
 function buildPaidRow(o) {
@@ -527,11 +537,14 @@ function buildOrderCard(order) {
   const subRows = order.subitems.map(s => {
     const statusBadge = getStatusBadge(s.status);
     const lt = lineTotal(s);
+    const mg = lineMargin(s);
     return `<tr>
       <td><div class="product-name" title="${s.name}">${s.name}</div></td>
       <td>${statusBadge}</td>
       <td><span class="price-pre">$</span><input class="price-edit" type="number" step="0.01" placeholder="0.00" value="${s.price}" id="price-${s.id}" oninput="recalcOrderTotal('${order.id}')" onblur="savePrice('${order.id}','${s.id}')"></td>
+      <td><span class="price-pre">$</span><input class="price-edit cost" type="number" step="0.01" placeholder="0.00" value="${s.cost}" id="cost-${s.id}" oninput="recalcOrderTotal('${order.id}')" onblur="saveCost('${order.id}','${s.id}')"></td>
       <td class="mono">${s.qty || '—'}</td>
+      <td class="mono" id="margin-${s.id}">${mg == null ? '—' : marginHtml(mg)}</td>
       <td>${s.color || '—'}</td>
       <td class="mono">${s.style || '—'}</td>
       <td>${s.deco || '—'}</td>
@@ -613,40 +626,73 @@ function buildOrderCard(order) {
           <th>Product</th>
           <th>Status</th>
           <th>Price/Item</th>
+          <th>Our Cost</th>
           <th>Qty</th>
+          <th>Margin</th>
           <th>Color</th>
           <th>Style #</th>
           <th>Decoration</th>
           <th>Line Total</th>
         </tr></thead>
-        <tbody>${subRows || '<tr><td colspan="8" style="color:var(--text3);text-align:center;padding:16px">No products</td></tr>'}</tbody>
-        <tfoot><tr class="ptotal-row">
-          <td colspan="7" style="text-align:right;font-weight:600;padding-top:8px">
-            Products total
-            <button class="use-total-btn" onclick="useTotalAsAmount('${order.id}')" title="Fill Invoiced Amount with this total">→ use as invoiced amount</button>
-          </td>
-          <td class="mono" id="ptotal-${order.id}" style="font-weight:700;padding-top:8px">$${fmtMoney(productsTotal)}</td>
-        </tr></tfoot>
+        <tbody>${subRows || '<tr><td colspan="10" style="color:var(--text3);text-align:center;padding:16px">No products</td></tr>'}</tbody>
       </table>
+      <div class="products-total-bar">
+        <div class="pt-metrics">
+          <span class="pt-metric"><span class="pt-mlabel">Revenue</span><span class="pt-value" id="ptotal-${order.id}">$${fmtMoney(productsTotal)}</span></span>
+          <span class="pt-metric"><span class="pt-mlabel">Our Cost</span><span class="pt-value" id="pcost-${order.id}">—</span></span>
+          <span class="pt-metric"><span class="pt-mlabel">Profit</span><span class="pt-value" id="pprofit-${order.id}">—</span></span>
+          <span class="pt-metric"><span class="pt-mlabel">Margin</span><span class="pt-value" id="pmargin-${order.id}">—</span></span>
+        </div>
+        <button class="use-total-btn" onclick="useTotalAsAmount('${order.id}')" title="Fill Invoiced Amount with the revenue total">→ use as invoiced amount</button>
+      </div>
     </div>
   </div>`;
 }
 
+function getQty(s) {
+  let q = parseFloat(s.qty);
+  if (isNaN(q) || q <= 0) q = 1;
+  return q;
+}
 function getPrice(s) {
   const inp = document.getElementById('price-' + s.id);
   const raw = inp ? inp.value : s.price;
   const p = parseFloat(raw);
   return isNaN(p) ? null : p;
 }
+function getCost(s) {
+  const inp = document.getElementById('cost-' + s.id);
+  const raw = inp ? inp.value : s.cost;
+  const c = parseFloat(raw);
+  return isNaN(c) ? null : c;
+}
 function lineTotal(s) {
   const p = getPrice(s);
   if (p == null) return null;
-  let q = parseFloat(s.qty);
-  if (isNaN(q) || q <= 0) q = 1;
-  return p * q;
+  return p * getQty(s);
+}
+function lineCost(s) {
+  const c = getCost(s);
+  if (c == null) return null;
+  return c * getQty(s);
+}
+function lineMargin(s) {
+  const p = getPrice(s);
+  const c = getCost(s);
+  if (p == null || c == null || p === 0) return null;
+  return (p - c) / p;
 }
 function fmtMoney(n) {
   return (n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function marginColor(m) {
+  if (m == null) return 'var(--text3)';
+  if (m < 0) return 'var(--red)';
+  if (m < 0.20) return 'var(--amber)';
+  return 'var(--green)';
+}
+function marginHtml(m) {
+  return `<span style="color:${marginColor(m)};font-weight:600">${(m * 100).toFixed(0)}%</span>`;
 }
 function getOrderById(id) {
   return allOrders.find(o => o.id === id) || paidOrders.find(o => o.id === id);
@@ -654,15 +700,25 @@ function getOrderById(id) {
 function recalcOrderTotal(orderId) {
   const order = getOrderById(orderId);
   if (!order) return;
-  let total = 0;
+  let revenue = 0, cost = 0;
   for (const s of order.subitems) {
     const lt = lineTotal(s);
-    const cell = document.getElementById('linetot-' + s.id);
-    if (cell) cell.textContent = (lt == null ? '—' : '$' + fmtMoney(lt));
-    if (lt != null) total += lt;
+    const ltCell = document.getElementById('linetot-' + s.id);
+    if (ltCell) ltCell.textContent = (lt == null ? '—' : '$' + fmtMoney(lt));
+    if (lt != null) revenue += lt;
+    const lc = lineCost(s);
+    if (lc != null) cost += lc;
+    const mg = lineMargin(s);
+    const mgCell = document.getElementById('margin-' + s.id);
+    if (mgCell) mgCell.innerHTML = (mg == null ? '—' : marginHtml(mg));
   }
-  const tot = document.getElementById('ptotal-' + orderId);
-  if (tot) tot.textContent = '$' + fmtMoney(total);
+  const profit = revenue - cost;
+  const margin = revenue > 0 ? profit / revenue : null;
+  const setTxt = (id, txt, color) => { const el = document.getElementById(id); if (el) { el.textContent = txt; if (color) el.style.color = color; } };
+  setTxt('ptotal-' + orderId, '$' + fmtMoney(revenue));
+  setTxt('pcost-' + orderId, '$' + fmtMoney(cost));
+  setTxt('pprofit-' + orderId, '$' + fmtMoney(profit), marginColor(margin));
+  setTxt('pmargin-' + orderId, margin == null ? '—' : (margin * 100).toFixed(0) + '%', marginColor(margin));
 }
 function useTotalAsAmount(orderId) {
   const order = getOrderById(orderId);
@@ -672,27 +728,25 @@ function useTotalAsAmount(orderId) {
   const inp = document.getElementById('inv-amt-' + orderId);
   if (inp) { inp.value = total.toFixed(2); inp.focus(); }
 }
-async function savePrice(orderId, subId) {
-  const input = document.getElementById('price-' + subId);
+async function saveSubNumber(orderId, subId, inputId, colId, field, label) {
+  const input = document.getElementById(inputId + subId);
   if (!input) return;
   const raw = input.value.trim();
   const order = getOrderById(orderId);
   const sub = order && order.subitems.find(x => x.id === subId);
-  // Skip the write if nothing actually changed
-  if (sub && (sub.price || '') === raw) return;
+  if (sub && (sub[field] || '') === raw) return; // no change
   if (raw !== '' && isNaN(parseFloat(raw))) return;
-
-  showToast('Saving price...');
+  showToast('Saving ' + label + '...');
   try {
     const colVal = raw === '' ? '' : String(parseFloat(raw));
     const mutation = `mutation {
       change_multiple_column_values(
         board_id: ${SUBITEMS_BOARD_ID}, item_id: ${subId},
-        column_values: "{\\"${SUB_PRICE}\\": \\"${colVal}\\"}"
+        column_values: "{\\"${colId}\\": \\"${colVal}\\"}"
       ) { id }
     }`;
     await mondayQuery(mutation);
-    if (sub) sub.price = raw;
+    if (sub) sub[field] = raw;
     recalcOrderTotal(orderId);
     showToast('Saved', false);
     hideToast();
@@ -701,6 +755,8 @@ async function savePrice(orderId, subId) {
     hideToast(3000);
   }
 }
+function savePrice(orderId, subId) { return saveSubNumber(orderId, subId, 'price-', SUB_PRICE, 'price', 'price'); }
+function saveCost(orderId, subId) { return saveSubNumber(orderId, subId, 'cost-', SUB_COST, 'cost', 'cost'); }
 
 function buildRecentPaidItem(r) {
   return `<div class="recent-item" id="recent-${r.id}">
