@@ -143,6 +143,34 @@
   .pc-flag{font-size:9px;font-weight:700;letter-spacing:.03em;padding:2px 6px;border-radius:4px;white-space:nowrap;}
   .pc-flag-red{background:#FEF2F2;color:#DC2626;}
   .pc-flag-amber{background:#FFFBEB;color:#D97706;}
+  /* Receiving slip (print) */
+  #rcv-slip-print{display:none;}
+  @media print{
+    body.printing-slip>*:not(#rcv-slip-print){display:none !important;}
+    #rcv-slip-print{display:block !important;}
+  }
+  .slip-wrap{font-family:'DM Sans','Inter',sans-serif;color:#1B2A4A;}
+  .slip-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #185FA5;}
+  .slip-brand{font-size:20px;font-weight:700;color:#185FA5;letter-spacing:1px;}
+  .slip-brand-sub{font-size:10px;color:#9CA3AF;margin-top:2px;letter-spacing:.05em;}
+  .slip-doc-title{font-size:18px;font-weight:600;color:#1B2A4A;text-align:right;}
+  .slip-doc-date{font-size:10px;color:#9CA3AF;text-align:right;margin-top:3px;}
+  .slip-meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid #D1D5DB;border-radius:8px;overflow:hidden;margin-bottom:18px;}
+  .slip-meta-cell{padding:11px 15px;border-right:1px solid #D1D5DB;}
+  .slip-meta-cell:last-child{border-right:none;}
+  .slip-meta-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#9CA3AF;margin-bottom:4px;}
+  .slip-meta-val{font-size:13px;font-weight:500;color:#1B2A4A;}
+  .slip-meta-val.mono{font-size:12px;color:#185FA5;}
+  .slip-meta-sub{font-size:11px;color:#6B7280;margin-top:2px;}
+  .slip-tbl{width:100%;border-collapse:collapse;margin-bottom:16px;}
+  .slip-tbl th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#9CA3AF;text-align:left;padding:7px 10px;border-bottom:2px solid #D1D5DB;background:#F3F5FA;}
+  .slip-tbl td{padding:9px 10px;border-bottom:1px solid #D1D5DB;font-size:12px;vertical-align:top;}
+  .slip-pname{font-weight:600;font-size:13px;}
+  .slip-pdetail{font-size:11px;color:#6B7280;margin-top:2px;}
+  .slip-chk{width:16px;height:16px;border:1.5px solid #9CA3AF;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;line-height:1;}
+  .slip-chk.on{background:#185FA5;border-color:#185FA5;color:#fff;font-size:11px;font-weight:700;}
+  .slip-footer-bar{display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid #D1D5DB;margin-top:8px;}
+  .slip-footer-txt{font-size:10px;color:#9CA3AF;}
   .product-card-name{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:7px;line-height:1.3;}
   .product-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px;}
   .ptag{font-size:11px;font-weight:500;padding:2px 7px;border-radius:8px;background:var(--bg);color:var(--body);border:1px solid var(--border);}
@@ -642,6 +670,49 @@ function placedDisplay(d){
 }
 function decoLabel(v){if(!v)return null;const val=typeof v==='string'?JSON.parse(v):v;return val?.ids?.map(i=>decoMap[i]).filter(Boolean).join(', ')||null;}
 
+function printReceivingSlip(orderId){
+  const o=all.find(x=>x.id===orderId);
+  if(!o){alert('Order not found in cache. Try refreshing the page.');return;}
+  const today=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const ihd=o.ihd?new Date(o.ihd+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
+  // Include physical/receivable products (everything except Promo Code and 3rd Party)
+  const subs=(o.subitems||[]).filter(s=>{const t=(sCol(s,'color_mm2dd6d5')||'').toLowerCase();return !/promo|3rd/.test(t);});
+  const rows=subs.map(s=>{
+    const name=s.name||'Product';
+    const color=sCol(s,'text_mm2276wz'),size=sCol(s,'text_mm22yw8s'),sn=sCol(s,'text_mm22fv7y'),sup=sCol(s,'text_mm22qdag');
+    const qty=sCol(s,'numeric_mm22crjt')||'—';
+    const st=sCol(s,'color_mm25v786')||'';
+    let idx=null;try{idx=(sColV(s,'color_mm25v786')||{}).index;}catch(e){}
+    const inHouse=/in house|decorated/i.test(st)||idx===0||idx===8; // already received/in house -> pre-checked
+    const det=[color&&'Color: '+color,size&&'Size: '+size,sn&&'Style #: '+sn,sup&&'Supplier: '+sup].filter(Boolean).join(' · ');
+    return `<tr>
+      <td style="text-align:center;width:34px"><span class="slip-chk ${inHouse?'on':''}">${inHouse?'✓':''}</span></td>
+      <td><div class="slip-pname">${name}</div>${det?`<div class="slip-pdetail">${det}</div>`:''}</td>
+      <td style="text-align:center;width:50px;font-weight:700">${qty}</td>
+      <td style="width:120px;font-size:11px;color:#6B7280">${st||'—'}</td>
+    </tr>`;
+  }).join('');
+  const totalQty=subs.reduce((a,s)=>a+(parseInt(sCol(s,'numeric_mm22crjt'))||0),0);
+  const notesHtml=o.notes?`<div style="background:#F3F5FA;border:1px solid #D1D5DB;border-radius:8px;padding:11px 14px;margin-bottom:16px"><div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#9CA3AF;margin-bottom:5px">Order Notes</div><div style="font-size:12px;color:#1B2A4A;line-height:1.6">${o.notes}</div></div>`:'';
+  const html=`<div class="slip-wrap">
+    <div class="slip-hdr"><div><div class="slip-brand">CCB IMPRINT</div><div class="slip-brand-sub">ccbimprint.com</div></div><div><div class="slip-doc-title">Receiving Slip</div><div class="slip-doc-date">Printed ${today}</div></div></div>
+    <div class="slip-meta-grid">
+      <div class="slip-meta-cell"><div class="slip-meta-lbl">Client</div><div class="slip-meta-val">${o.name||''}</div>${o.contact?`<div class="slip-meta-sub">${o.contact}</div>`:''}</div>
+      <div class="slip-meta-cell"><div class="slip-meta-lbl">CCB Order #</div><div class="slip-meta-val mono">${o.ccbNum||o.orderNum||o.id}</div>${o.sales?`<div class="slip-meta-sub">Rep: ${o.sales}</div>`:''}</div>
+      <div class="slip-meta-cell"><div class="slip-meta-lbl">In Hands</div><div class="slip-meta-val">${ihd}</div>${o.imprint?`<div class="slip-meta-sub">${o.imprint}</div>`:''}</div>
+    </div>
+    ${subs.length?`<table class="slip-tbl"><thead><tr><th style="text-align:center;width:34px">In</th><th>Product</th><th style="text-align:center;width:50px">Qty</th><th style="width:120px">Status</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td></td><td style="font-size:11px;color:#9CA3AF;padding:7px 10px">Total pieces</td><td style="text-align:center;font-weight:700;padding:7px 10px">${totalQty}</td><td></td></tr></tfoot></table>`:'<div style="font-size:13px;color:#9CA3AF;padding:16px 0">No receivable products on this order.</div>'}
+    ${notesHtml}
+    <div class="slip-footer-bar"><div class="slip-footer-txt">CCB Imprint · ${today}</div><div class="slip-footer-txt">Checked = already in house</div></div>
+  </div>`;
+  let c=document.getElementById('rcv-slip-print');
+  if(!c){c=document.createElement('div');c.id='rcv-slip-print';document.body.appendChild(c);}
+  c.innerHTML=html;
+  document.body.classList.add('printing-slip');
+  window.print();
+  setTimeout(()=>document.body.classList.remove('printing-slip'),300);
+}
+
 function buildCard(sub){
   const name=sub.name||'Product',qty=sCol(sub,'numeric_mm22crjt'),color=sCol(sub,'text_mm2276wz'),
     size=sCol(sub,'text_mm22yw8s'),sn=sCol(sub,'text_mm22fv7y'),sup=sCol(sub,'text_mm22qdag'),ps=sCol(sub,'color_mm25v786');
@@ -764,6 +835,10 @@ function render(){
             <svg viewBox="0 0 12 12"><path d="M8.5 1.5l2 2-6 6H3V8l5.5-6.5z"/></svg>
             Edit
           </button>
+          <button class="edit-order-btn" title="Print receiving slip" onclick="printReceivingSlip('${o.id}')" style="margin-top:4px">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 4.5V1.5h6v3M3 9H1.5V5.5h9V9H9M3.5 7.5h5V11h-5z"/></svg>
+            Slip
+          </button>
         </td>
       </tr>`);
       if(isEx)rows.push(`<tr class="subrow"><td colspan="11"><div class="subrow-inner">
@@ -820,6 +895,10 @@ function render(){
           <button class="edit-order-btn" onclick="openEditModal('${o.id}')">
             <svg viewBox="0 0 12 12"><path d="M8.5 1.5l2 2-6 6H3V8l5.5-6.5z"/></svg>
             Edit
+          </button>
+          <button class="edit-order-btn" title="Print receiving slip" onclick="printReceivingSlip('${o.id}')" style="margin-top:4px">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 4.5V1.5h6v3M3 9H1.5V5.5h9V9H9M3.5 7.5h5V11h-5z"/></svg>
+            Slip
           </button>
         </td>
       </tr>`);
@@ -2189,8 +2268,12 @@ async function submitOrder(){
       ?'The lead has been added to the Pipeline in Monday.'
       :'The order has been added to Active Orders in Monday.';
 
-    // Trigger cache refresh in background
-    fetch('/api/refresh').then(()=>load()).catch(()=>{});
+    // Refresh cache + data, then optionally print a receiving slip
+    try{ await fetch('/api/refresh'); }catch(e){}
+    await load();
+    if(!toPipeline){
+      setTimeout(()=>{ if(confirm(`Order ${orderNum} created. Print a receiving slip for it now?`)){ printReceivingSlip(parentId); } }, 150);
+    }
 
 
   }catch(err){
