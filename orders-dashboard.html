@@ -2272,6 +2272,13 @@ async function submitOrder(){
     try{ await fetch('/api/refresh'); }catch(e){}
     await load();
     if(!toPipeline){
+      // One-time retry so a freshly-created order's products are surfaced before the slip prints
+      let oNew=all.find(x=>x.id===parentId);
+      if(!oNew||!(oNew.subitems&&oNew.subitems.length)){
+        await new Promise(r=>setTimeout(r,1200));
+        try{ await fetch('/api/refresh'); }catch(e){}
+        await load();
+      }
       setTimeout(()=>{ if(confirm(`Order ${orderNum} created. Print a receiving slip for it now?`)){ printReceivingSlip(parentId); } }, 150);
     }
 
