@@ -1194,7 +1194,7 @@ function openModal(){
   addProduct();
   setTimeout(()=>{
     document.getElementById('f-company').focus();
-    checkAndOfferDraft();
+    checkForDraft();
   },300);
 }
 
@@ -1696,6 +1696,8 @@ function resetModal(){
   // Restore Add Another button
   const btn=document.querySelector('#modalSuccess .btn-ghost');
   if(btn)btn.style.display='';
+  // Clear any stale "Draft saved" badge
+  if(typeof removeDraftBadge==='function')removeDraftBadge();
 }
 
 function syncPromoFromOrderStatus(){
@@ -2530,20 +2532,65 @@ function loadDraft() {
 
 function clearDraft() {
   localStorage.removeItem(DRAFT_KEY);
+  removeDraftBadge();
 }
+
+// ---- AUTOSAVE ----------------------------------------------------------
+// Silent, debounced. Fires on any input/change inside the new-order form
+// (event-delegated, so product rows added later are covered automatically).
+// Skipped in edit mode -- those edits live in Monday, not the draft slot.
+let _autosaveTimer = null;
+function autosaveDraft() {
+  if (editingOrderId) return;
+  clearTimeout(_autosaveTimer);
+  _autosaveTimer = setTimeout(() => {
+    try {
+      const draft = collectFormData();
+      // Don't persist a totally empty form
+      const hasContent = draft['f-company'] || draft['f-contact'] || draft['f-email'] ||
+        draft['f-phone'] || draft['f-shipto'] ||
+        (draft.products || []).some(p => Object.values(p).some(v => v && String(v).trim()));
+      if (!hasContent) return;
+      draft._savedAt = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      updateDraftBadge(draft._savedAt);
+    } catch (e) { console.warn('autosave failed', e); }
+  }, 600);
+}
+
+function updateDraftBadge(at) {
+  const title = document.getElementById('modalTitle');
+  if (!title) return;
+  let badge = title.querySelector('.draft-badge');
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.className = 'draft-badge';
+    badge.style.marginLeft = '8px';
+    title.appendChild(badge);
+  }
+  badge.innerHTML = '💾 Draft saved ' + at;
+}
+function removeDraftBadge() {
+  const badge = document.querySelector('#modalTitle .draft-badge');
+  if (badge) badge.remove();
+}
+
+// Wire autosave once -- #modalForm is static, delegation covers dynamic rows
+(function wireAutosave() {
+  const form = document.getElementById('modalForm');
+  if (!form) return;
+  form.addEventListener('input', autosaveDraft);
+  form.addEventListener('change', autosaveDraft);
+})();
 
 function restoreDraft(draft) {
   if (!draft) return;
   // Restore order-level fields
-  const fields = ['f-company','f-contact','f-email','f-phone','f-ihd','f-shipto','f-notes'];
-  fields.forEach(id => {
+  DRAFT_ORDER_FIELDS.forEach(id => {
     const el = document.getElementById(id);
     if (el && draft[id] !== undefined) el.value = draft[id];
   });
-  if (draft['f-sales']) { const el = document.getElementById('f-sales'); if(el) el.value = draft['f-sales']; }
-  if (draft['f-imprint']) { const el = document.getElementById('f-imprint'); if(el) el.value = draft['f-imprint']; }
-  if (draft['f-status']) { const el = document.getElementById('f-status'); if(el) el.value = draft['f-status']; }
-  // Restore products (text fields only, not files)
+  // Restore products
   if (draft.products) {
     // Remove existing products and re-add
     document.getElementById('productsList').innerHTML = '';
@@ -2551,18 +2598,26 @@ function restoreDraft(draft) {
     draft.products.forEach(p => {
       addProduct();
       const pid = productCount;
-      ['name','style','color','size','supplier','price','cost'].forEach(f => {
+      DRAFT_PRODUCT_FIELDS.forEach(f => {
         const el = document.getElementById(`p${pid}-${f}`);
         if (el && p[f]) el.value = p[f];
       });
+      // refresh the per-row qty total after restoring sizes
+      if (typeof calcQty === 'function') calcQty(pid);
     });
   }
+  if (typeof recalcOrderTotals === 'function') recalcOrderTotals();
   showAlert(`Draft restored from ${draft._savedAt}`, 'success');
 }
 
+const DRAFT_ORDER_FIELDS = ['f-company','f-contact','f-email','f-phone','f-ihd','f-shipto',
+  'f-payment','f-notes','f-sales','f-imprint','f-status',
+  'f-addr-street','f-addr-city','f-addr-state','f-addr-zip','f-other-charges','f-other-charges-details'];
+const DRAFT_PRODUCT_FIELDS = ['name','style','color','size','supplier','price','cost','type','ponum','podate','productstatus'];
+
 function collectFormData() {
   const data = {};
-  ['f-company','f-contact','f-email','f-phone','f-ihd','f-shipto','f-notes','f-sales','f-imprint','f-status'].forEach(id => {
+  DRAFT_ORDER_FIELDS.forEach(id => {
     const el = document.getElementById(id);
     if (el) data[id] = el.value;
   });
@@ -2571,7 +2626,7 @@ function collectFormData() {
   document.querySelectorAll('.product-block').forEach(block => {
     const pid = block.id.replace('product-','');
     const p = {};
-    ['name','style','color','size','supplier','price','cost'].forEach(f => {
+    DRAFT_PRODUCT_FIELDS.forEach(f => {
       const el = document.getElementById(`p${pid}-${f}`);
       if (el) p[f] = el.value;
     });
