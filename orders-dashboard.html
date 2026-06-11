@@ -179,6 +179,11 @@
   .product-card-name{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:7px;line-height:1.3;}
   .product-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px;}
   .ptag{font-size:11px;font-weight:500;padding:2px 7px;border-radius:8px;background:var(--bg);color:var(--body);border:1px solid var(--border);}
+  .pc-status-row{margin-bottom:9px;}
+  .pc-status{font-size:11px;font-weight:600;padding:2px 22px 2px 8px;border-radius:8px;background:#FFFBEB url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23D97706' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>") no-repeat right 7px center;color:#D97706;border:1px solid #FDE68A;font-family:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;max-width:200px;}
+  .pc-status:hover{border-color:#D97706;}
+  .pc-status:disabled{opacity:.5;cursor:default;}
+  .pc-status option{color:var(--body);background:#fff;}
   .deco-summary{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;}
   .deco-pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:50px;font-size:10px;font-weight:700;letter-spacing:.04em;background:#E0F5FD;color:var(--cyan);border:1px solid #99D9F5;}
   .deco-list{display:flex;flex-direction:column;gap:4px;}
@@ -606,6 +611,7 @@ const salesMap={1:'Chaz Lucius',2:'Bailey McGraw',3:'Jess Miller',4:'Nick Miller
 const impMap={1:'CCB Imprint',2:'CCB Insight'};
 const decoMap={1:'Embroidery',2:'Screenprint',3:'DTG',4:'DTF',5:'Engrave',6:'Other',7:'Sublimated',8:'UV Print'};
 const salesIdMap={'Chaz Lucius':1,'Bailey McGraw':2,'Jess Miller':3,'Nick Miller':4,'George Miller':5,'Web Order':6,'Caitlin Hargraves':7};
+const PRODUCT_STATUSES=['In House','Product Ordered','Receiving','On Shelf (Undecorated)','In Production','QC','Decorated','On Shelf (Decorated)'];
 
 function col(o,id){return o.column_values?.find(c=>c.id===id)?.text||'';}
 function colV(o,id){try{return JSON.parse(o.column_values?.find(c=>c.id===id)?.value||'null');}catch{return null;}}
@@ -767,7 +773,14 @@ function buildCard(sub){
   </div>`:'';
   const tags=[qty?`<span class="ptag">Qty: ${qty}</span>`:'',color?`<span class="ptag">${color}</span>`:'',
     size?`<span class="ptag">${size}</span>`:'',sn?`<span class="ptag">${sn}</span>`:'',
-    sup?`<span class="ptag">${sup}</span>`:'',ps?`<span class="ptag" style="background:#FFFBEB;color:#D97706">${ps}</span>`:''].filter(Boolean).join('');
+    sup?`<span class="ptag">${sup}</span>`:''].filter(Boolean).join('');
+
+  // Inline-editable product status dropdown (saves to subitems board)
+  const psInList=PRODUCT_STATUSES.includes(ps);
+  const statusOpts=`<option value=""${!ps?' selected':''}>— Status —</option>`
+    +(ps&&!psInList?`<option selected>${ps}</option>`:'')
+    +PRODUCT_STATUSES.map(s=>`<option${s===ps?' selected':''}>${s}</option>`).join('');
+  const statusControl=`<div class="pc-status-row"><select class="pc-status" data-prev="${ps}" onclick="event.stopPropagation()" onchange="saveProductStatus('${sub.id}',this)">${statusOpts}</select></div>`;
 
   const decos=[
     {n:1,sv:sColV(sub,'dropdown_mm2y4w39'),pl:sCol(sub,'text_mm2y6g62'),sc:sCol(sub,'numeric_mm2yn2nb'),dv:sColV(sub,'boolean_mm2y62fz')},
@@ -798,7 +811,36 @@ function buildCard(sub){
       ? `<button class="pc-fbtn ok" onclick="event.stopPropagation();viewAsset('${artIds[0]}')">📎 Artwork</button><button class="pc-fbtn" title="Add / replace artwork" onclick="event.stopPropagation();pickAndUpload('${sub.id}','file_mm221c09','*/*',false)">＋</button>`
       : `<button class="pc-fbtn warn" onclick="event.stopPropagation();pickAndUpload('${sub.id}','file_mm221c09','*/*',false)">＋ Artwork</button>`}
   </div>`;
-  return`<div class="product-card pc-flex">${thumb}<div class="pc-main"><div class="product-card-name">${name}</div>${filesRow}<div class="product-tags">${tags}</div>${decoSummary}${decoHTML}${marginHTML}</div></div>`;
+  return`<div class="product-card pc-flex">${thumb}<div class="pc-main"><div class="product-card-name">${name}</div>${statusControl}${filesRow}<div class="product-tags">${tags}</div>${decoSummary}${decoHTML}${marginHTML}</div></div>`;
+}
+
+// Inline save of a product (subitem) status from the orders dashboard
+async function saveProductStatus(subId,sel){
+  const val=sel.value;
+  const prev=sel.dataset.prev||'';
+  if(val===prev)return;
+  sel.disabled=true;
+  try{
+    const body=val?{color_mm25v786:{label:val}}:{color_mm25v786:{}};
+    const cv=JSON.stringify(JSON.stringify(body));
+    await mondayMutation(`mutation{change_multiple_column_values(board_id:${SUBITEMS_BOARD},item_id:${subId},column_values:${cv}){id}}`);
+    // keep local cache in sync so collapsed summaries / re-renders stay correct
+    for(const o of all){
+      const s=(o.subitems||[]).find(x=>x.id===subId);
+      if(!s)continue;
+      let c=s.column_values?.find(cv=>cv.id==='color_mm25v786');
+      if(c){c.text=val;c.value=val?JSON.stringify({label:val}):null;}
+      else if(s.column_values){s.column_values.push({id:'color_mm25v786',text:val,value:val?JSON.stringify({label:val}):null});}
+      break;
+    }
+    sel.dataset.prev=val;
+    ordToast('Product status updated',1500);
+  }catch(e){
+    sel.value=prev;
+    ordToast('Update failed: '+(e.message||e),4000);
+  }finally{
+    sel.disabled=false;
+  }
 }
 
 function buildProductSummaryLines(subitems){
