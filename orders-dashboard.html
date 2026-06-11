@@ -1320,7 +1320,7 @@ async function openEditModal(orderId){
             <label class="form-label">Product Type</label>
             <select class="form-select" id="p${id}-type" onchange="syncOrderStatusFromProducts()">
               <option value="">Select...</option>
-              <option ${(pType==="In House"||pType==="In House Decoration")?"selected":""}>In House</option>
+              <option value="In House" ${(pType==="In House"||pType==="In House Decoration")?"selected":""}>In House Decoration</option>
               <option ${pType==="Pre-Decorated"?"selected":""}>Pre-Decorated</option>
               <option ${pType.includes("3rd")?"selected":""}>3rd Party</option>
               <option ${pType.includes("Promo")?"selected":""}>Promo Code</option>
@@ -1721,7 +1721,7 @@ function addProduct(){
         <label class="form-label">Product Type</label>
         <select class="form-select" id="p${id}-type" onchange="syncOrderStatusFromProducts()">
           <option value="">Select...</option>
-          <option>In House</option>
+          <option value="In House">In House Decoration</option>
           <option>Pre-Decorated</option>
           <option>3rd Party</option>
           <option>Promo Code</option>

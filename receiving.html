@@ -898,7 +898,7 @@ function renderDashboard(orders, snapshot = true) {
 
     const rows = order.products.map(p => {
       const typeClass = p.type === 'Pre-Decorated' ? 'type-pd' : 'type-ih';
-      const typeLabel = p.type === 'Pre-Decorated' ? 'Pre-Dec' : 'In House';
+      const typeLabel = p.type === 'Pre-Decorated' ? 'Pre-Dec' : 'In House Dec';
       const hasMockup = p.mockupUrls && p.mockupUrls.length > 0;
       const mockupCell = hasMockup
         ? `<button class="mockup-btn" onclick="openMockup('${p.id}', ${JSON.stringify(p.mockupUrls).replace(/"/g, '&quot;')}, '${p.name.replace(/'/g,"\\'")}')">
