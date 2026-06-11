@@ -1388,6 +1388,11 @@ async function openEditModal(orderId){
       }
     });
   }
+  // Populate each product's calculated qty total on open (oninput only fires on user edits)
+  document.querySelectorAll('#modalForm .product-block').forEach(b=>{
+    const pid=(b.id||'').replace('product-','');
+    if(pid)calcQty(pid);
+  });
   recalcOrderTotals();
 
   document.getElementById('modalOverlay').classList.add('open');
@@ -1895,7 +1900,7 @@ function parseQtyFromSize(sizeStr){
   if(!sizeStr) return 0;
   let total=0;
   sizeStr.split(',').forEach(part=>{
-    const tokens=part.trim().split(/[\/\-\s]+/).filter(Boolean);
+    const tokens=part.trim().split(/[\/\-:\u2013\u2014\s]+/).filter(Boolean);
     const ints=tokens.filter(t=>/^\d+$/.test(t));
     if(ints.length===1) total+=parseInt(ints[0]);                 // one qty + optional size token
     else if(ints.length>=2) total+=parseInt(ints[ints.length-1]); // ambiguous (e.g. numeric size): take last int as qty
