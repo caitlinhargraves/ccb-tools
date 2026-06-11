@@ -766,10 +766,18 @@ function buildCard(sub){
   const totalCost=cost*qtyNum;
   const margin=totalRev>0?((totalRev-totalCost)/totalRev*100):null;
   const mc=margin===null?'var(--text3)':margin>=40?'#16a34a':margin>=20?'#D97706':'#DC2626';
-  const marginHTML=(price||cost)?`<div style="display:flex;gap:10px;margin-top:7px;padding-top:7px;border-top:1px solid var(--border);font-size:11px;flex-wrap:wrap">
-    ${price?`<span style="color:var(--text2)">💰 <strong>$${totalRev.toFixed(2)}</strong> rev</span>`:''}
-    ${cost?`<span style="color:var(--text2)">📦 <strong>$${totalCost.toFixed(2)}</strong> cost</span>`:''}
-    ${margin!==null?`<span style="color:${mc};font-weight:700">${margin.toFixed(1)}% margin</span>`:''}
+  const lineProfit=totalRev-totalCost;
+  const marginHTML=(price||cost)?`<div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--border);font-size:11px;">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      ${price?`<span style="color:var(--text2)">🏷️ <strong>$${price.toFixed(2)}</strong>/ea price</span>`:''}
+      ${cost?`<span style="color:var(--text2)">📦 <strong>$${cost.toFixed(2)}</strong>/ea cost</span>`:''}
+      ${margin!==null?`<span style="color:${mc};font-weight:700">${margin.toFixed(1)}% margin</span>`:''}
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;color:var(--text3);font-size:10px;">
+      <span>× ${qtyNum} = <strong style="color:var(--text2)">$${totalRev.toFixed(2)}</strong> rev</span>
+      ${cost?`<span><strong style="color:var(--text2)">$${totalCost.toFixed(2)}</strong> cost</span>`:''}
+      ${margin!==null?`<span><strong style="color:${mc}">$${lineProfit.toFixed(2)}</strong> profit</span>`:''}
+    </div>
   </div>`:'';
   const tags=[qty?`<span class="ptag">Qty: ${qty}</span>`:'',color?`<span class="ptag">${color}</span>`:'',
     size?`<span class="ptag">${size}</span>`:'',sn?`<span class="ptag">${sn}</span>`:'',
