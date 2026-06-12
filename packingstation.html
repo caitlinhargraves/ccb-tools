@@ -210,8 +210,9 @@ main { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
    PRINT STYLES
 ══════════════════════════════ */
 @media print {
+  @page { size: letter; margin: 0.45in; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  .slip-page { page-break-after: always; break-after: page; }
+  .slip-page { page-break-after: always; break-after: page; max-width: 100%; padding: 0; margin: 0; }
   .slip-page:last-child { page-break-after: avoid; break-after: avoid; }
   .slip-status-bar { display: none !important; }
   .topbar, header, .detail-topbar, .progress-section, .picklist-header,
@@ -247,18 +248,18 @@ main { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
 .spec-box-print strong { color: #7a4d00; display: block; margin-bottom: 2px; }
 
 .slip-table { width: 100%; border-collapse: collapse; font-size: 10.5px; margin-bottom: 14px; table-layout: fixed; }
-.slip-table colgroup col:nth-child(1) { width: 22px; }
-.slip-table colgroup col:nth-child(2) { width: 56px; }
+.slip-table colgroup col:nth-child(1) { width: 20px; }
+.slip-table colgroup col:nth-child(2) { width: 58px; }
 .slip-table colgroup col:nth-child(3) { width: auto; }
-.slip-table colgroup col:nth-child(4) { width: 58px; }
-.slip-table colgroup col:nth-child(5) { width: 28px; }
-.slip-table colgroup col:nth-child(6) { width: 74px; }
-.slip-table colgroup col:nth-child(7) { width: 36px; }
-.slip-table colgroup col:nth-child(8) { width: 74px; }
+.slip-table colgroup col:nth-child(4) { width: 62px; }
+.slip-table colgroup col:nth-child(5) { width: 42px; }
+.slip-table colgroup col:nth-child(6) { width: 72px; }
+.slip-table colgroup col:nth-child(7) { width: 44px; }
+.slip-table colgroup col:nth-child(8) { width: 80px; }
 .slip-table thead tr { background: #1a2035; color: #fff; }
-.slip-table th { padding: 6px 7px; text-align: left; font-weight: 700; font-size: 9.5px; letter-spacing: 0.3px; }
+.slip-table th { padding: 6px 5px; text-align: left; font-weight: 700; font-size: 9.5px; letter-spacing: 0.3px; white-space: nowrap; }
 .slip-table th.ctr { text-align: center; }
-.slip-table td { padding: 7px 7px; border-bottom: 0.5px solid #eee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slip-table td { padding: 7px 5px; border-bottom: 0.5px solid #eee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .slip-table tr:nth-child(even) td { background: #f8f8f8; }
 .slip-table td.ctr { text-align: center; }
 .slip-table td.mono { font-family: 'Courier New', monospace; font-size: 10px; }
