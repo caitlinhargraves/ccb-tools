@@ -406,7 +406,9 @@ function buildOrderGroup(list){
   const missFlag=missingMock?`<span style="font-size:12px;font-weight:500;color:var(--amber);background:var(--amber-bg);padding:3px 9px;border-radius:6px">${missingMock} missing mockup</span>`:'';
   const missingArt=list.filter(p=>!(p.artworkAssetIds||[]).length).length;
   const artFlag=missingArt?`<span style="font-size:12px;font-weight:500;color:var(--red);background:var(--red-bg);padding:3px 9px;border-radius:6px">${missingArt} missing artwork</span>`:'';
-  const rows=list.map(p=>buildProductRow(p,p._section||'active')).join('');
+  const _byMethod=new Map();for(const _p of list){const _m=_p.primaryDecoDisplay||'Other';if(!_byMethod.has(_m))_byMethod.set(_m,[]);_byMethod.get(_m).push(_p);}
+  const _multi=_byMethod.size>1;
+  let rows='';for(const [_method,_prods] of _byMethod){if(_multi)rows+=`<div style="padding:7px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${DECO_TC[_method]||'var(--text3)'}">${_method}</div>`;rows+=_prods.map(_p=>buildProductRow(_p,_p._section||'active')).join('');}
   return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -577,6 +579,14 @@ function buildCard(p,section){
 
 const STATION_IDS=[5,8];
 function restrictToStation(p){var ss=(p.allSlots||[]).filter(function(slot){try{var ids=JSON.parse((p._sc[slot.style]||{}).value||'{}').ids||[];return ids.some(function(id){return STATION_IDS.indexOf(parseInt(id))>=0;});}catch(e){return false;}});if(!ss.length)return null;p.allSlots=ss;var pid=parseInt((JSON.parse((p._sc[ss[0].style]||{}).value||'{}').ids||[])[0]||0);p.primaryDecoId=pid;p.primaryDecoDisplay=DECO_DISPLAY[pid]||p.primaryDecoDisplay;p.placement=(p._sc[ss[0].place]||{}).text||p.placement;p.artworkDesc=(p._sc[ss[0].desc]||{}).text||p.artworkDesc;return p;}
+function qtyFromSize(sizeStr,fallback){
+  if(!sizeStr)return fallback;
+  var total=0,found=false,re=/([0-9]*[A-Za-z][A-Za-z0-9]*)\s*[\/\-:x\u00d7\u2013\u2014]\s*(\d+)/gi,m;
+  while((m=re.exec(sizeStr))!==null){total+=parseInt(m[2],10);found=true;}
+  if(found)return String(total);
+  if(/^\s*\d+\s*$/.test(sizeStr))return sizeStr.trim();
+  return fallback;
+}
 function parseProduct(item,sub){
   const cv={};for(const c of item.column_values)cv[c.id]=c;
   const sc={};for(const c of sub.column_values)sc[c.id]=c;
@@ -594,7 +604,7 @@ function parseProduct(item,sub){
   const artworkAssetIds=_slotArtIds;
   const primaryPlacement=allSlots.length>0?sc[allSlots[0].place]?.text||'':sc[S_PLACEMENT]?.text||'';
   const primaryDesc=allSlots.length>0?sc[allSlots[0].desc]?.text||'':sc[S_ARTWORK_DESC]?.text||'';
-  return{id:sub.id,name:sub.name,orderId:item.id,orderName:item.name,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',inHands:cv[O_INHAND]?.text||'',placed:cv[O_PLACED]?.text||'',created:item.created_at||'',shelf:cv[O_SHELF]?.text||'',salesperson:cv[O_SALES]?.text||'',qty:sc[S_QTY]?.text||'',color:sc[S_COLOR]?.text||'',size:sc[S_SIZE]?.text||'',style:sc[S_STYLE]?.text||'',primaryDecoId,primaryDecoDisplay,placement:primaryPlacement,artworkDesc:primaryDesc,prodNotes:sc[S_PROD_NOTES]?.text||'',mockupAssetId,mockupAssetIds,artworkAssetIds,allSlots,_sc:sc};
+  return{id:sub.id,name:sub.name,orderId:item.id,orderName:item.name,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',inHands:cv[O_INHAND]?.text||'',placed:cv[O_PLACED]?.text||'',created:item.created_at||'',shelf:cv[O_SHELF]?.text||'',salesperson:cv[O_SALES]?.text||'',qty:qtyFromSize(sc[S_SIZE]?.text||'',sc[S_QTY]?.text||''),color:sc[S_COLOR]?.text||'',size:sc[S_SIZE]?.text||'',style:sc[S_STYLE]?.text||'',primaryDecoId,primaryDecoDisplay,placement:primaryPlacement,artworkDesc:primaryDesc,prodNotes:sc[S_PROD_NOTES]?.text||'',mockupAssetId,mockupAssetIds,artworkAssetIds,allSlots,_sc:sc};
 }
 
 function sortByDate(arr){return arr.sort((a,b)=>{if(!a.inHands&&!b.inHands)return 0;if(!a.inHands)return 1;if(!b.inHands)return-1;return new Date(a.inHands)-new Date(b.inHands);});}
