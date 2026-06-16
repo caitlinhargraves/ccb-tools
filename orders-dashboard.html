@@ -230,6 +230,34 @@
   .draft-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;background:#FFF9F0;color:#D97706;border:1px solid #FCD34D;border-radius:50px;padding:2px 10px;font-weight:600;}
   .draft-row{display:flex;gap:8px;align-items:center;padding:10px 20px;background:var(--bg);border-top:1px solid var(--border);font-size:12px;color:var(--muted);}
   .form-hint{font-size:11px;color:var(--subtle);margin-top:2px;}
+  /* INLINE VALIDATION */
+  .form-input.invalid,.form-select.invalid,.form-textarea.invalid{border-color:var(--magenta)!important;box-shadow:0 0 0 3px rgba(236,0,140,.12)!important;}
+  .field-err-msg{font-size:11px;color:var(--magenta);font-weight:600;margin-top:3px;display:flex;align-items:center;gap:4px;}
+  /* QTY BREAKDOWN CHIPS */
+  .qty-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
+  .qty-chip{font-size:11px;font-weight:600;color:var(--navy);background:#EEF6FF;border:1px solid #CDE7FB;border-radius:50px;padding:2px 9px;line-height:1.6;}
+  .qty-chip .qc-size{color:var(--cyan);font-weight:700;}
+  .qty-chip.qty-chip-total{background:var(--navy);color:#fff;border-color:var(--navy);}
+  /* DECORATION STYLE ICON BAR */
+  .deco-style-bar{display:flex;flex-wrap:wrap;gap:6px;}
+  .deco-style-btn{flex:1 1 0;min-width:70px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px 6px;background:var(--white);border:1.5px solid var(--border);border-radius:9px;cursor:pointer;color:var(--muted);font-family:'Inter',sans-serif;transition:border-color .18s,color .18s,background .18s,transform .12s,box-shadow .18s;}
+  .deco-style-btn svg{width:21px;height:21px;pointer-events:none;}
+  .deco-style-btn .ds-label{font-size:10px;font-weight:700;letter-spacing:.02em;pointer-events:none;}
+  .deco-style-btn:hover{border-color:#99D9F5;color:var(--navy);background:#F7FCFF;}
+  .deco-style-btn.active{border-color:var(--cyan);color:var(--cyan);background:#F0FAFF;box-shadow:0 0 0 3px rgba(0,174,239,.12);transform:translateY(-1px);}
+  /* ORDER MODE TOGGLE */
+  .mode-toggle{display:flex;gap:0;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:3px;margin-bottom:18px;}
+  .mode-opt{flex:1;text-align:center;font-size:12px;font-weight:700;letter-spacing:.03em;padding:7px 10px;border-radius:7px;border:none;background:none;color:var(--muted);cursor:pointer;font-family:'Inter',sans-serif;transition:background .18s,color .18s,box-shadow .18s;}
+  .mode-opt.active{background:var(--white);color:var(--navy);box-shadow:0 1px 3px rgba(27,42,74,.12);}
+  .mode-opt .mo-sub{display:block;font-size:9px;font-weight:600;color:var(--subtle);letter-spacing:.03em;margin-top:1px;text-transform:none;}
+  .mode-opt.active .mo-sub{color:var(--cyan);}
+  /* COLLAPSIBLE MORE DETAILS */
+  .more-toggle{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--cyan);background:none;border:none;cursor:pointer;padding:4px 0;font-family:'Inter',sans-serif;}
+  .more-toggle svg{width:11px;height:11px;transition:transform .2s;}
+  .more-toggle.open svg{transform:rotate(90deg);}
+  .more-wrap{display:none;margin-top:12px;}
+  .more-wrap.open{display:block;animation:moreIn .2s ease;}
+  @keyframes moreIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
 
   /* PRODUCT BLOCK */
   .products-list{display:flex;flex-direction:column;gap:12px;}
@@ -432,6 +460,13 @@
     <!-- FORM -->
     <div class="modal-body" id="modalForm">
 
+      <!-- ORDER MODE TOGGLE (also acts as the old #pipelineLabel hide/show hook) -->
+      <div id="pipelineLabel" class="mode-toggle">
+        <button type="button" class="mode-opt active" id="mode-order" onclick="setOrderMode(false)">New Order<span class="mo-sub">full job &middot; goes to Active</span></button>
+        <button type="button" class="mode-opt" id="mode-pipeline" onclick="setOrderMode(true)">Pipeline<span class="mo-sub">lead &middot; follow up later</span></button>
+        <input type="checkbox" id="f-pipeline" hidden>
+      </div>
+
       <!-- ORDER DETAILS -->
       <div class="form-section">
         <div class="form-section-title">Order Details</div>
@@ -451,15 +486,11 @@
             <input type="email" class="form-input" id="f-email" placeholder="email@company.com">
           </div>
           <div class="form-group">
-            <label class="form-label">Phone</label>
-            <input type="tel" class="form-input" id="f-phone" placeholder="(612) 555-0100">
-          </div>
-        </div>
-        <div class="form-row cols-3">
-          <div class="form-group">
             <label class="form-label">In Hands Date <span class="req">*</span></label>
             <input type="date" class="form-input" id="f-ihd">
           </div>
+        </div>
+        <div class="form-row cols-2">
           <div class="form-group">
             <label class="form-label">Sales Rep</label>
             <select class="form-select" id="f-sales">
@@ -477,67 +508,80 @@
             </select>
           </div>
         </div>
-        <div class="form-row cols-2">
-          <div class="form-group">
-            <label class="form-label">Shipping To (Name / Company)</label>
-            <input type="text" class="form-input" id="f-shipto" placeholder="Name or company">
+
+        <button type="button" class="more-toggle" id="moreToggle" onclick="toggleMore()">
+          <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2l5 4.5L4 11"/></svg>
+          More details (phone, shipping, charges, status)
+        </button>
+        <div class="more-wrap" id="moreWrap">
+          <div class="form-row cols-2">
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <input type="tel" class="form-input" id="f-phone" placeholder="(612) 555-0100">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Payment Method</label>
+              <input type="text" class="form-input" id="f-payment" placeholder="CC, Gradient Bucks, etc.">
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Payment Method</label>
-            <input type="text" class="form-input" id="f-payment" placeholder="CC, Gradient Bucks, etc.">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Shipping To (Name / Company)</label>
+              <input type="text" class="form-input" id="f-shipto" placeholder="Name or company">
+            </div>
           </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Street Address</label>
-            <input type="text" class="form-input" id="f-addr-street" placeholder="123 Main St">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Street Address</label>
+              <input type="text" class="form-input" id="f-addr-street" placeholder="123 Main St">
+            </div>
           </div>
-        </div>
-        <div class="form-row cols-3">
-          <div class="form-group">
-            <label class="form-label">City</label>
-            <input type="text" class="form-input" id="f-addr-city" placeholder="Minneapolis">
+          <div class="form-row cols-3">
+            <div class="form-group">
+              <label class="form-label">City</label>
+              <input type="text" class="form-input" id="f-addr-city" placeholder="Minneapolis">
+            </div>
+            <div class="form-group">
+              <label class="form-label">State</label>
+              <input type="text" class="form-input" id="f-addr-state" placeholder="MN" maxlength="2" style="text-transform:uppercase">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Zip</label>
+              <input type="text" class="form-input" id="f-addr-zip" placeholder="55401" maxlength="10">
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">State</label>
-            <input type="text" class="form-input" id="f-addr-state" placeholder="MN" maxlength="2" style="text-transform:uppercase">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Notes</label>
+              <textarea class="form-textarea" id="f-notes" placeholder="Any special instructions or context..."></textarea>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Zip</label>
-            <input type="text" class="form-input" id="f-addr-zip" placeholder="55401" maxlength="10">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Other Charges ($)</label>
+              <input type="number" class="form-input" id="f-other-charges" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Other Charges Details</label>
+              <input type="text" class="form-input" id="f-other-charges-details" placeholder="e.g. Rush fee, setup, shipping...">
+            </div>
           </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Notes</label>
-            <textarea class="form-textarea" id="f-notes" placeholder="Any special instructions or context..."></textarea>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Other Charges ($)</label>
-            <input type="number" class="form-input" id="f-other-charges" placeholder="0.00" step="0.01" min="0">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Other Charges Details</label>
-            <input type="text" class="form-input" id="f-other-charges-details" placeholder="e.g. Rush fee, setup, shipping...">
-          </div>
-        </div>
-        <div class="form-row" id="order-status-row">
-          <div class="form-group">
-            <label class="form-label">Order Status <span style="font-size:10px;color:var(--subtle);font-weight:400">(leave blank for New)</span></label>
-            <select class="form-select" id="f-status" onchange="syncPromoFromOrderStatus()">
-              <option value="">New</option>
-              <option>In House</option>
-              <option>Products Ordered</option>
-              <option>Decorated</option>
-              <option>3rd Party Ordered</option>
-              <option>3rd Party Complete</option>
-              <option>Promo Code</option>
-              <option>Ready for Shipping</option>
-              <option>Shipped</option>
-              <option>Delivered</option>
-            </select>
+          <div class="form-row" id="order-status-row">
+            <div class="form-group">
+              <label class="form-label">Order Status <span style="font-size:10px;color:var(--subtle);font-weight:400">(leave blank for New)</span></label>
+              <select class="form-select" id="f-status" onchange="syncPromoFromOrderStatus()">
+                <option value="">New</option>
+                <option>In House</option>
+                <option>Products Ordered</option>
+                <option>Decorated</option>
+                <option>3rd Party Ordered</option>
+                <option>3rd Party Complete</option>
+                <option>Promo Code</option>
+                <option>Ready for Shipping</option>
+                <option>Shipped</option>
+                <option>Delivered</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -546,7 +590,7 @@
       <div class="form-section" id="products-form-section">
         <div class="form-section-title">Products</div>
         <div class="products-list" id="productsList"></div>
-        <button type="button" class="add-product-btn" onclick="addProduct()">
+        <button type="button" class="add-product-btn" onclick="addProductFocus()">
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 1.5v11M1.5 6.5h11"/></svg>
           Add Product
         </button>
@@ -560,6 +604,7 @@
       <div class="success-title">Order Created!</div>
       <div class="success-num" id="successNum"></div>
       <div class="success-sub">The order has been added to Active Orders in Monday.</div>
+      <div id="successWarn" style="display:none;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#B45309;background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:8px 12px;margin-top:6px;max-width:360px;line-height:1.4">⚠ No CCB number was assigned (numbering service did not respond). Open the order in Monday to add one.</div>
       <button class="btn btn-primary" onclick="closeModal()" style="margin-top:8px">Done</button>
       <button class="btn btn-ghost" onclick="resetModal()" style="margin-top:4px">Add Another Order</button>
     </div>
@@ -574,10 +619,6 @@
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h9M5 3V2h3v1M4 3l.5 7.5h4L9 3"/></svg>
           Delete
         </button>
-        <label id="pipelineLabel" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;margin-right:4px">
-          <input type="checkbox" id="f-pipeline" style="width:14px;height:14px;accent-color:var(--cyan)">
-          Save to Pipeline instead
-        </label>
         <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
         <button class="btn btn-primary" id="submitBtn" onclick="submitOrder()">
           Create Order
@@ -1214,6 +1255,8 @@ async function openEditModal(orderId){
   if(deleteBtn)deleteBtn.style.display='inline-flex';
   const pipelineLabel=document.getElementById('pipelineLabel');
   if(pipelineLabel)pipelineLabel.style.display='none';
+  // Existing orders carry shipping / charges / status data, so show those fields up front
+  if(typeof setMoreOpen==='function')setMoreOpen(true);
 
   // Hide pipeline checkbox in edit mode (no longer in HTML but guard anyway)
 
@@ -1299,7 +1342,7 @@ async function openEditModal(orderId){
   const productsSection=document.getElementById('products-form-section');
   if(productsSection){
     productsSection.innerHTML=`<div class="form-section-title">Products</div><div id="productsList"></div>
-    <button type="button" class="add-product-btn" onclick="addProduct()" style="margin-top:8px">
+    <button type="button" class="add-product-btn" onclick="addProductFocus()" style="margin-top:8px">
       <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.5 1v9M1 5.5h9"/></svg>
       Add Product
     </button>`;
@@ -1328,7 +1371,10 @@ async function openEditModal(orderId){
       div.innerHTML=`
         <div class="product-block-header">
           <div class="product-block-num">Product ${id}</div>
-          ${id>1?`<button type="button" class="remove-product" onclick="removeProduct(${id})">Remove</button>`:''}
+          <div style="display:flex;gap:6px;align-items:center">
+            <button type="button" class="remove-product" title="Copy this product into a new one" onclick="duplicateProduct(${id})">⧉ Duplicate</button>
+            ${id>1?`<button type="button" class="remove-product" onclick="removeProduct(${id})">Remove</button>`:''}
+          </div>
         </div>
         <div class="form-row cols-2">
           <div class="form-group">
@@ -1349,6 +1395,7 @@ async function openEditModal(orderId){
             <label class="form-label">Sizes & quantities</label>
             <input type="text" class="form-input" id="p${id}-size" placeholder="S/12, M/24, L/8  —  or just 48" value="${(pSize||pQtyDirect||'').replace(/"/g,'&quot;')}" oninput="calcQty(${id});recalcOrderTotals()">
             <div class="form-hint">Sizes or a plain number for no-size items (golf balls, etc). Total: <strong id="p${id}-qtytotal">—</strong></div>
+            <div class="qty-chips" id="p${id}-qtychips"></div>
           </div>
         </div>
         <div class="form-row cols-2">
@@ -1426,7 +1473,7 @@ async function openEditModal(orderId){
         addDeco(id);
         const curDId=decoCounters[id];
         const styleEl=document.getElementById(`p${id}-d${curDId}-style`);
-        if(styleEl&&styleId)styleEl.value=String(styleId);
+        if(styleId)setDecoStyleValue(id,curDId,styleId);
         const plEl=document.getElementById(`p${id}-d${curDId}-placement`);
         if(plEl)plEl.value=pl;
         const descEl=document.getElementById(`p${id}-d${curDId}-desc`);
@@ -1698,6 +1745,9 @@ function resetModal(){
   if(btn)btn.style.display='';
   // Clear any stale "Draft saved" badge
   if(typeof removeDraftBadge==='function')removeDraftBadge();
+  // Reset the New Order / Pipeline toggle and collapse the More-details section
+  if(typeof setOrderMode==='function')setOrderMode(false);
+  if(typeof setMoreOpen==='function')setMoreOpen(false);
 }
 
 function syncPromoFromOrderStatus(){
@@ -1722,6 +1772,154 @@ function syncOrderStatusFromProducts(){
     if(os&&[...os.options].some(o=>(o.value||o.text)==='Promo Code'))os.value='Promo Code';
   }
 }
+// ===================== DECORATION STYLE ICON BAR =====================
+const DECO_STYLES=[
+  {v:'1',label:'Embroidery',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19L16 8"/><circle cx="17.3" cy="6.7" r="1.5"/><path d="M19.6 4.4c-2 .2-3.3 1.5-3.3 3.1"/></svg>'},
+  {v:'2',label:'Screenprint',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="13" rx="1"/><path d="M6.5 13.5h11"/><path d="M9.2 13.5l2.6-3.7"/></svg>'},
+  {v:'3',label:'DTG',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4.5 4.5 6.5 6.2 9.6 8 8.4V19.5h8V8.4l1.8 1.2L19.5 6.5 16 4.5 14 6a2.8 2.8 0 0 1-4 0z"/><circle cx="12" cy="13" r="1.5" fill="currentColor" stroke="none"/></svg>'},
+  {v:'4',label:'DTF',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="10" rx="1"/><path d="M12 13v5"/><path d="M9.5 16.5 12 19l2.5-2.5"/><path d="M7.5 21h9"/></svg>'},
+  {v:'8',label:'UV Print',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="3"/><path d="M12 2.6v1.6M4.7 9H3.1M20.9 9h-1.6M6.6 3.6l1.1 1.1M17.4 3.6l-1.1 1.1"/><path d="M5 20h14"/></svg>'},
+  {v:'5',label:'Engrave',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.6 3.6 20.4 9.4 11 18.8l-3.4 1 1-3.4z"/><path d="M4 20.6h6"/></svg>'},
+  {v:'6',label:'Other',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="6" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18" cy="12" r="1.6" fill="currentColor"/></svg>'}
+];
+function buildDecoStyleBar(productId,dId){
+  return DECO_STYLES.map(s=>
+    `<button type="button" class="deco-style-btn" data-val="${s.v}" title="${s.label}" onclick="setDecoStyleValue(${productId},${dId},'${s.v}')">${s.icon}<span class="ds-label">${s.label}</span></button>`
+  ).join('');
+}
+// Sets the hidden #...-style input AND highlights the matching icon button.
+// Clicking the active icon again clears the selection (decoration is optional).
+function setDecoStyleValue(productId,dId,val){
+  val=String(val==null?'':val);
+  const hidden=document.getElementById(`p${productId}-d${dId}-style`);
+  const bar=document.getElementById(`p${productId}-d${dId}-stylebar`);
+  if(hidden){
+    if(hidden.value===val)val='';
+    hidden.value=val;
+  }
+  if(bar)bar.querySelectorAll('.deco-style-btn').forEach(b=>b.classList.toggle('active',!!val&&b.dataset.val===val));
+}
+
+// ===================== MORE-DETAILS DISCLOSURE =====================
+function toggleMore(){
+  const w=document.getElementById('moreWrap'),t=document.getElementById('moreToggle');
+  if(!w)return;
+  const open=!w.classList.contains('open');
+  w.classList.toggle('open',open);
+  if(t)t.classList.toggle('open',open);
+}
+function setMoreOpen(open){
+  const w=document.getElementById('moreWrap'),t=document.getElementById('moreToggle');
+  if(w)w.classList.toggle('open',open);
+  if(t)t.classList.toggle('open',open);
+}
+
+// ===================== ORDER / PIPELINE MODE TOGGLE =====================
+function setOrderMode(toPipeline){
+  const cb=document.getElementById('f-pipeline');
+  if(cb)cb.checked=!!toPipeline;
+  const mo=document.getElementById('mode-order'),mp=document.getElementById('mode-pipeline');
+  if(mo)mo.classList.toggle('active',!toPipeline);
+  if(mp)mp.classList.toggle('active',!!toPipeline);
+  if(!editingOrderId){
+    const sb=document.getElementById('submitBtn');
+    if(sb)sb.textContent=toPipeline?'Add to Pipeline':'Create Order';
+  }
+}
+
+// ===================== INLINE VALIDATION =====================
+function clearFieldErrors(){
+  document.querySelectorAll('#modalForm .invalid').forEach(el=>el.classList.remove('invalid'));
+  document.querySelectorAll('#modalForm .field-err-msg').forEach(el=>el.remove());
+}
+function markInvalid(id,msg){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.classList.add('invalid');
+  const grp=el.closest('.form-group')||el.parentElement;
+  if(grp&&!grp.querySelector('.field-err-msg')){
+    const m=document.createElement('div');
+    m.className='field-err-msg';
+    m.textContent='⚠ '+msg;
+    grp.appendChild(m);
+  }
+}
+function ensureFieldVisible(el){
+  if(!el)return;
+  const wrap=el.closest('.more-wrap');
+  if(wrap&&!wrap.classList.contains('open'))setMoreOpen(true);
+  try{el.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
+}
+// Clear a field's error as soon as the user starts fixing it
+(function wireFieldErrorClear(){
+  const form=document.getElementById('modalForm');
+  if(!form)return;
+  form.addEventListener('input',e=>{
+    const t=e.target;
+    if(t&&t.classList&&t.classList.contains('invalid')){
+      t.classList.remove('invalid');
+      const grp=t.closest('.form-group');
+      const m=grp&&grp.querySelector('.field-err-msg');
+      if(m)m.remove();
+    }
+  });
+})();
+
+// ===================== SIZE / QTY BREAKDOWN =====================
+// Returns [{size, qty}, ...] mirroring parseQtyFromSize's token logic.
+function parseSizeBreakdown(sizeStr){
+  if(!sizeStr)return [];
+  const out=[];
+  sizeStr.split(',').forEach(part=>{
+    const raw=part.trim();
+    if(!raw)return;
+    const tokens=raw.split(/[\/\-:\u2013\u2014\s]+/).filter(Boolean);
+    const ints=tokens.filter(t=>/^\d+$/.test(t));
+    const sizeToks=tokens.filter(t=>!/^\d+$/.test(t));
+    if(ints.length===1){
+      out.push({size:sizeToks.join(' '),qty:parseInt(ints[0])});
+    } else if(ints.length>=2){
+      out.push({size:sizeToks.concat(ints.slice(0,-1)).join(' '),qty:parseInt(ints[ints.length-1])});
+    }
+  });
+  return out;
+}
+
+// ===================== PRODUCT HELPERS =====================
+// Add a product and drop focus on its name field (used by the Add Product buttons)
+function addProductFocus(){
+  addProduct();
+  const nId=productCount;
+  const nameEl=document.getElementById(`p${nId}-name`);
+  if(nameEl){nameEl.focus({preventScroll:true});nameEl.scrollIntoView({behavior:'smooth',block:'center'});}
+}
+// Clone a product (and its decorations) into a fresh block. Files are not copied.
+function duplicateProduct(srcId){
+  addProduct();
+  const nId=productCount;
+  ['name','style','color','size','supplier','price','cost','ponum','podate','type','productstatus'].forEach(f=>{
+    const s=document.getElementById(`p${srcId}-${f}`),d=document.getElementById(`p${nId}-${f}`);
+    if(s&&d)d.value=s.value;
+  });
+  document.querySelectorAll(`#p${srcId}-decos .deco-spot-block`).forEach(b=>{
+    const m=(b.id||'').match(/-deco(\d+)$/);
+    if(!m)return;
+    const sd=m[1];
+    addDeco(nId);
+    const nd=decoCounters[nId];
+    const sv=document.getElementById(`p${srcId}-d${sd}-style`)?.value;
+    if(sv)setDecoStyleValue(nId,nd,sv);
+    ['placement','desc','screens','colors','prodnotes'].forEach(f=>{
+      const s=document.getElementById(`p${srcId}-d${sd}-${f}`),d=document.getElementById(`p${nId}-d${nd}-${f}`);
+      if(s&&d)d.value=s.value;
+    });
+  });
+  calcQty(nId);
+  recalcOrderTotals();
+  const nameEl=document.getElementById(`p${nId}-name`);
+  if(nameEl){nameEl.focus({preventScroll:true});nameEl.scrollIntoView({behavior:'smooth',block:'center'});}
+}
+
 function addProduct(){
   productCount++;
   const id=productCount;
@@ -1731,7 +1929,10 @@ function addProduct(){
   div.innerHTML=`
     <div class="product-block-header">
       <div class="product-block-num">Product ${id}</div>
-      ${id>1?`<button type="button" class="remove-product" onclick="removeProduct(${id})">Remove</button>`:''}
+      <div style="display:flex;gap:6px;align-items:center">
+        <button type="button" class="remove-product" title="Copy this product into a new one" onclick="duplicateProduct(${id})">⧉ Duplicate</button>
+        ${id>1?`<button type="button" class="remove-product" onclick="removeProduct(${id})">Remove</button>`:''}
+      </div>
     </div>
     <div class="form-row cols-2">
       <div class="form-group">
@@ -1752,6 +1953,7 @@ function addProduct(){
         <label class="form-label">Sizes & quantities</label>
         <input type="text" class="form-input" id="p${id}-size" placeholder="S/12, M/24, L/8  —  or just 48" oninput="calcQty(${id});recalcOrderTotals()">
         <div class="form-hint">Sizes or a plain number for no-size items (golf balls, etc). Total: <strong id="p${id}-qtytotal">—</strong></div>
+        <div class="qty-chips" id="p${id}-qtychips"></div>
       </div>
     </div>
     <div class="form-row cols-2">
@@ -1836,39 +2038,34 @@ function addDeco(productId){
       <div class="deco-spot-label">Decoration ${dId}</div>
       <button type="button" class="remove-deco" onclick="removeDeco(${productId},${dId})">Remove</button>
     </div>
-    <div class="form-row cols-2">
-      <div class="form-group">
-        <label class="form-label">Decoration Style</label>
-        <select class="form-select" id="p${productId}-d${dId}-style">
-          <option value="">Select...</option>
-          <option value="1">Embroidery</option><option value="2">Screenprint</option>
-          <option value="3">DTG</option><option value="4">DTF</option>
-          <option value="5">Engrave</option><option value="6">Other</option>
-          <option value="8">UV Print</option>
-        </select>
-      </div>
+    <div class="form-group" style="margin-bottom:10px">
+      <label class="form-label">Decoration Style</label>
+      <div class="deco-style-bar" id="p${productId}-d${dId}-stylebar">${buildDecoStyleBar(productId,dId)}</div>
+      <input type="hidden" id="p${productId}-d${dId}-style" value="">
+    </div>
+    <div class="form-row cols-3">
       <div class="form-group">
         <label class="form-label">Placement</label>
         <input type="text" class="form-input" id="p${productId}-d${dId}-placement" placeholder="Left Chest, Full Back...">
       </div>
-    </div>
-    <div class="form-row cols-3">
       <div class="form-group">
         <label class="form-label">Artwork Description</label>
         <input type="text" class="form-input" id="p${productId}-d${dId}-desc" placeholder="Logo name or description">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Screen Count</label>
-        <input type="number" class="form-input" id="p${productId}-d${dId}-screens" placeholder="2" min="0">
       </div>
       <div class="form-group">
         <label class="form-label">Colors / Thread</label>
         <input type="text" class="form-input" id="p${productId}-d${dId}-colors" placeholder="White, Navy...">
       </div>
     </div>
-    <div class="form-group" style="margin-top:4px">
-      <label class="form-label">Production Notes</label>
-      <input type="text" class="form-input" id="p${productId}-d${dId}-prodnotes" placeholder="Special instructions, price note, thread details...">
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label class="form-label">Screen Count</label>
+        <input type="number" class="form-input" id="p${productId}-d${dId}-screens" placeholder="2" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Production Notes</label>
+        <input type="text" class="form-input" id="p${productId}-d${dId}-prodnotes" placeholder="Special instructions, price note...">
+      </div>
     </div>
     <div class="form-row cols-2" style="margin-top:6px">
       <div class="form-group">
@@ -1920,9 +2117,19 @@ function removeDeco(productId,dId){
 function calcQty(id){
   const sizeVal=document.getElementById(`p${id}-size`)?.value||'';
   const totalEl=document.getElementById(`p${id}-qtytotal`);
-  if(!totalEl)return;
   const total=parseQtyFromSize(sizeVal);
-  totalEl.textContent=total>0?total:' — ';
+  if(totalEl)totalEl.textContent=total>0?total:' — ';
+  const chipsEl=document.getElementById(`p${id}-qtychips`);
+  if(chipsEl){
+    const parts=parseSizeBreakdown(sizeVal);
+    if(!parts.length){
+      chipsEl.innerHTML='';
+    } else if(parts.length===1&&!parts[0].size){
+      chipsEl.innerHTML=`<span class="qty-chip qty-chip-total">${parts[0].qty} pc${parts[0].qty===1?'':'s'}</span>`;
+    } else {
+      chipsEl.innerHTML=parts.map(p=>`<span class="qty-chip"><span class="qc-size">${p.size||'?'}</span> · ${p.qty}</span>`).join('')+`<span class="qty-chip qty-chip-total">${total} total</span>`;
+    }
+  }
 }
 function recalcOrderTotals(){
   const el=document.getElementById('orderTotals');
@@ -2151,19 +2358,36 @@ async function submitOrder(){
   const btn=document.getElementById('submitBtn');
   const toPipeline = document.getElementById('f-pipeline')?.checked || false;
 
-  // Validate
-  if(!v('f-company')){alert('Company name is required.');document.getElementById('f-company').focus();return;}
-  if(!v('f-contact')){alert('Contact name is required.');document.getElementById('f-contact').focus();return;}
-  if(!v('f-email')){alert('Email is required.');document.getElementById('f-email').focus();return;}
+  // Validate (inline, all-at-once -- no blocking alerts)
+  clearFieldErrors();
+  const problems=[];
+  if(!v('f-company'))problems.push(['f-company','Company name is required']);
+  if(!v('f-contact'))problems.push(['f-contact','Contact name is required']);
+  if(!v('f-email'))problems.push(['f-email','Email is required']);
+  else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('f-email')))problems.push(['f-email','That email looks off']);
+  let noProducts=false;
   if(!toPipeline){
-    if(!v('f-ihd')){alert('In Hands Date is required.');document.getElementById('f-ihd').focus();return;}
-    if(!v('f-imprint')){alert('Please select CCB Imprint or CCB Insight.');document.getElementById('f-imprint').focus();return;}
+    if(!v('f-ihd'))problems.push(['f-ihd','In Hands Date is required']);
+    if(!v('f-imprint'))problems.push(['f-imprint','Pick CCB Imprint or Insight']);
     const productBlocks=document.querySelectorAll('.product-block');
-    if(!productBlocks.length){alert('Please add at least one product.');return;}
+    if(!productBlocks.length)noProducts=true;
     for(const pb of productBlocks){
       const pid=pb.id.replace('product-','');
-      if(!v(`p${pid}-name`)){alert('All products need a name.');document.getElementById(`p${pid}-name`).focus();return;}
+      if(!v(`p${pid}-name`))problems.push([`p${pid}-name`,'Product needs a name']);
     }
+  }
+  if(problems.length||noProducts){
+    problems.forEach(([id,msg])=>markInvalid(id,msg));
+    if(problems.length){
+      const first=document.getElementById(problems[0][0]);
+      ensureFieldVisible(first);
+      if(first)first.focus({preventScroll:true});
+    } else if(noProducts){
+      if(typeof ordToast==='function')ordToast('Add at least one product before creating the order.',3200);
+      const ps=document.getElementById('products-form-section');
+      if(ps)ps.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+    return;
   }
 
   btn.classList.add('loading');
@@ -2171,16 +2395,18 @@ async function submitOrder(){
   document.getElementById('modalStatus').textContent=toPipeline?'Adding to Pipeline in Monday...':'Creating order in Monday...';
 
   try{
-    // Auto-assign CCB Order Number
+    // Auto-assign CCB Order Number (retry once before giving up)
     let ccbOrderNum='';
-    try{
-      const ctrl=new AbortController();
-      const t=setTimeout(()=>ctrl.abort(),8000);
-      const nr=await fetch('/api/next-order-number',{signal:ctrl.signal});
-      clearTimeout(t);
-      const nd=await nr.json();
-      ccbOrderNum=nd.orderNumber||'';
-    }catch(e){console.warn('Could not get order number:',e);}
+    for(let attempt=1;attempt<=2&&!ccbOrderNum;attempt++){
+      try{
+        const ctrl=new AbortController();
+        const t=setTimeout(()=>ctrl.abort(),8000);
+        const nr=await fetch('/api/next-order-number',{signal:ctrl.signal});
+        clearTimeout(t);
+        const nd=await nr.json();
+        ccbOrderNum=nd.orderNumber||'';
+      }catch(e){console.warn('Order number attempt '+attempt+' failed:',e);}
+    }
 
     // Build parent column values
     const today=new Date().toISOString().split('T')[0];
@@ -2369,6 +2595,8 @@ async function submitOrder(){
     document.querySelector('#modalSuccess .success-sub').textContent=toPipeline
       ?'The lead has been added to the Pipeline in Monday.'
       :'The order has been added to Active Orders in Monday.';
+    const _warnEl=document.getElementById('successWarn');
+    if(_warnEl)_warnEl.style.display=(!toPipeline&&!ccbOrderNum)?'flex':'none';
 
     // Refresh cache + data, then optionally print a receiving slip
     try{ await fetch('/api/refresh'); }catch(e){}
@@ -2454,6 +2682,13 @@ setInterval(load,60000);
 
 // Close on Escape
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+// Cmd/Ctrl + Enter submits the open order modal
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){
+    const ov=document.getElementById('modalOverlay');
+    if(ov&&ov.classList.contains('open')){e.preventDefault();submitOrder();}
+  }
+});
 
 async function bulkArchiveCompleted() {
   const btn = document.getElementById('archiveBtn');
