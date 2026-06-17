@@ -894,8 +894,8 @@ function buildCard(sub){
       ? `<button class="pc-fbtn ok" onclick="event.stopPropagation();viewAsset('${mockIds[0]}')">🖼 Mockup</button><button class="pc-fbtn" title="Add another mockup" onclick="event.stopPropagation();pickAndUpload('${sub.id}','file_mm26e29h','image/*',true)">＋</button>`
       : `<button class="pc-fbtn warn" onclick="event.stopPropagation();pickAndUpload('${sub.id}','file_mm26e29h','image/*',true)">＋ Mockup</button>`}
     ${hasArt
-      ? `<button class="pc-fbtn ok" onclick="event.stopPropagation();viewAsset('${artIds[0]}')">📎 Artwork</button><button class="pc-fbtn" title="Add / replace artwork" onclick="event.stopPropagation();pickAndUpload('${sub.id}','file_mm221c09','*/*',false)">＋</button>`
-      : `<button class="pc-fbtn warn" onclick="event.stopPropagation();pickAndUpload('${sub.id}','file_mm221c09','*/*',false)">＋ Artwork</button>`}
+      ? `<button class="pc-fbtn ok" onclick="event.stopPropagation();viewAsset('${artIds[0]}')">📎 Artwork</button><button class="pc-fbtn" title="Add more artwork" onclick="event.stopPropagation();pickAndUpload('${sub.id}','file_mm221c09','*/*',true)">＋</button>`
+      : `<button class="pc-fbtn warn" onclick="event.stopPropagation();pickAndUpload('${sub.id}','file_mm221c09','*/*',true)">＋ Artwork</button>`}
   </div>`;
   return`<div class="product-card pc-flex">${thumb}<div class="pc-main"><div class="product-card-name">${name}</div>${statusControl}${filesRow}<div class="product-tags">${tags}</div>${decoSummary}${decoHTML}${marginHTML}</div></div>`;
 }
@@ -2120,8 +2120,8 @@ function addDeco(productId){
         <div class="mockup-preview" id="p${productId}-d${dId}-mockup-preview"></div>
       </div>
       <div class="form-group">
-        <label class="form-label">Artwork File <span style="font-size:10px;color:var(--muted);font-weight:400">(any format)</span></label>
-        <input type="file" class="form-file-input" id="p${productId}-d${dId}-artwork" accept="*/*">
+        <label class="form-label">Artwork Files <span style="font-size:10px;color:var(--muted);font-weight:400">(any format, multiple OK)</span></label>
+        <input type="file" class="form-file-input" id="p${productId}-d${dId}-artwork" accept="*/*" multiple>
         <div id="p${productId}-d${dId}-artwork-name" style="font-size:11px;color:var(--muted);margin-top:3px"></div>
       </div>
     </div>
@@ -2321,7 +2321,7 @@ async function saveOrderEdits(){
         if(colors)subCols[decoColorColsE[dId]]=colors;
         if(pNotes)subCols['long_text_mm27e9c4']={text:pNotes};
         const artInput=document.getElementById(`p${pid}-d${dId}-artwork`);
-        if(artInput?.files?.[0])artworkFilesE[dId]=artInput.files[0];
+        if(artInput?.files?.length)artworkFilesE[dId]=Array.from(artInput.files);
         const mockInput=document.getElementById(`p${pid}-d${dId}-mockups`);
         if(mockInput?.files?.length)mockupFilesE.push(...Array.from(mockInput.files));
       }
@@ -2335,14 +2335,16 @@ async function saveOrderEdits(){
         resolvedSubId=newSub?.create_subitem?.id;
       }
       if(resolvedSubId&&Object.keys(artworkFilesE).length){
-        for(const [dId,file] of Object.entries(artworkFilesE)){
-          try{
-            const fd=new FormData();
-            fd.append('file',file,file.name);
-            fd.append('itemId',resolvedSubId);
-            fd.append('columnId',artFileColsE[dId]);
-            await fetch('/api/upload-file',{method:'POST',body:fd});
-          }catch(e){console.warn('Artwork upload failed:',e);artUploadErrors.push(e.message||'Upload failed');}
+        for(const [dId,files] of Object.entries(artworkFilesE)){
+          for(const file of files){
+            try{
+              const fd=new FormData();
+              fd.append('file',file,file.name);
+              fd.append('itemId',resolvedSubId);
+              fd.append('columnId',artFileColsE[dId]);
+              await fetch('/api/upload-file',{method:'POST',body:fd});
+            }catch(e){console.warn('Artwork upload failed:',e);artUploadErrors.push(e.message||'Upload failed');}
+          }
         }
       }
       if(resolvedSubId&&mockupFilesE.length){
@@ -2585,7 +2587,7 @@ async function submitOrder(){
           if(prodNotes)subCols['long_text_mm27e9c4']={text:prodNotes};
           // Collect artwork files to upload after subitem is created
           const artInput=document.getElementById(`p${pid}-d${dId}-artwork`);
-          if(artInput?.files?.[0])artworkFiles[dId]=artInput.files[0];
+          if(artInput?.files?.length)artworkFiles[dId]=Array.from(artInput.files);
           const mockInput=document.getElementById(`p${pid}-d${dId}-mockups`);
           if(mockInput?.files?.length)mockupFiles.push(...Array.from(mockInput.files));
         }
@@ -2605,14 +2607,16 @@ async function submitOrder(){
         // Upload artwork files via server relay
         if(subId&&Object.keys(artworkFiles).length){
           document.getElementById('modalStatus').textContent=`Uploading artwork for ${pName}...`;
-          for(const [dId,file] of Object.entries(artworkFiles)){
-            try{
-              const fd=new FormData();
-              fd.append('file',file,file.name);
-              fd.append('itemId',subId);
-              fd.append('columnId',artFileCols[dId]);
-              await fetch('/api/upload-file',{method:'POST',body:fd});
-            }catch(e){console.warn('Artwork upload failed:',e);artUploadErrors.push(e.message||'Upload failed');}
+          for(const [dId,files] of Object.entries(artworkFiles)){
+            for(const file of files){
+              try{
+                const fd=new FormData();
+                fd.append('file',file,file.name);
+                fd.append('itemId',subId);
+                fd.append('columnId',artFileCols[dId]);
+                await fetch('/api/upload-file',{method:'POST',body:fd});
+              }catch(e){console.warn('Artwork upload failed:',e);artUploadErrors.push(e.message||'Upload failed');}
+            }
           }
         }
         // Upload mockups to the mockup column (supports multiple)
