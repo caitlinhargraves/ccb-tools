@@ -110,6 +110,19 @@
   .inv-paid{background:#ECFDF5;color:#059669;}
   .inv-overdue{background:#FFF0F8;color:var(--magenta);font-weight:700;}
   .inv-select{font-family:inherit;font-size:11px;font-weight:600;padding:3px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;}
+  .status-select{font-family:inherit;font-size:11px;font-weight:600;padding:3px 20px 3px 9px;border-radius:8px;border:1px solid transparent;cursor:pointer;appearance:none;-webkit-appearance:none;max-width:170px;background-repeat:no-repeat;background-position:right 6px center;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>");}
+  .status-select:hover{filter:brightness(.97);}
+  .status-select option{color:var(--body);background:#fff;font-weight:500;}
+  .ss-new{background-color:#F3F4F6;color:#6B7280;}
+  .ss-inhouse{background-color:#EFF6FF;color:#3B82F6;}
+  .ss-ordered{background-color:#ECFDF5;color:#059669;}
+  .ss-decorated{background-color:#FFFBEB;color:#D97706;}
+  .ss-ready{background-color:#F0FDF4;color:#16A34A;}
+  .ss-shipped{background-color:#F0FDF4;color:#15803D;}
+  .ss-3rdparty{background-color:#FAF5FF;color:#7C3AED;}
+  .ss-3rdcomplete{background-color:#ECFDF5;color:#059669;}
+  .ss-promo{background-color:#FFF0F8;color:var(--magenta);}
+  .ss-delivered{background-color:#F3F4F6;color:#374151;}
   .salesperson{font-size:12px;color:var(--muted);font-weight:500;}
   .product-count{font-size:12px;color:var(--muted);}
   .product-count strong{color:var(--navy);font-weight:700;}
@@ -678,6 +691,30 @@ function statusBadge(s){
     '3rd Party Complete':'badge-3rdcomplete','Promo Code':'badge-promo','Delivered':'badge-delivered'};
   return`<span class="badge ${m[s]||'badge-new'}">${s||'New'}</span>`;
 }
+const STATUS_CLS={'New':'ss-new','In House':'ss-inhouse','Products Ordered':'ss-ordered','Decorated':'ss-decorated',
+  'Ready for Shipping':'ss-ready','Shipped':'ss-shipped','3rd Party Ordered':'ss-3rdparty',
+  '3rd Party Complete':'ss-3rdcomplete','Promo Code':'ss-promo','Delivered':'ss-delivered'};
+const ORDER_STATUSES=['New','In House','Products Ordered','Decorated','3rd Party Ordered','3rd Party Complete','Promo Code','Ready for Shipping','Shipped','Delivered'];
+// Inline-editable order status dropdown (saves to Orders board)
+function statusSelect(o){
+  const cur=o.status||'New';
+  return`<select class="status-select ${STATUS_CLS[cur]||'ss-new'}" data-prev="${cur}" onclick="event.stopPropagation()" onchange="setOrderStatus('${o.id}',this.value,this)">`+
+    ORDER_STATUSES.map(s=>`<option ${cur===s?'selected':''}>${s}</option>`).join('')+`</select>`;
+}
+async function setOrderStatus(orderId,label,el){
+  const prev=el?el.dataset.prev:null;
+  try{
+    const cv=JSON.stringify(JSON.stringify({color_mm27qyta:{label:label}}));
+    await mondayMutation(`mutation{change_multiple_column_values(board_id:${ORDERS_BOARD},item_id:${orderId},column_values:${cv}){id}}`);
+    const o=all.find(x=>x.id===orderId);if(o)o.status=label;
+    if(el){el.className='status-select '+(STATUS_CLS[label]||'ss-new');el.dataset.prev=label;}
+    updateStats(all);
+    ordToast('Order status updated',1500);
+  }catch(e){
+    alert('Could not update order status: '+e.message);
+    if(el&&prev){el.value=prev;el.className='status-select '+(STATUS_CLS[prev]||'ss-new');}
+  }
+}
 function invBadge(s){
   const m={'Not Invoiced':'inv-none','Invoice Created':'inv-created','Invoice Sent':'inv-sent','Paid':'inv-paid','Overdue':'inv-overdue'};
   return`<span class="inv ${m[s]||'inv-none'}">${s||'—'}</span>`;
@@ -959,7 +996,7 @@ function render(){
         <td><div class="expand-icon"><svg width="9" height="13" viewBox="0 0 9 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 2l5 4.5L2 11"/></svg></div></td>
         <td><div class="order-num">${o.ccbNum||o.orderNum}</div></td>
         <td><div class="company-name">${o.name}</div>${o.contact?`<div class="contact-name">${o.contact}</div>`:''}</td>
-        <td>${statusBadge(o.status)}</td>
+        <td>${statusSelect(o)}</td>
         <td>${dateDisplay(o.ihd)}</td>
         <td>${placedDisplay(o.placed||o.created)}</td>
         <td style="min-width:180px;max-width:240px">${buildProductSummaryLines(o.subitems)}</td>
@@ -1020,7 +1057,7 @@ function render(){
         <td><div class="expand-icon"><svg width="9" height="13" viewBox="0 0 9 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 2l5 4.5L2 11"/></svg></div></td>
         <td><div class="order-num">${o.ccbNum||o.orderNum}</div></td>
         <td><div class="company-name">${o.name}</div>${o.contact?`<div class="contact-name">${o.contact}</div>`:''}</td>
-        <td>${statusBadge(o.status)}</td>
+        <td>${statusSelect(o)}</td>
         <td>${dateDisplay(o.ihd)}</td>
         <td>${placedDisplay(o.placed||o.created)}</td>
         <td style="min-width:180px;max-width:240px">${buildProductSummaryLines(o.subitems)}</td>
