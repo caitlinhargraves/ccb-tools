@@ -1688,6 +1688,7 @@ function closeModal(){
 }
 
 // ── File viewer lightbox ──────────────────────────────────────────────
+let _assetReq=0;
 async function viewAsset(assetId){
   // Create lightbox if it doesn't exist
   let lb=document.getElementById('assetLightbox');
@@ -1707,10 +1708,12 @@ async function viewAsset(assetId){
     lb.addEventListener('click',function(e){if(e.target===lb)lb.style.display='none';});
     document.body.appendChild(lb);
   }
-  // Show spinner
+  // Tag this request. Only the most recent click is allowed to paint,
+  // so a slow earlier mockup can never overwrite a newer one.
+  const myReq=++_assetReq;
   lb.style.display='flex';
-  document.getElementById('assetLightboxSpinner').style.display='';
-  document.getElementById('assetLightboxContent').innerHTML='<div id="assetLightboxSpinner" style="color:#fff;font-size:14px">Loading...</div>';
+  const contentEl=document.getElementById('assetLightboxContent');
+  contentEl.innerHTML='<div style="color:#fff;font-size:14px">Loading...</div>';
   document.getElementById('assetLightboxName').textContent='';
   document.getElementById('assetLightboxDownload').href='#';
 
@@ -1719,31 +1722,37 @@ async function viewAsset(assetId){
     const r=await fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({query:`{assets(ids:[${assetId}]){id name public_url url_thumbnail}}`})});
     const d=await r.json();
+    if(myReq!==_assetReq)return; // a newer mockup was opened while this was loading
     const asset=d?.data?.assets?.[0];
     if(!asset){
-      document.getElementById('assetLightboxContent').innerHTML='<div style="color:#f66;font-size:14px">Could not load file.</div>';
+      contentEl.innerHTML='<div style="color:#f66;font-size:14px">Could not load file.</div>';
       return;
     }
     const proxyUrl=`/api/file-proxy?assetId=${assetId}`;
-    const isImage=/\.(png|jpe?g|gif|webp|svg|bmp|tiff?)$/i.test(asset.name)||/^image\//i.test('');
-    // Try rendering as image; fall back to download link for non-images
     const ext=(asset.name||'').split('.').pop().toLowerCase();
     const imgExts=['png','jpg','jpeg','gif','webp','svg','bmp','tiff','tif'];
     if(imgExts.includes(ext)){
-      document.getElementById('assetLightboxContent').innerHTML=
-        `<img src="${proxyUrl}" alt="${asset.name}" style="max-width:86vw;max-height:80vh;border-radius:8px;box-shadow:0 4px 32px rgba(0,0,0,.5)" onerror="this.outerHTML='<div style=color:#f66;font-size:14px>Image failed to load</div>'">`;
+      // Load the image off-DOM and only swap it in after it finishes loading.
+      // The "Loading..." placeholder stays until then, so no stale frame shows.
+      const img=new Image();
+      img.alt=asset.name||'';
+      img.style.cssText='max-width:86vw;max-height:80vh;border-radius:8px;box-shadow:0 4px 32px rgba(0,0,0,.5)';
+      img.onload=()=>{if(myReq!==_assetReq)return;contentEl.innerHTML='';contentEl.appendChild(img);};
+      img.onerror=()=>{if(myReq!==_assetReq)return;contentEl.innerHTML='<div style="color:#f66;font-size:14px">Image failed to load</div>';};
+      img.src=proxyUrl;
     } else {
-      document.getElementById('assetLightboxContent').innerHTML=
+      contentEl.innerHTML=
         `<div style="text-align:center;color:#fff;padding:32px">
           <div style="font-size:40px;margin-bottom:12px">📎</div>
           <div style="font-size:15px;font-weight:600">${asset.name}</div>
-          <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:6px">Non-image file — use the link below to open or download</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:6px">Non-image file. Use the link below to open or download.</div>
         </div>`;
     }
     document.getElementById('assetLightboxName').textContent=asset.name||'';
     document.getElementById('assetLightboxDownload').href=proxyUrl;
   }catch(err){
-    document.getElementById('assetLightboxContent').innerHTML=`<div style="color:#f66;font-size:14px">Error: ${err.message}</div>`;
+    if(myReq!==_assetReq)return;
+    contentEl.innerHTML=`<div style="color:#f66;font-size:14px">Error: ${err.message}</div>`;
   }
 }
 
