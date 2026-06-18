@@ -668,7 +668,7 @@ let editingOrderId=null;
 const collapsedGroups=new Set(['group_mm26j0hj','group_mm2dtmde','group_mm2wg547','group_mm2wb7r2','group_mm2cavn']);
 const salesMap={1:'Chaz Lucius',2:'Bailey McGraw',3:'Jess Miller',4:'Nick Miller',5:'George Miller',6:'Web Order',7:'Caitlin Hargraves'};
 const impMap={1:'CCB Imprint',2:'CCB Insight'};
-const decoMap={1:'Embroidery',2:'Screenprint',3:'DTG',4:'DTF',5:'Engrave',6:'Other',7:'Sublimated',8:'UV Print'};
+const decoMap={1:'Embroidery',2:'Screenprint',3:'DTG',4:'DTF',5:'Engrave',6:'Other',7:'Sublimated',8:'UV Print',9:'Custom Box'};
 const salesIdMap={'Chaz Lucius':1,'Bailey McGraw':2,'Jess Miller':3,'Nick Miller':4,'George Miller':5,'Web Order':6,'Caitlin Hargraves':7};
 const PRODUCT_STATUSES=['In House','Product Ordered','Receiving','On Shelf (Undecorated)','In Production','QC','Decorated','On Shelf (Decorated)'];
 
@@ -1831,7 +1831,8 @@ const DECO_STYLES=[
   {v:'4',label:'DTF',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="10" rx="1"/><path d="M12 13v5"/><path d="M9.5 16.5 12 19l2.5-2.5"/><path d="M7.5 21h9"/></svg>'},
   {v:'8',label:'UV Print',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="3"/><path d="M12 2.6v1.6M4.7 9H3.1M20.9 9h-1.6M6.6 3.6l1.1 1.1M17.4 3.6l-1.1 1.1"/><path d="M5 20h14"/></svg>'},
   {v:'5',label:'Engrave',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.6 3.6 20.4 9.4 11 18.8l-3.4 1 1-3.4z"/><path d="M4 20.6h6"/></svg>'},
-  {v:'6',label:'Other',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="6" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18" cy="12" r="1.6" fill="currentColor"/></svg>'}
+  {v:'6',label:'Other',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="6" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18" cy="12" r="1.6" fill="currentColor"/></svg>'},
+  {v:'9',label:'Custom Box',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>'}
 ];
 function buildDecoStyleBar(productId,dId){
   return DECO_STYLES.map(s=>

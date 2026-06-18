@@ -713,6 +713,8 @@ const NOTES_COL = 'long_text_mm225vbf';
 const IMPRINT_COL = 'dropdown_mm276wtz';
 
 const EXCLUDED_TYPES = ['promo code', '3rd party'];
+const CUSTOM_BOX_ID = 9;
+const CUSTOM_BOX_SLOT_COLS = ['dropdown_mm2y4w39','dropdown_mm2yaxxz','dropdown_mm2ygyew'];
 const EXCLUDED_ORDER_STATUSES = ['promo code', '3rd party', '3rd party ordered'];
 
 async function mondayQuery(query) {
@@ -748,7 +750,7 @@ async function loadOrders() {
             }
             subitems {
               id name
-              column_values(ids: ["${STATUS_COL}","${TYPE_COL}","${QTY_COL}","${COLOR_COL}","${SIZE_COL}","${STYLE_COL}","${SUPPLIER_COL}","${MOCKUP_COL}","${PO_DATE_COL}"]) {
+              column_values(ids: ["${STATUS_COL}","${TYPE_COL}","${QTY_COL}","${COLOR_COL}","${SIZE_COL}","${STYLE_COL}","${SUPPLIER_COL}","${MOCKUP_COL}","${PO_DATE_COL}","dropdown_mm2y4w39","dropdown_mm2yaxxz","dropdown_mm2ygyew"]) {
                 id value text
               }
             }
@@ -781,6 +783,11 @@ async function loadOrders() {
 
         if (status !== 'Product Ordered') continue;
         if (EXCLUDED_TYPES.some(t => subType.includes(t))) continue;
+        // Custom Boxes are made in-house from raw stock, nothing to receive
+        if (CUSTOM_BOX_SLOT_COLS.some(cid => {
+          try { return (JSON.parse(sMap[cid]?.value || '{}').ids || []).includes(CUSTOM_BOX_ID); }
+          catch(e) { return false; }
+        })) continue;
 
         let mockupUrls = [];
         try {
