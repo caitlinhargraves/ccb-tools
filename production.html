@@ -221,7 +221,7 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 <script>
 
 const ORDERS_BOARD='18407165363';const SUBS_BOARD='18407165552';
-const O_NUM='pulse_id_mm27vwa5';const O_STATUS='color_mm27qyta';const O_INHAND='date_mm22wpk2';const O_CONTACT='text_mm221kg3';const O_SHELF='text_mm2ngkpv';const O_SALES='dropdown_mm22w5rr';const O_PLACED='date4';
+const O_NUM='pulse_id_mm27vwa5';const O_STATUS='color_mm27qyta';const O_INHAND='date_mm22wpk2';const O_CONTACT='text_mm221kg3';const O_SHELF='text_mm2ngkpv';const O_SALES='dropdown_mm22w5rr';const O_PLACED='date4';const O_SHIPTO='text_mm26gtxp';const O_LOC='location_mm2682nc';
 const S_STATUS='color_mm25v786';const S_TYPE='color_mm2dd6d5';const S_QTY='numeric_mm22crjt';const S_COLOR='text_mm2276wz';const S_SIZE='text_mm22yw8s';const S_STYLE='text_mm22fv7y';const S_DECO='dropdown_mm22dn1f';
 const D1_STYLE='dropdown_mm2y4w39';const D1_PLACE='text_mm2y6g62';const D1_DESC='text_mm2y3mb9';const D1_ART='file_mm2y1yem';const D1_SCREENS='numeric_mm2yn2nb';const D1_COLORS='text_mm2y2y6a';const D1_NOTES='long_text_mm3yw3sd';
 const D2_STYLE='dropdown_mm2yaxxz';const D2_PLACE='text_mm2yge79';const D2_DESC='text_mm2ymf5k';const D2_ART='file_mm2ya55c';const D2_SCREENS='numeric_mm2ynqby';const D2_COLORS='text_mm2y5vn6';const D2_NOTES='long_text_mm3yxdjc';
@@ -406,7 +406,7 @@ function buildOrderGroup(list){
   const missFlag=missingMock?`<span style="font-size:12px;font-weight:500;color:var(--amber);background:var(--amber-bg);padding:3px 9px;border-radius:6px">${missingMock} missing mockup</span>`:'';
   const missingArt=list.filter(p=>!(p.artworkAssetIds||[]).length).length;
   const artFlag=missingArt?`<span style="font-size:12px;font-weight:500;color:var(--red);background:var(--red-bg);padding:3px 9px;border-radius:6px">${missingArt} missing artwork</span>`:'';
-  const _byMethod=new Map();for(const _p of list){const _m=_p.primaryDecoDisplay||'Other';if(!_byMethod.has(_m))_byMethod.set(_m,[]);_byMethod.get(_m).push(_p);}
+  const _ship=[o.shipTo,o.shipAddr].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(' &middot; ');const shipLine=_ship?`<div style="display:flex;align-items:center;gap:6px;padding:7px 16px;background:var(--surface);border-bottom:1px solid var(--border);font-size:12px;color:var(--text2);flex-wrap:wrap"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--text3);stroke-width:1.6;fill:none;flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span><b style="color:var(--text);font-weight:600">Ship to:</b> ${_ship}</span></div>`:'';const _byMethod=new Map();for(const _p of list){const _m=_p.primaryDecoDisplay||'Other';if(!_byMethod.has(_m))_byMethod.set(_m,[]);_byMethod.get(_m).push(_p);}
   const _multi=_byMethod.size>1;
   let rows='';for(const [_method,_prods] of _byMethod){if(_multi)rows+=`<div style="padding:7px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${DECO_TC[_method]||'var(--text3)'}">${_method}</div>`;rows+=_prods.map(_p=>buildProductRow(_p,_p._section||'active')).join('');}
   return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px">
@@ -423,6 +423,7 @@ function buildOrderGroup(list){
         <span style="font-size:12px;color:var(--text2)">${list.length} product${list.length>1?'s':''}</span>
       </div>
     </div>
+    ${shipLine}
     ${rows}
   </div>`;
 }
@@ -602,7 +603,7 @@ function parseProduct(item,sub){
   const artworkAssetIds=_slotArtIds;
   const primaryPlacement=allSlots.length>0?sc[allSlots[0].place]?.text||'':sc[S_PLACEMENT]?.text||'';
   const primaryDesc=allSlots.length>0?sc[allSlots[0].desc]?.text||'':sc[S_ARTWORK_DESC]?.text||'';
-  return{id:sub.id,name:sub.name,orderId:item.id,orderName:item.name,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',inHands:cv[O_INHAND]?.text||'',placed:cv[O_PLACED]?.text||'',created:item.created_at||'',shelf:cv[O_SHELF]?.text||'',salesperson:cv[O_SALES]?.text||'',qty:qtyFromSize(sc[S_SIZE]?.text||'',sc[S_QTY]?.text||''),color:sc[S_COLOR]?.text||'',size:sc[S_SIZE]?.text||'',style:sc[S_STYLE]?.text||'',primaryDecoId,primaryDecoDisplay,placement:primaryPlacement,artworkDesc:primaryDesc,prodNotes:sc[S_PROD_NOTES]?.text||'',mockupAssetId,mockupAssetIds,artworkAssetIds,allSlots,_sc:sc};
+  return{id:sub.id,name:sub.name,orderId:item.id,orderName:item.name,ccbNum:cv[O_NUM]?.text||'',contact:cv[O_CONTACT]?.text||'',inHands:cv[O_INHAND]?.text||'',placed:cv[O_PLACED]?.text||'',created:item.created_at||'',shelf:cv[O_SHELF]?.text||'',salesperson:cv[O_SALES]?.text||'',shipTo:cv[O_SHIPTO]?.text||'',shipAddr:cv[O_LOC]?.text||'',qty:qtyFromSize(sc[S_SIZE]?.text||'',sc[S_QTY]?.text||''),color:sc[S_COLOR]?.text||'',size:sc[S_SIZE]?.text||'',style:sc[S_STYLE]?.text||'',primaryDecoId,primaryDecoDisplay,placement:primaryPlacement,artworkDesc:primaryDesc,prodNotes:sc[S_PROD_NOTES]?.text||'',mockupAssetId,mockupAssetIds,artworkAssetIds,allSlots,_sc:sc};
 }
 
 function sortByDate(arr){return arr.sort((a,b)=>{if(!a.inHands&&!b.inHands)return 0;if(!a.inHands)return 1;if(!b.inHands)return-1;return new Date(a.inHands)-new Date(b.inHands);});}
@@ -690,7 +691,7 @@ async function loadData(){
   window._forceRefresh=false;
   const btn=document.getElementById('refresh-btn');btn.disabled=true;btn.classList.add('spinning');
   try{
-    const q1=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:500,query_params:{rules:[{column_id:"group",compare_value:["topics"]}]}){items{id name created_at column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHELF}","${O_SALES}","${O_PLACED}"]){id text value}subitems{id name}}}}}`;
+    const q1=`{boards(ids:[${ORDERS_BOARD}]){items_page(limit:500,query_params:{rules:[{column_id:"group",compare_value:["topics"]}]}){items{id name created_at column_values(ids:["${O_NUM}","${O_STATUS}","${O_INHAND}","${O_CONTACT}","${O_SHELF}","${O_SALES}","${O_PLACED}","${O_SHIPTO}","${O_LOC}"]){id text value}subitems{id name}}}}}`;
     const data1=await mq(q1);
     const rawItems=data1.boards[0].items_page.items;
     const allSubIds=[];
