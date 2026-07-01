@@ -806,6 +806,20 @@ async function pickAndUpload(subId,columnId,accept,multiple){
   inp.click();
 }
 
+async function promoteOrder(orderId){
+  const o=all.find(x=>x.id===orderId);
+  if(!o){alert('Order not found in cache. Try refreshing the page.');return;}
+  if(!confirm(`Promote "${o.name}" to Active Orders?\n\nThis moves the existing lead (with its products) straight into Active Orders. Nothing new is created.`))return;
+  try{
+    await mondayMutation(`mutation{move_item_to_group(item_id:${orderId},group_id:"${ACTIVE_GROUP}"){id}}`);
+    if(typeof ordToast==='function')ordToast('Promoted to Active Orders.',2500);
+    try{ await fetch('/api/refresh'); }catch(e){}
+    await load();
+  }catch(err){
+    alert('Error promoting order: '+(err.message||'Unknown error'));
+  }
+}
+
 function printOrderSlip(orderId){
   const o=all.find(x=>x.id===orderId);
   if(!o){alert('Order not found in cache. Try refreshing the page.');return;}
@@ -1041,6 +1055,10 @@ function render(){
             <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 4.5V1.5h6v3M3 9H1.5V5.5h9V9H9M3.5 7.5h5V11h-5z"/></svg>
             Order Slip
           </button>
+          ${o.groupId===PENDING_GROUP?`<button class="edit-order-btn" title="Promote to Active Orders" onclick="promoteOrder('${o.id}')" style="margin-top:4px;background:var(--navy);color:#fff;border-color:var(--navy)">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 10V2M2.5 5.5L6 2l3.5 3.5"/></svg>
+            Promote
+          </button>`:''}
         </td>
       </tr>`);
       if(isEx)rows.push(`<tr class="subrow"><td colspan="11"><div class="subrow-inner">
@@ -1726,7 +1744,8 @@ let _lbIdx=0;
 //   When more than one is present the lightbox shows ‹ › nav + a counter so you
 //   can flip through every file, not just the first one.
 function viewAsset(assetId,group){
-  _lbIds=Array.isArray(group)?group.map(String):(group?String(group).split(',').filter(Boolean):[String(assetId)]);
+  const raw=Array.isArray(group)?group.map(String):(group?String(group).split(',').filter(Boolean):[String(assetId)]);
+  _lbIds=[...new Set(raw)];
   if(!_lbIds.length)_lbIds=[String(assetId)];
   _lbIdx=_lbIds.indexOf(String(assetId));
   if(_lbIdx<0)_lbIdx=0;
@@ -2483,15 +2502,15 @@ async function submitOrder(){
   if(!v('f-email'))problems.push(['f-email','Email is required']);
   else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('f-email')))problems.push(['f-email','That email looks off']);
   let noProducts=false;
+  const productBlocks=document.querySelectorAll('.product-block');
   if(!toPipeline){
     if(!v('f-ihd'))problems.push(['f-ihd','In Hands Date is required']);
     if(!v('f-imprint'))problems.push(['f-imprint','Pick CCB Imprint or Insight']);
-    const productBlocks=document.querySelectorAll('.product-block');
     if(!productBlocks.length)noProducts=true;
-    for(const pb of productBlocks){
-      const pid=pb.id.replace('product-','');
-      if(!v(`p${pid}-name`))problems.push([`p${pid}-name`,'Product needs a name']);
-    }
+  }
+  for(const pb of productBlocks){
+    const pid=pb.id.replace('product-','');
+    if(!v(`p${pid}-name`))problems.push([`p${pid}-name`,'Product needs a name']);
   }
   if(problems.length||noProducts){
     problems.forEach(([id,msg])=>markInvalid(id,msg));
@@ -2586,8 +2605,8 @@ async function submitOrder(){
     const parentId=parentResult.create_item.id;
     const orderNum=ccbOrderNum||parentResult.create_item.column_values?.find(c=>c.id==='pulse_id_mm27vwa5')?.text||parentId;
 
-    if(!toPipeline){
-      document.getElementById('modalStatus').textContent=`Order ${orderNum} created. Adding products...`;
+    {
+      document.getElementById('modalStatus').textContent=toPipeline?`Lead ${orderNum} added. Saving products...`:`Order ${orderNum} created. Adding products...`;
 
       // Create subitems
       const decoStyleCols={1:'dropdown_mm2y4w39',2:'dropdown_mm2yaxxz',3:'dropdown_mm2ygyew'};
@@ -2779,7 +2798,11 @@ function updateSideNavVisibility(){
 }
 
 load();
-setInterval(load,60000);
+setInterval(()=>{
+  const lb=document.getElementById('assetLightbox');
+  const lbOpen=lb&&lb.style.display==='flex';
+  if(expanded.size===0&&!lbOpen)load();
+},60000);
 
 // Pre-fill new order form if navigated from Pipeline (convert to order flow)
 (function checkPrefill(){
