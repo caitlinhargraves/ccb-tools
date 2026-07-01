@@ -86,6 +86,7 @@
   .order-num{font-weight:700;font-size:13px;color:var(--cyan);}
   .company-name{font-weight:700;font-size:14px;color:var(--navy);}
   .contact-name{font-size:12px;color:var(--muted);margin-top:1px;}
+  .ship-to-line{font-size:11px;color:var(--subtle);margin-top:2px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:8px;font-size:11px;font-weight:600;white-space:nowrap;}
   .badge::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0;}
   .badge-new{background:#F3F4F6;color:#6B7280;} .badge-new::before{background:#9CA3AF;}
@@ -161,34 +162,43 @@
   .pc-flag{font-size:9px;font-weight:700;letter-spacing:.03em;padding:2px 6px;border-radius:4px;white-space:nowrap;}
   .pc-flag-red{background:#FEF2F2;color:#DC2626;}
   .pc-flag-amber{background:#FFFBEB;color:#D97706;}
-  /* Receiving slip (print) */
+  /* Order slip (print) -- CCB navy/grey/CMYK branding, no background floods */
   #rcv-slip-print{display:none;}
   @media print{
     body.printing-slip>*:not(#rcv-slip-print){display:none !important;}
     #rcv-slip-print{display:block !important;}
+    @page{size:letter;margin:0.45in;}
   }
-  .slip-wrap{font-family:'DM Sans','Inter',sans-serif;color:#1B2A4A;}
-  .slip-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #185FA5;}
-  .slip-brand{font-size:20px;font-weight:700;color:#185FA5;letter-spacing:1px;}
-  .slip-brand-sub{font-size:10px;color:#9CA3AF;margin-top:2px;letter-spacing:.05em;}
-  .slip-doc-title{font-size:18px;font-weight:600;color:#1B2A4A;text-align:right;}
-  .slip-doc-date{font-size:10px;color:#9CA3AF;text-align:right;margin-top:3px;}
-  .slip-meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid #D1D5DB;border-radius:8px;overflow:hidden;margin-bottom:18px;}
-  .slip-meta-cell{padding:11px 15px;border-right:1px solid #D1D5DB;}
+  .slip-wrap{font-family:'DM Sans','Inter',sans-serif;color:var(--navy);}
+  .slip-accent-bar{display:flex;height:4px;margin-bottom:18px;}
+  .slip-accent-bar span{flex:1;}
+  .slip-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+  .slip-brand{font-size:19px;font-weight:800;color:var(--navy);letter-spacing:.2px;}
+  .slip-brand-sub{font-size:10px;color:var(--subtle);margin-top:2px;letter-spacing:.05em;}
+  .slip-doc-title{font-size:17px;font-weight:700;color:var(--navy);text-align:right;}
+  .slip-doc-date{font-size:10px;color:var(--subtle);text-align:right;margin-top:3px;}
+  .slip-meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px;}
+  .slip-meta-cell{padding:11px 15px;border-right:1px solid var(--border);}
   .slip-meta-cell:last-child{border-right:none;}
-  .slip-meta-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#9CA3AF;margin-bottom:4px;}
-  .slip-meta-val{font-size:13px;font-weight:500;color:#1B2A4A;}
-  .slip-meta-val.mono{font-size:12px;color:#185FA5;}
-  .slip-meta-sub{font-size:11px;color:#6B7280;margin-top:2px;}
+  .slip-meta-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--subtle);margin-bottom:4px;}
+  .slip-meta-val{font-size:13px;font-weight:600;color:var(--navy);}
+  .slip-meta-val.mono{font-size:12px;color:var(--navy);}
+  .slip-meta-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .slip-shipto{border:1px solid var(--border);border-radius:8px;padding:11px 15px;margin-bottom:16px;display:flex;justify-content:space-between;gap:20px;}
+  .slip-shipto-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--subtle);margin-bottom:4px;}
+  .slip-shipto-val{font-size:13px;font-weight:600;color:var(--navy);line-height:1.5;}
   .slip-tbl{width:100%;border-collapse:collapse;margin-bottom:16px;}
-  .slip-tbl th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#9CA3AF;text-align:left;padding:7px 10px;border-bottom:2px solid #D1D5DB;background:#F3F5FA;}
-  .slip-tbl td{padding:9px 10px;border-bottom:1px solid #D1D5DB;font-size:12px;vertical-align:top;}
+  .slip-tbl th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--subtle);text-align:left;padding:7px 10px;border-bottom:2px solid var(--border);}
+  .slip-tbl td{padding:9px 10px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top;}
   .slip-pname{font-weight:600;font-size:13px;}
-  .slip-pdetail{font-size:11px;color:#6B7280;margin-top:2px;}
-  .slip-chk{width:16px;height:16px;border:1.5px solid #9CA3AF;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;line-height:1;}
-  .slip-chk.on{background:#185FA5;border-color:#185FA5;color:#fff;font-size:11px;font-weight:700;}
-  .slip-footer-bar{display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid #D1D5DB;margin-top:8px;}
-  .slip-footer-txt{font-size:10px;color:#9CA3AF;}
+  .slip-pdetail{font-size:11px;color:var(--muted);margin-top:2px;}
+  .slip-flag{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.03em;padding:2px 6px;border-radius:4px;margin-top:4px;margin-right:4px;background:#FEF2F2;color:#DC2626;}
+  .slip-chk{width:16px;height:16px;border:1.5px solid var(--subtle);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;line-height:1;}
+  .slip-chk.on{background:var(--navy);border-color:var(--navy);color:#fff;font-size:11px;font-weight:700;}
+  .slip-signoff{display:flex;gap:36px;margin-top:26px;}
+  .slip-signoff-cell{flex:1;}
+  .slip-signoff-rule{border-bottom:1px solid var(--navy);height:26px;}
+  .slip-signoff-label{font-size:9px;color:var(--subtle);text-transform:uppercase;letter-spacing:.07em;margin-top:5px;}
   .product-card-name{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:7px;line-height:1.3;}
   .product-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px;}
   .ptag{font-size:11px;font-weight:500;padding:2px 7px;border-radius:8px;background:var(--bg);color:var(--body);border:1px solid var(--border);}
@@ -796,11 +806,13 @@ async function pickAndUpload(subId,columnId,accept,multiple){
   inp.click();
 }
 
-function printReceivingSlip(orderId){
+function printOrderSlip(orderId){
   const o=all.find(x=>x.id===orderId);
   if(!o){alert('Order not found in cache. Try refreshing the page.');return;}
   const today=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   const ihd=o.ihd?new Date(o.ihd+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
+  const DECO_STYLE_COLS=['dropdown_mm2y4w39','dropdown_mm2yaxxz','dropdown_mm2ygyew'];
+  const DECO_ART_COLS=['file_mm2y1yem','file_mm2ya55c','file_mm2yjme2'];
   // Include physical/receivable products (everything except Promo Code and 3rd Party)
   const subs=(o.subitems||[]).filter(s=>{const t=(sCol(s,'color_mm2dd6d5')||'').toLowerCase();return !/promo|3rd/.test(t);});
   const rows=subs.map(s=>{
@@ -811,25 +823,37 @@ function printReceivingSlip(orderId){
     let idx=null;try{idx=(sColV(s,'color_mm25v786')||{}).index;}catch(e){}
     const inHouse=/in house|decorated/i.test(st)||idx===0||idx===8; // already received/in house -> pre-checked
     const det=[color&&'Color: '+color,size&&'Size: '+size,sn&&'Style #: '+sn,sup&&'Supplier: '+sup].filter(Boolean).join(' · ');
+    // Flags: missing mockup, missing artwork on any decoration spot that has a style set
+    const hasMockup=sFileIds(s,'file_mm26e29h').length>0;
+    const decoStyleSet=DECO_STYLE_COLS.some(c=>{const v=sColV(s,c);return v&&Array.isArray(v.ids)&&v.ids.length;});
+    const artMissing=DECO_STYLE_COLS.some((c,i)=>{const v=sColV(s,c);const styled=v&&Array.isArray(v.ids)&&v.ids.length;return styled&&sFileIds(s,DECO_ART_COLS[i]).length===0;});
+    const flags=[!hasMockup&&decoStyleSet?'<span class="slip-flag">Missing mockup</span>':'',artMissing?'<span class="slip-flag">Missing artwork</span>':''].filter(Boolean).join('');
     return `<tr>
       <td style="text-align:center;width:34px"><span class="slip-chk ${inHouse?'on':''}">${inHouse?'✓':''}</span></td>
-      <td><div class="slip-pname">${name}</div>${det?`<div class="slip-pdetail">${det}</div>`:''}</td>
+      <td><div class="slip-pname">${name}</div>${det?`<div class="slip-pdetail">${det}</div>`:''}${flags?`<div>${flags}</div>`:''}</td>
       <td style="text-align:center;width:50px;font-weight:700">${qty}</td>
-      <td style="width:120px;font-size:11px;color:#6B7280">${st||'—'}</td>
+      <td style="width:120px;font-size:11px;color:var(--muted)">${st||'—'}</td>
     </tr>`;
   }).join('');
   const totalQty=subs.reduce((a,s)=>a+(parseInt(sCol(s,'numeric_mm22crjt'))||0),0);
-  const notesHtml=o.notes?`<div style="background:#F3F5FA;border:1px solid #D1D5DB;border-radius:8px;padding:11px 14px;margin-bottom:16px"><div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#9CA3AF;margin-bottom:5px">Order Notes</div><div style="font-size:12px;color:#1B2A4A;line-height:1.6">${o.notes}</div></div>`:'';
+  const notesHtml=o.notes?`<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 14px;margin-bottom:16px"><div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--subtle);margin-bottom:5px">Order Notes</div><div style="font-size:12px;color:var(--navy);line-height:1.6">${o.notes}</div></div>`:'';
+  const shipAddr=o.address||'';
+  const shipToHtml=(o.shippingTo||shipAddr)?`<div class="slip-shipto"><div><div class="slip-shipto-lbl">Ship To</div><div class="slip-shipto-val">${o.shippingTo||o.name||''}${shipAddr?`<br>${shipAddr}`:''}</div></div>${o.tracking?`<div style="text-align:right"><div class="slip-shipto-lbl">Tracking</div><div class="slip-shipto-val" style="font-size:11px">${o.tracking}</div></div>`:''}</div>`:'';
   const html=`<div class="slip-wrap">
-    <div class="slip-hdr"><div><div class="slip-brand">CCB IMPRINT</div><div class="slip-brand-sub">ccbimprint.com</div></div><div><div class="slip-doc-title">Receiving Slip</div><div class="slip-doc-date">Printed ${today}</div></div></div>
+    <div class="slip-accent-bar"><span style="background:var(--cyan)"></span><span style="background:var(--magenta)"></span><span style="background:var(--yellow)"></span><span style="background:var(--navy)"></span></div>
+    <div class="slip-hdr"><div><div class="slip-brand">CCB IMPRINT</div><div class="slip-brand-sub">ccbimprint.com</div></div><div><div class="slip-doc-title">Order Slip</div><div class="slip-doc-date">Printed ${today}</div></div></div>
     <div class="slip-meta-grid">
       <div class="slip-meta-cell"><div class="slip-meta-lbl">Client</div><div class="slip-meta-val">${o.name||''}</div>${o.contact?`<div class="slip-meta-sub">${o.contact}</div>`:''}</div>
       <div class="slip-meta-cell"><div class="slip-meta-lbl">CCB Order #</div><div class="slip-meta-val mono">${o.ccbNum||o.orderNum||o.id}</div>${o.sales?`<div class="slip-meta-sub">Rep: ${o.sales}</div>`:''}</div>
       <div class="slip-meta-cell"><div class="slip-meta-lbl">In Hands</div><div class="slip-meta-val">${ihd}</div>${o.imprint?`<div class="slip-meta-sub">${o.imprint}</div>`:''}</div>
     </div>
-    ${subs.length?`<table class="slip-tbl"><thead><tr><th style="text-align:center;width:34px">In</th><th>Product</th><th style="text-align:center;width:50px">Qty</th><th style="width:120px">Status</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td></td><td style="font-size:11px;color:#9CA3AF;padding:7px 10px">Total pieces</td><td style="text-align:center;font-weight:700;padding:7px 10px">${totalQty}</td><td></td></tr></tfoot></table>`:'<div style="font-size:13px;color:#9CA3AF;padding:16px 0">No receivable products on this order.</div>'}
+    ${shipToHtml}
+    ${subs.length?`<table class="slip-tbl"><thead><tr><th style="text-align:center;width:34px">In</th><th>Product</th><th style="text-align:center;width:50px">Qty</th><th style="width:120px">Status</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td></td><td style="font-size:11px;color:var(--subtle);padding:7px 10px">Total pieces</td><td style="text-align:center;font-weight:700;padding:7px 10px">${totalQty}</td><td></td></tr></tfoot></table>`:'<div style="font-size:13px;color:var(--subtle);padding:16px 0">No receivable products on this order.</div>'}
     ${notesHtml}
-    <div class="slip-footer-bar"><div class="slip-footer-txt">CCB Imprint · ${today}</div><div class="slip-footer-txt">Checked = already in house</div></div>
+    <div class="slip-signoff">
+      <div class="slip-signoff-cell"><div class="slip-signoff-rule"></div><div class="slip-signoff-label">Packed by / Date</div></div>
+      <div class="slip-signoff-cell"><div class="slip-signoff-rule"></div><div class="slip-signoff-label">Checked by / Date</div></div>
+    </div>
   </div>`;
   let c=document.getElementById('rcv-slip-print');
   if(!c){c=document.createElement('div');c.id='rcv-slip-print';document.body.appendChild(c);}
@@ -1000,7 +1024,7 @@ function render(){
       rows.push(`<tr class="${isEx?'expanded':''}" onclick="toggleRow('${o.id}')">
         <td><div class="expand-icon"><svg width="9" height="13" viewBox="0 0 9 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 2l5 4.5L2 11"/></svg></div></td>
         <td><div class="order-num">${o.ccbNum||o.orderNum}</div></td>
-        <td><div class="company-name">${o.name}</div>${o.contact?`<div class="contact-name">${o.contact}</div>`:''}</td>
+        <td><div class="company-name">${o.name}</div>${o.contact?`<div class="contact-name">${o.contact}</div>`:''}${o.address?`<div class="ship-to-line" title="Ships to: ${o.address}">📦 ${o.address}</div>`:''}</td>
         <td>${statusSelect(o)}</td>
         <td>${dateDisplay(o.ihd)}</td>
         <td>${placedDisplay(o.placed||o.created)}</td>
@@ -1013,9 +1037,9 @@ function render(){
             <svg viewBox="0 0 12 12"><path d="M8.5 1.5l2 2-6 6H3V8l5.5-6.5z"/></svg>
             Edit
           </button>
-          <button class="edit-order-btn" title="Print receiving slip" onclick="printReceivingSlip('${o.id}')" style="margin-top:4px">
+          <button class="edit-order-btn" title="Print order slip" onclick="printOrderSlip('${o.id}')" style="margin-top:4px">
             <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 4.5V1.5h6v3M3 9H1.5V5.5h9V9H9M3.5 7.5h5V11h-5z"/></svg>
-            Slip
+            Order Slip
           </button>
         </td>
       </tr>`);
@@ -1061,7 +1085,7 @@ function render(){
       rows.push(`<tr class="${isEx?'expanded':''}" onclick="toggleRow('${o.id}')">
         <td><div class="expand-icon"><svg width="9" height="13" viewBox="0 0 9 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 2l5 4.5L2 11"/></svg></div></td>
         <td><div class="order-num">${o.ccbNum||o.orderNum}</div></td>
-        <td><div class="company-name">${o.name}</div>${o.contact?`<div class="contact-name">${o.contact}</div>`:''}</td>
+        <td><div class="company-name">${o.name}</div>${o.contact?`<div class="contact-name">${o.contact}</div>`:''}${o.address?`<div class="ship-to-line" title="Ships to: ${o.address}">📦 ${o.address}</div>`:''}</td>
         <td>${statusSelect(o)}</td>
         <td>${dateDisplay(o.ihd)}</td>
         <td>${placedDisplay(o.placed||o.created)}</td>
@@ -1074,9 +1098,9 @@ function render(){
             <svg viewBox="0 0 12 12"><path d="M8.5 1.5l2 2-6 6H3V8l5.5-6.5z"/></svg>
             Edit
           </button>
-          <button class="edit-order-btn" title="Print receiving slip" onclick="printReceivingSlip('${o.id}')" style="margin-top:4px">
+          <button class="edit-order-btn" title="Print order slip" onclick="printOrderSlip('${o.id}')" style="margin-top:4px">
             <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 4.5V1.5h6v3M3 9H1.5V5.5h9V9H9M3.5 7.5h5V11h-5z"/></svg>
-            Slip
+            Order Slip
           </button>
         </td>
       </tr>`);
@@ -2704,7 +2728,7 @@ async function submitOrder(){
         try{ await fetch('/api/refresh'); }catch(e){}
         await load();
       }
-      setTimeout(()=>{ if(confirm(`Order ${orderNum} created. Print a receiving slip for it now?`)){ printReceivingSlip(parentId); } }, 150);
+      setTimeout(()=>{ if(confirm(`Order ${orderNum} created. Print an order slip for it now?`)){ printOrderSlip(parentId); } }, 150);
     }
 
 
