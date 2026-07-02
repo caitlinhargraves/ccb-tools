@@ -865,8 +865,14 @@ function printOrderSlip(orderId){
     ${subs.length?`<table class="slip-tbl"><thead><tr><th style="text-align:center;width:34px">In</th><th>Product</th><th style="text-align:center;width:50px">Qty</th><th style="width:120px">Status</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td></td><td style="font-size:11px;color:var(--subtle);padding:7px 10px">Total pieces</td><td style="text-align:center;font-weight:700;padding:7px 10px">${totalQty}</td><td></td></tr></tfoot></table>`:'<div style="font-size:13px;color:var(--subtle);padding:16px 0">No receivable products on this order.</div>'}
     ${notesHtml}
     <div class="slip-signoff">
-      <div class="slip-signoff-cell"><div class="slip-signoff-rule"></div><div class="slip-signoff-label">Packed by / Date</div></div>
-      <div class="slip-signoff-cell"><div class="slip-signoff-rule"></div><div class="slip-signoff-label">Checked by / Date</div></div>
+      <div class="slip-signoff-cell">
+        <div class="slip-signoff-rule"></div><div class="slip-signoff-label">First Sign Off / Date</div>
+        <div class="slip-signoff-rule" style="margin-top:14px"></div><div class="slip-signoff-label">Email</div>
+      </div>
+      <div class="slip-signoff-cell">
+        <div class="slip-signoff-rule"></div><div class="slip-signoff-label">Final Sign Off / Date</div>
+        <div class="slip-signoff-rule" style="margin-top:14px"></div><div class="slip-signoff-label">Email</div>
+      </div>
     </div>
   </div>`;
   let c=document.getElementById('rcv-slip-print');
