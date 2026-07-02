@@ -399,6 +399,7 @@
     <option value="">All Sales Reps</option>
     <option>Chaz Lucius</option><option>Bailey McGraw</option><option>Jess Miller</option>
     <option>Nick Miller</option><option>George Miller</option><option>Web Order</option><option>Caitlin Hargraves</option>
+    <option>Bryce</option><option>Tucker</option>
   </select>
   <select class="filter-select" id="imprintFilter" onchange="applyFilters()">
     <option value="">Imprint + Insight</option>
@@ -525,6 +526,7 @@
               <option value="">Select...</option>
               <option>Chaz Lucius</option><option>Bailey McGraw</option><option>Jess Miller</option>
               <option>Nick Miller</option><option>George Miller</option><option>Web Order</option><option>Caitlin Hargraves</option>
+              <option>Bryce</option><option>Tucker</option>
             </select>
           </div>
           <div class="form-group">
@@ -676,10 +678,10 @@ let all=[], filtered=[], expanded=new Set(), statusFilter='all', sort={col:'orde
 let editingOrderId=null;
 // Collapse all groups except Active Orders by default
 const collapsedGroups=new Set(['group_mm26j0hj','group_mm2dtmde','group_mm2wg547','group_mm2wb7r2','group_mm2cavn']);
-const salesMap={1:'Chaz Lucius',2:'Bailey McGraw',3:'Jess Miller',4:'Nick Miller',5:'George Miller',6:'Web Order',7:'Caitlin Hargraves'};
+const salesMap={1:'Chaz Lucius',2:'Bailey McGraw',3:'Jess Miller',4:'Nick Miller',5:'George Miller',6:'Web Order',7:'Caitlin Hargraves',8:'Bryce',9:'Tucker'};
 const impMap={1:'CCB Imprint',2:'CCB Insight'};
 const decoMap={1:'Embroidery',2:'Screenprint',3:'DTG',4:'DTF',5:'Engrave',6:'Other',7:'Sublimated',8:'UV Print',9:'Custom Box'};
-const salesIdMap={'Chaz Lucius':1,'Bailey McGraw':2,'Jess Miller':3,'Nick Miller':4,'George Miller':5,'Web Order':6,'Caitlin Hargraves':7};
+const salesIdMap={'Chaz Lucius':1,'Bailey McGraw':2,'Jess Miller':3,'Nick Miller':4,'George Miller':5,'Web Order':6,'Caitlin Hargraves':7,'Bryce':8,'Tucker':9};
 const PRODUCT_STATUSES=['In House','Product Ordered','Receiving','On Shelf (Undecorated)','In Production','QC','Decorated','On Shelf (Decorated)'];
 
 function col(o,id){return o.column_values?.find(c=>c.id===id)?.text||'';}
@@ -697,6 +699,7 @@ function parseOrder(o){
     tracking:colV(o,'link_mm22d8ca')?.url||'',notes:col(o,'long_text_mm225vbf'),
     shippingTo:col(o,'text_mm26gtxp'),address:col(o,'location_mm2682nc'),email:colV(o,'email_mm22ap28')?.email||'',phone:col(o,'phone_mm22ertc'),
     otherCharges:colV(o,'numeric_mm222s2j')||'',otherChargesDetails:col(o,'long_text_mm22zdh2')||'',
+    revenue:col(o,'numeric_mm4wv7sc')||'',grossProfit:col(o,'numeric_mm4wyq9k')||'',commission:col(o,'numeric_mm4w38cv')||'',
     subitems:o.subitems||[],groupId:o.group?.id||'topics'};
 }
 
@@ -883,27 +886,47 @@ function printOrderSlip(orderId){
   setTimeout(()=>document.body.classList.remove('printing-slip'),300);
 }
 
+// Manual sales-entered financials (Revenue, Gross Profit, Commission) -- no calculation, just input + display
+function buildFinancialsBlock(o){
+  const rev=o.revenue!==''&&o.revenue!==undefined?o.revenue:'';
+  const gp=o.grossProfit!==''&&o.grossProfit!==undefined?o.grossProfit:'';
+  const comm=o.commission!==''&&o.commission!==undefined?o.commission:'';
+  return `<div style="display:flex;gap:20px;align-items:center;margin-top:10px;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;flex-wrap:wrap" onclick="event.stopPropagation()">
+    <span style="font-weight:700;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Order Total</span>
+    <span style="display:flex;align-items:center;gap:5px">💰 Revenue: <strong>$</strong><input type="number" step="0.01" class="form-input" style="width:100px;padding:4px 6px;font-size:12px;font-weight:700" placeholder="0.00" value="${rev}" onclick="event.stopPropagation()" onchange="saveOrderFinancial('${o.id}','numeric_mm4wv7sc',this.value)"></span>
+    <span style="display:flex;align-items:center;gap:5px">📈 Gross Profit: <strong>$</strong><input type="number" step="0.01" class="form-input" style="width:100px;padding:4px 6px;font-size:12px;font-weight:700" placeholder="0.00" value="${gp}" onclick="event.stopPropagation()" onchange="saveOrderFinancial('${o.id}','numeric_mm4wyq9k',this.value)"></span>
+    <span style="display:flex;align-items:center;gap:5px">🧾 Commission: <strong>$</strong><input type="number" step="0.01" class="form-input" style="width:100px;padding:4px 6px;font-size:12px;font-weight:700" placeholder="0.00" value="${comm}" onclick="event.stopPropagation()" onchange="saveOrderFinancial('${o.id}','numeric_mm4w38cv',this.value)"></span>
+  </div>`;
+}
+
+async function saveOrderFinancial(orderId,columnId,value){
+  const num=parseFloat(value);
+  const jsonVal=escGql(isNaN(num)?'':String(num));
+  try{
+    await mondayMutation(`mutation{change_simple_column_value(item_id:${orderId},board_id:${ORDERS_BOARD},column_id:"${columnId}",value:"${jsonVal}"){id}}`);
+    const o=all.find(x=>x.id===orderId);
+    if(o){
+      if(columnId==='numeric_mm4wv7sc')o.revenue=isNaN(num)?'':num;
+      if(columnId==='numeric_mm4wyq9k')o.grossProfit=isNaN(num)?'':num;
+      if(columnId==='numeric_mm4w38cv')o.commission=isNaN(num)?'':num;
+    }
+  }catch(e){
+    alert('Failed to save: '+e.message);
+  }
+}
+
 function buildCard(sub){
   const name=sub.name||'Product',qty=sCol(sub,'numeric_mm22crjt'),color=sCol(sub,'text_mm2276wz'),
     size=sCol(sub,'text_mm22yw8s'),sn=sCol(sub,'text_mm22fv7y'),sup=sCol(sub,'text_mm22qdag'),ps=sCol(sub,'color_mm25v786');
   const price=parseFloat(sCol(sub,'numeric_mm2299qw'))||0;
-  const cost=parseFloat(sCol(sub,'numeric_mm266zz9'))||0;
   const qtyNum=parseFloat(qty)||1;
   const totalRev=price*qtyNum;
-  const totalCost=cost*qtyNum;
-  const margin=totalRev>0?((totalRev-totalCost)/totalRev*100):null;
-  const mc=margin===null?'var(--text3)':margin>=40?'#16a34a':margin>=20?'#D97706':'#DC2626';
-  const lineProfit=totalRev-totalCost;
-  const marginHTML=(price||cost)?`<div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--border);font-size:11px;">
+  const marginHTML=price?`<div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--border);font-size:11px;">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-      ${price?`<span style="color:var(--text2)">🏷️ <strong>$${price.toFixed(2)}</strong>/ea price</span>`:''}
-      ${cost?`<span style="color:var(--text2)">📦 <strong>$${cost.toFixed(2)}</strong>/ea cost</span>`:''}
-      ${margin!==null?`<span style="color:${mc};font-weight:700">${margin.toFixed(1)}% margin</span>`:''}
+      <span style="color:var(--text2)">🏷️ <strong>$${price.toFixed(2)}</strong>/ea price</span>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;color:var(--text3);font-size:10px;">
       <span>× ${qtyNum} = <strong style="color:var(--text2)">$${totalRev.toFixed(2)}</strong> rev</span>
-      ${cost?`<span><strong style="color:var(--text2)">$${totalCost.toFixed(2)}</strong> cost</span>`:''}
-      ${margin!==null?`<span><strong style="color:${mc}">$${lineProfit.toFixed(2)}</strong> profit</span>`:''}
     </div>
   </div>`:'';
   const tags=[qty?`<span class="ptag">Qty: ${qty}</span>`:'',color?`<span class="ptag">${color}</span>`:'',
@@ -1070,30 +1093,7 @@ function render(){
       if(isEx)rows.push(`<tr class="subrow"><td colspan="11"><div class="subrow-inner">
         <div class="subrow-heading">Products · ${o.subitems.length} item${o.subitems.length!==1?'s':''} — full detail</div>
         <div class="product-cards">${o.subitems.map(buildCard).join('')}</div>
-        ${(function(){
-          var totRev=0,totCost=0,hasData=false;
-          o.subitems.forEach(function(sub){
-            var p=parseFloat(sCol(sub,'numeric_mm2299qw'))||0;
-            var c=parseFloat(sCol(sub,'numeric_mm266zz9'))||0;
-            var q=parseFloat(sCol(sub,'numeric_mm22crjt'))||1;
-            if(p||c){hasData=true;totRev+=p*q;totCost+=c*q;}
-          });
-          if(!hasData)return '';
-          var otherCh=parseFloat(o.otherCharges)||0;
-          totRev+=otherCh;
-          var totProfit=totRev-totCost;
-          var totMargin=totRev>0?(totProfit/totRev*100):null;
-          var mc=totMargin===null?'var(--text3)':totMargin>=40?'#16a34a':totMargin>=20?'#D97706':'#DC2626';
-          var html='<div style="display:flex;gap:20px;align-items:center;margin-top:10px;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;flex-wrap:wrap">';
-          html+='<span style="font-weight:700;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Order Total</span>';
-          html+='<span>💰 Revenue: <strong>$'+totRev.toFixed(2)+'</strong></span>';
-          html+='<span>📦 Cost: <strong>$'+totCost.toFixed(2)+'</strong></span>';
-          html+='<span>📈 Profit: <strong style="color:'+mc+'">$'+totProfit.toFixed(2)+'</strong></span>';
-          if(totMargin!==null)html+='<span style="color:'+mc+';font-weight:700;font-size:13px">'+totMargin.toFixed(1)+'% margin</span>';
-          if(otherCh)html+='<span style="color:var(--text3);font-size:10px">(incl. $'+otherCh.toFixed(2)+' other charges)</span>';
-          html+='</div>';
-          return html;
-        })()}
+        ${buildFinancialsBlock(o)}
 
         ${(o.notes||o.shippingTo||o.tracking)?`<div class="order-extras">${o.shippingTo?`<span>📦 Ships to: ${o.shippingTo}</span>`:''}${o.notes?`<span>📝 ${o.notes}</span>`:''}${o.tracking?`<a href="${o.tracking}" target="_blank">🔗 Track</a>`:''}</div>`:''}
       </div></td></tr>`);
@@ -1453,7 +1453,6 @@ async function openEditModal(orderId){
       const pQtyDirect=(!pSizeRaw&&pQty)?pQty:'';
       const pSupplier=sCol(sub,'text_mm22qdag');
       const pPrice=sCol(sub,'numeric_mm2299qw');
-      const pCost=sCol(sub,'numeric_mm266zz9');
       const pPoNum=sCol(sub,'text_mm27ns9d');
       const pPoDate=sCol(sub,'date_mm26mc76');
       const pType=sCol(sub,'color_mm2dd6d5');
@@ -1496,10 +1495,6 @@ async function openEditModal(orderId){
           <div class="form-group">
             <label class="form-label">Price / Item ($)</label>
             <input type="number" step="0.01" class="form-input" id="p${id}-price" placeholder="0.00" value="${pPrice}" oninput="recalcOrderTotals()">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Our Cost / Item ($)</label>
-            <input type="number" step="0.01" class="form-input" id="p${id}-cost" placeholder="0.00" value="${pCost}">
           </div>
         </div>
         <div class="form-row cols-3">
@@ -2105,10 +2100,6 @@ function addProduct(){
         <label class="form-label">Price / Item ($)</label>
         <input type="number" step="0.01" class="form-input" id="p${id}-price" placeholder="0.00" oninput="recalcOrderTotals()">
       </div>
-      <div class="form-group">
-        <label class="form-label">Our Cost / Item ($)</label>
-        <input type="number" step="0.01" class="form-input" id="p${id}-cost" placeholder="0.00">
-      </div>
     </div>
     <div class="form-row cols-3">
       <div class="form-group">
@@ -2315,15 +2306,7 @@ async function saveOrderEdits(){
     const company=v('f-company');
     const contact=v('f-contact');
     const email=v('f-email');
-    const phone=v('f-phone');
-    const ihd=v('f-ihd');
-    const shipto=v('f-shipto');
-    const notes=v('f-notes');
-    const salesName=v('f-sales');
-    const salesId=salesIdMap[salesName];
-    const imprintId=v('f-imprint');
-    const status=v('f-status');
-    const o=all.find(x=>x.id===editingOrderId);
+    const phone=v('f-phone').replace(/\D/g,'');
 
     // Build and send column values
     const colVals={};
@@ -2371,7 +2354,6 @@ async function saveOrderEdits(){
       const pSize=v(`p${pid}-size`);
       const pSupplier=v(`p${pid}-supplier`);
       const pPrice=v(`p${pid}-price`);
-      const pCost=v(`p${pid}-cost`);
       const pQtyDirect=v(`p${pid}-qty`);
       const pPoNumE=v(`p${pid}-ponum`);
       const pPoDateE=v(`p${pid}-podate`);
@@ -2392,7 +2374,6 @@ async function saveOrderEdits(){
       } else { const _q=parseQtyFromSize(pSize); if(_q>0)subCols['numeric_mm22crjt']=_q; }
       if(pSupplier)subCols['text_mm22qdag']=pSupplier;
       if(pPrice)subCols['numeric_mm2299qw']=parseFloat(pPrice);
-      if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
       if(pPoNumE)subCols['text_mm27ns9d']=pPoNumE;
       if(pPoDateE)subCols['date_mm26mc76']={date:pPoDateE};
       if(pTypeE)subCols['color_mm2dd6d5']={label:pTypeE==='In House'?'In House Decoration':pTypeE};
@@ -2557,8 +2538,7 @@ async function submitOrder(){
     const salesId=salesIdMap[salesName];
     const imprintId=v('f-imprint');
     const email=v('f-email');
-    const phone=v('f-phone');
-    const shipto=v('f-shipto');
+    const phone=v('f-phone').replace(/\D/g,'');
     const addrStreet=v('f-addr-street');
     const addrCity=v('f-addr-city');
     const addrState=v('f-addr-state').toUpperCase();
@@ -2631,7 +2611,6 @@ async function submitOrder(){
         const pSize=v(`p${pid}-size`);
         const pSupplier=v(`p${pid}-supplier`);
         const pPrice=v(`p${pid}-price`);
-        const pCost=v(`p${pid}-cost`);
 
         let subCols={};
         if(pStyle)subCols['text_mm22fv7y']=pStyle;
@@ -2639,7 +2618,6 @@ async function submitOrder(){
         if(pSize){const _plain=/^\d+$/.test(pSize.trim());subCols['text_mm22yw8s']=_plain?'':pSize;}
         if(pSupplier)subCols['text_mm22qdag']=pSupplier;
         if(pPrice)subCols['numeric_mm2299qw']=parseFloat(pPrice);
-        if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
         // Calculate total quantity
         const pPoNum=v(`p${pid}-ponum`);
         const pPoDate=v(`p${pid}-podate`);
