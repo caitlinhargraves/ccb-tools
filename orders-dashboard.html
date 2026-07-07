@@ -2307,6 +2307,13 @@ async function saveOrderEdits(){
     const contact=v('f-contact');
     const email=v('f-email');
     const phone=v('f-phone').replace(/\D/g,'');
+    const ihd=v('f-ihd');
+    const salesName=v('f-sales');
+    const salesId=salesIdMap[salesName];
+    const imprintId=v('f-imprint');
+    const shipto=v('f-shipto');
+    const notes=v('f-notes');
+    const status=v('f-status');
 
     // Build and send column values
     const colVals={};
@@ -2546,6 +2553,7 @@ async function submitOrder(){
     const payment=v('f-payment');
     const notes=v('f-notes');
     const contact=v('f-contact');
+    const shipto=v('f-shipto');
     const otherCharges=v('f-other-charges');
     const otherChargesDetails=v('f-other-charges-details');
     const orderStatus=v('f-status');
