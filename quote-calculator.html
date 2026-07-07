@@ -106,6 +106,45 @@
     .sell-big{font-size:34px;}
     .metrics-grid{grid-template-columns:repeat(3,1fr);}
   }
+
+  /* PRINT QUOTE */
+  .print-quote-btn{width:100%;padding:13px;border:none;border-radius:12px;background:var(--navy);color:#fff;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s;}
+  .print-quote-btn:hover{opacity:.88;}
+  @media print{
+    body.printing-quote>*:not(#quote-print){display:none !important;}
+    body.printing-quote #quote-print{display:block !important;}
+  }
+  #quote-print{display:none;}
+  .slip-wrap{font-family:'DM Sans','Inter',sans-serif;color:var(--navy);max-width:680px;margin:0 auto;padding:24px;}
+  .slip-accent-bar{display:flex;height:4px;margin-bottom:18px;}
+  .slip-accent-bar span{flex:1;}
+  .slip-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+  .slip-brand{font-size:19px;font-weight:800;color:var(--navy);letter-spacing:.2px;}
+  .slip-brand-sub{font-size:10px;color:var(--subtle);margin-top:2px;letter-spacing:.05em;}
+  .slip-doc-title{font-size:17px;font-weight:700;color:var(--navy);text-align:right;}
+  .slip-doc-date{font-size:10px;color:var(--subtle);text-align:right;margin-top:3px;}
+  .slip-meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px;}
+  .slip-meta-cell{padding:11px 15px;border-right:1px solid var(--border);}
+  .slip-meta-cell:last-child{border-right:none;}
+  .slip-meta-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--subtle);margin-bottom:4px;}
+  .slip-meta-val{font-size:13px;font-weight:600;color:var(--navy);}
+  .slip-meta-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .slip-tbl{width:100%;border-collapse:collapse;margin-bottom:16px;}
+  .slip-tbl th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--subtle);text-align:left;padding:7px 10px;border-bottom:2px solid var(--border);}
+  .slip-tbl td{padding:9px 10px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top;}
+  .slip-pname{font-weight:600;font-size:13px;}
+  .slip-pdetail{font-size:11px;color:var(--muted);margin-top:2px;}
+  .slip-totals{margin-top:4px;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+  .slip-total-row{display:flex;justify-content:space-between;padding:9px 15px;font-size:13px;border-bottom:1px solid var(--border);}
+  .slip-total-row:last-child{border-bottom:none;}
+  .slip-total-row.grand{background:var(--navy);color:#fff;font-weight:700;font-size:15px;}
+  .slip-total-row .tl-lbl{color:var(--muted);}
+  .slip-total-row.grand .tl-lbl{color:rgba(255,255,255,.75);}
+  .slip-signoff{display:flex;gap:36px;margin-top:26px;}
+  .slip-signoff-cell{flex:1;}
+  .slip-signoff-rule{border-bottom:1px solid var(--navy);height:26px;}
+  .slip-signoff-label{font-size:9px;color:var(--subtle);text-transform:uppercase;letter-spacing:.07em;margin-top:5px;}
+  .slip-note{font-size:10px;color:var(--subtle);margin-top:18px;line-height:1.6;}
 </style>
 </head>
 <body>
@@ -124,6 +163,25 @@
 <div class="page-wrap">
   <div class="page-title">Quote Calculator</div>
   <div class="page-sub">Enter item cost, quantity, and decoration locations to get a sell price.</div>
+
+  <!-- QUOTE FOR (client-facing fields) -->
+  <div class="card">
+    <div class="card-title">Quote For</div>
+    <div class="field-grid">
+      <div class="field">
+        <label>Company name</label>
+        <input type="text" id="qClient" placeholder="e.g. ETS Wealth Management">
+      </div>
+      <div class="field">
+        <label>Contact name</label>
+        <input type="text" id="qContact" placeholder="e.g. Melissa Scoggins">
+      </div>
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <label>Product / item description</label>
+      <input type="text" id="qProduct" placeholder="e.g. Nike Dri-FIT Polo, Navy">
+    </div>
+  </div>
 
   <!-- JOB DETAILS -->
   <div class="card">
@@ -199,7 +257,15 @@
     </div>
     <div id="breakdownRows"></div>
   </div>
+
+  <button class="print-quote-btn" onclick="printQuote()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Print Client Quote
+  </button>
 </div>
+
+<div id="quote-print"></div>
+
 
 <script>
 const MARKUP=[
@@ -402,6 +468,68 @@ function calc(){
 
 // Start with one location
 addLocation();
+
+function printQuote(){
+  const client=(document.getElementById('qClient').value||'').trim();
+  const contact=(document.getElementById('qContact').value||'').trim();
+  const product=(document.getElementById('qProduct').value||'').trim();
+  const qty=Math.max(1,parseInt(document.getElementById('qty').value)||1);
+  const sellPrice=parseFloat(document.getElementById('res-sellprice').textContent.replace('$',''))||0;
+  const subtotal=parseFloat(document.getElementById('res-subtotal').textContent.replace('$',''))||0;
+  const setupText=document.getElementById('res-setup').textContent;
+  const setupFee=setupText==='—'?0:parseFloat(setupText.replace('$',''))||0;
+  const grandTotal=parseFloat(document.getElementById('res-grandtotal').textContent.replace('$',''))||0;
+  const today=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const quoteNum='Q-'+Date.now().toString().slice(-6);
+
+  // Describe decoration locations in plain client-facing language (no internal cost/markup)
+  const locLines=locations.filter(l=>l.method!=='none').map((loc,i)=>{
+    const cfg=METHODS[loc.method];
+    let detail=cfg.label;
+    if(loc.method==='embroidery'){
+      const names={small:'Small logo (up to 3")',standard:'Standard logo (3"–5")',large:'Large logo (5"–8")',fullback:'Full back / oversized'};
+      detail+=' — '+(names[loc.embSize]||'');
+    } else if(loc.method==='screenprint'){
+      const el=document.getElementById(loc.id+'-colors');
+      const colors=el?parseFloat(el.value)||loc.colors:loc.colors;
+      detail+=' — '+colors+' color'+(colors==1?'':'s');
+    }
+    return `<tr><td><div class="slip-pname">Location ${i+1}</div><div class="slip-pdetail">${detail}</div></td></tr>`;
+  }).join('');
+
+  const html=`<div class="slip-wrap">
+    <div class="slip-accent-bar"><span style="background:var(--cyan)"></span><span style="background:var(--magenta)"></span><span style="background:var(--yellow)"></span><span style="background:var(--navy)"></span></div>
+    <div class="slip-hdr"><div><div class="slip-brand">CCB IMPRINT</div><div class="slip-brand-sub">ccbimprint.com</div></div><div><div class="slip-doc-title">Quote</div><div class="slip-doc-date">${quoteNum} &middot; ${today}</div></div></div>
+    <div class="slip-meta-grid">
+      <div class="slip-meta-cell"><div class="slip-meta-lbl">Prepared For</div><div class="slip-meta-val">${client||'—'}</div>${contact?`<div class="slip-meta-sub">${contact}</div>`:''}</div>
+      <div class="slip-meta-cell"><div class="slip-meta-lbl">Item</div><div class="slip-meta-val">${product||'—'}</div></div>
+      <div class="slip-meta-cell"><div class="slip-meta-lbl">Quantity</div><div class="slip-meta-val">${qty}</div></div>
+    </div>
+    ${locLines?`<table class="slip-tbl"><thead><tr><th>Decoration</th></tr></thead><tbody>${locLines}</tbody></table>`:''}
+    <div class="slip-totals">
+      <div class="slip-total-row"><span class="tl-lbl">Price per piece</span><span>$${sellPrice.toFixed(2)}</span></div>
+      <div class="slip-total-row"><span class="tl-lbl">Subtotal (&times; ${qty})</span><span>$${subtotal.toFixed(2)}</span></div>
+      ${setupFee>0?`<div class="slip-total-row"><span class="tl-lbl">Setup fees</span><span>$${setupFee.toFixed(2)}</span></div>`:''}
+      <div class="slip-total-row grand"><span class="tl-lbl">Total</span><span>$${grandTotal.toFixed(2)}</span></div>
+    </div>
+    <div class="slip-signoff">
+      <div class="slip-signoff-cell">
+        <div class="slip-signoff-rule"></div><div class="slip-signoff-label">Approved By / Date</div>
+      </div>
+      <div class="slip-signoff-cell">
+        <div class="slip-signoff-rule"></div><div class="slip-signoff-label">Email</div>
+      </div>
+    </div>
+    <div class="slip-note">Quote valid for 30 days. Pricing subject to final artwork approval and blank availability.</div>
+  </div>`;
+
+  const c=document.getElementById('quote-print');
+  c.innerHTML=html;
+  document.body.classList.add('printing-quote');
+  window.print();
+  setTimeout(()=>document.body.classList.remove('printing-quote'),300);
+}
+
 </script>
 </body>
 </html>
