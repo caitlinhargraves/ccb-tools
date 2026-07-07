@@ -2304,6 +2304,7 @@ async function saveOrderEdits(){
   btn.textContent='Saving...';
   document.getElementById('modalStatus').textContent='Saving to Monday...';
   try{
+    const o=all.find(x=>x.id===editingOrderId);
     const company=v('f-company');
     const contact=v('f-contact');
     const email=v('f-email');
