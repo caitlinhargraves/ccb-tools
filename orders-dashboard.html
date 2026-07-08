@@ -869,12 +869,18 @@ function printOrderSlip(orderId){
     ${notesHtml}
     <div class="slip-signoff">
       <div class="slip-signoff-cell">
-        <div class="slip-signoff-rule"></div><div class="slip-signoff-label">First Sign Off / Date</div>
-        <div class="slip-signoff-rule" style="margin-top:14px"></div><div class="slip-signoff-label">Email</div>
+        <div class="slip-signoff-label" style="margin-bottom:2px">First Sign Off</div>
+        <div style="display:flex;gap:14px">
+          <div style="flex:2"><div class="slip-signoff-rule"></div><div class="slip-signoff-label">Initial</div></div>
+          <div style="flex:1"><div class="slip-signoff-rule"></div><div class="slip-signoff-label">Date</div></div>
+        </div>
       </div>
       <div class="slip-signoff-cell">
-        <div class="slip-signoff-rule"></div><div class="slip-signoff-label">Final Sign Off / Date</div>
-        <div class="slip-signoff-rule" style="margin-top:14px"></div><div class="slip-signoff-label">Email</div>
+        <div class="slip-signoff-label" style="margin-bottom:2px">Final Sign Off</div>
+        <div style="display:flex;gap:14px">
+          <div style="flex:2"><div class="slip-signoff-rule"></div><div class="slip-signoff-label">Initial</div></div>
+          <div style="flex:1"><div class="slip-signoff-rule"></div><div class="slip-signoff-label">Date</div></div>
+        </div>
       </div>
     </div>
   </div>`;
