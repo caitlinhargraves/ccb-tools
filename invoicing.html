@@ -314,31 +314,55 @@ async function loadOrders() {
   }
 
   try {
-    const q = `{
-      boards(ids: [${BOARD_ID}]) {
-        items_page(limit: 200) {
-          items {
-            id name group { id }
-            column_values(ids: [
-              "${COL_ORDER_NUM}","${COL_ORDER_STATUS}","${COL_INVOICE_STATUS}",
-              "${COL_INVOICE_NUM}","${COL_INVOICE_DATE}","${COL_INVOICE_SENT_DATE}",
-              "${COL_INVOICED_AMOUNT}","${COL_NETSUITE}","${COL_CONTACT}",
-              "${COL_EMAIL}","${COL_SHIP_TO}","${COL_SHIP_ADDR}","${COL_BILL_ADDR}",
-              "${COL_COMPANY}","${COL_IN_HANDS}","${COL_SALESPERSON}","${COL_OTHER_CHARGES}","${COL_OTHER_CHARGES_DETAILS}","${COL_PAYMENT_METHOD}"
-            ]) { id text value }
-            subitems {
-              id name
-              column_values(ids: [
-                "${SUB_STATUS}","${SUB_PRICE}","${SUB_COST}","${SUB_QTY}","${SUB_COLOR}","${SUB_STYLE}","${SUB_DECO}"
-              ]) { id text value }
-            }
-          }
-        }
-      }
-    }`;
+    const COLUMN_IDS_Q = `
+      "${COL_ORDER_NUM}","${COL_ORDER_STATUS}","${COL_INVOICE_STATUS}",
+      "${COL_INVOICE_NUM}","${COL_INVOICE_DATE}","${COL_INVOICE_SENT_DATE}",
+      "${COL_INVOICED_AMOUNT}","${COL_NETSUITE}","${COL_CONTACT}",
+      "${COL_EMAIL}","${COL_SHIP_TO}","${COL_SHIP_ADDR}","${COL_BILL_ADDR}",
+      "${COL_COMPANY}","${COL_IN_HANDS}","${COL_SALESPERSON}","${COL_OTHER_CHARGES}","${COL_OTHER_CHARGES_DETAILS}","${COL_PAYMENT_METHOD}"
+    `;
+    const SUB_COLUMN_IDS_Q = `"${SUB_STATUS}","${SUB_PRICE}","${SUB_COST}","${SUB_QTY}","${SUB_COLOR}","${SUB_STYLE}","${SUB_DECO}"`;
 
-    const data = await mondayQuery(q);
-    const items = data.boards[0].items_page.items;
+    // Paginate through the full board — a flat limit silently drops
+    // any items past that count once the board grows past it.
+    let items = [];
+    let cursor = null;
+    do {
+      const q = cursor
+        ? `{
+            next_items_page(cursor: "${cursor}", limit: 200) {
+              cursor
+              items {
+                id name group { id }
+                column_values(ids: [${COLUMN_IDS_Q}]) { id text value }
+                subitems {
+                  id name
+                  column_values(ids: [${SUB_COLUMN_IDS_Q}]) { id text value }
+                }
+              }
+            }
+          }`
+        : `{
+            boards(ids: [${BOARD_ID}]) {
+              items_page(limit: 200) {
+                cursor
+                items {
+                  id name group { id }
+                  column_values(ids: [${COLUMN_IDS_Q}]) { id text value }
+                  subitems {
+                    id name
+                    column_values(ids: [${SUB_COLUMN_IDS_Q}]) { id text value }
+                  }
+                }
+              }
+            }
+          }`;
+
+      const data = await mondayQuery(q);
+      const page = cursor ? data.next_items_page : data.boards[0].items_page;
+      items = items.concat(page.items);
+      cursor = page.cursor;
+    } while (cursor);
 
     allOrders = [];
     paidOrders = [];
