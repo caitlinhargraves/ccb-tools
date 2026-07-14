@@ -1459,6 +1459,7 @@ async function openEditModal(orderId){
       const pQtyDirect=(!pSizeRaw&&pQty)?pQty:'';
       const pSupplier=sCol(sub,'text_mm22qdag');
       const pPrice=sCol(sub,'numeric_mm2299qw');
+      const pCost=sCol(sub,'numeric_mm266zz9');
       const pPoNum=sCol(sub,'text_mm27ns9d');
       const pPoDate=sCol(sub,'date_mm26mc76');
       const pType=sCol(sub,'color_mm2dd6d5');
@@ -1493,7 +1494,7 @@ async function openEditModal(orderId){
             <div class="qty-chips" id="p${id}-qtychips"></div>
           </div>
         </div>
-        <div class="form-row cols-2">
+        <div class="form-row cols-3">
           <div class="form-group">
             <label class="form-label">Supplier</label>
             <input type="text" class="form-input" id="p${id}-supplier" placeholder="SanMar, S&S..." value="${pSupplier.replace(/"/g,'&quot;')}">
@@ -1501,6 +1502,10 @@ async function openEditModal(orderId){
           <div class="form-group">
             <label class="form-label">Price / Item ($)</label>
             <input type="number" step="0.01" class="form-input" id="p${id}-price" placeholder="0.00" value="${pPrice}" oninput="recalcOrderTotals()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Our Cost / Item ($)</label>
+            <input type="number" step="0.01" class="form-input" id="p${id}-cost" placeholder="0.00" value="${pCost}" oninput="recalcOrderTotals()">
           </div>
         </div>
         <div class="form-row cols-3">
@@ -2097,7 +2102,7 @@ function addProduct(){
         <div class="qty-chips" id="p${id}-qtychips"></div>
       </div>
     </div>
-    <div class="form-row cols-2">
+    <div class="form-row cols-3">
       <div class="form-group">
         <label class="form-label">Supplier</label>
         <input type="text" class="form-input" id="p${id}-supplier" placeholder="SanMar, S&amp;S...">
@@ -2105,6 +2110,10 @@ function addProduct(){
       <div class="form-group">
         <label class="form-label">Price / Item ($)</label>
         <input type="number" step="0.01" class="form-input" id="p${id}-price" placeholder="0.00" oninput="recalcOrderTotals()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Our Cost / Item ($)</label>
+        <input type="number" step="0.01" class="form-input" id="p${id}-cost" placeholder="0.00" oninput="recalcOrderTotals()">
       </div>
     </div>
     <div class="form-row cols-3">
@@ -2369,6 +2378,7 @@ async function saveOrderEdits(){
       const pSize=v(`p${pid}-size`);
       const pSupplier=v(`p${pid}-supplier`);
       const pPrice=v(`p${pid}-price`);
+      const pCost=v(`p${pid}-cost`);
       const pQtyDirect=v(`p${pid}-qty`);
       const pPoNumE=v(`p${pid}-ponum`);
       const pPoDateE=v(`p${pid}-podate`);
@@ -2389,6 +2399,7 @@ async function saveOrderEdits(){
       } else { const _q=parseQtyFromSize(pSize); if(_q>0)subCols['numeric_mm22crjt']=_q; }
       if(pSupplier)subCols['text_mm22qdag']=pSupplier;
       if(pPrice)subCols['numeric_mm2299qw']=parseFloat(pPrice);
+      if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
       if(pPoNumE)subCols['text_mm27ns9d']=pPoNumE;
       if(pPoDateE)subCols['date_mm26mc76']={date:pPoDateE};
       if(pTypeE)subCols['color_mm2dd6d5']={label:pTypeE==='In House'?'In House Decoration':pTypeE};
@@ -2627,6 +2638,7 @@ async function submitOrder(){
         const pSize=v(`p${pid}-size`);
         const pSupplier=v(`p${pid}-supplier`);
         const pPrice=v(`p${pid}-price`);
+        const pCost=v(`p${pid}-cost`);
 
         let subCols={};
         if(pStyle)subCols['text_mm22fv7y']=pStyle;
@@ -2634,6 +2646,7 @@ async function submitOrder(){
         if(pSize){const _plain=/^\d+$/.test(pSize.trim());subCols['text_mm22yw8s']=_plain?'':pSize;}
         if(pSupplier)subCols['text_mm22qdag']=pSupplier;
         if(pPrice)subCols['numeric_mm2299qw']=parseFloat(pPrice);
+        if(pCost)subCols['numeric_mm266zz9']=parseFloat(pCost);
         // Calculate total quantity
         const pPoNum=v(`p${pid}-ponum`);
         const pPoDate=v(`p${pid}-podate`);
