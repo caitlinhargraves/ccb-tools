@@ -69,6 +69,15 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 .card-header{display:grid;grid-template-columns:1fr auto;gap:16px;padding:14px 18px 12px;border-bottom:1px solid var(--border);background:var(--surface2);align-items:start}
 .card-name{font-size:14px;font-weight:500;letter-spacing:-.01em;margin-bottom:4px}
 .card-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.shelf-line{display:flex;align-items:center;gap:5px}
+.shelf-chip{font-family:'Inter',monospace;font-size:11px;font-weight:700;color:var(--navy);background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:1px 6px;letter-spacing:.03em}
+.shelf-edit-btn{font-size:10px;line-height:1;padding:2px 5px;background:transparent;color:var(--text3);border:1px solid var(--border);border-radius:4px;cursor:pointer}
+.shelf-edit-btn:hover{color:var(--navy);border-color:var(--navy)}
+.shelf-add-btn{font-size:11px;padding:2px 7px;background:transparent;color:var(--text2);border:1px dashed var(--border);border-radius:5px;cursor:pointer}
+.shelf-add-btn:hover{color:var(--navy);border-color:var(--navy);border-style:solid}
+.shelf-input{font-family:'Inter',monospace;font-size:11px;padding:2px 6px;border:1px solid var(--navy);border-radius:5px;width:70px;text-transform:uppercase;outline:none}
+.shelf-save-btn{font-size:10px;padding:2px 7px;background:var(--navy);color:#fff;border:none;border-radius:4px;cursor:pointer}
+.shelf-save-btn:hover{opacity:.85}
 .chip{font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);color:var(--text2);background:var(--surface);white-space:nowrap}
 .chip.due-soon{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-border)}
 .chip.overdue{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
@@ -415,6 +424,7 @@ function buildOrderGroup(list){
         <span style="font-family:'Inter',monospace;font-size:13px;font-weight:600;background:var(--blue-bg);color:var(--blue);padding:3px 9px;border-radius:6px">${o.ccbNum||'—'}</span>
         <span style="font-size:15px;font-weight:600;color:var(--text)">${o.orderName||''}</span>
         ${o.salesperson?`<span style="font-size:12px;color:var(--text2)">${o.salesperson}</span>`:''}
+        ${shelfChip(o)}
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         ${artFlag}
@@ -426,6 +436,42 @@ function buildOrderGroup(list){
     ${shipLine}
     ${rows}
   </div>`;
+}
+function shelfChip(o){
+  const val=o.shelf||'';
+  return val
+    ? `<div class="shelf-line" id="shelf-line-${o.orderId}" onclick="event.stopPropagation()"><span class="shelf-chip" id="shelf-disp-${o.orderId}">📍 ${val}</span><button class="shelf-edit-btn" title="Edit shelf location" onclick="editShelf('${o.orderId}')">✎</button></div>`
+    : `<div class="shelf-line" id="shelf-line-${o.orderId}" onclick="event.stopPropagation()"><button class="shelf-add-btn" onclick="editShelf('${o.orderId}')">+ Shelf</button></div>`;
+}
+function findOrderProd(orderId){return [...allUpcoming,...allActive].find(p=>p.orderId===orderId);}
+function editShelf(orderId){
+  const o=findOrderProd(orderId);
+  const line=document.getElementById('shelf-line-'+orderId);
+  if(!line)return;
+  line.innerHTML=`<input class="shelf-input" type="text" placeholder="e.g. A-12" value="${escAttr(o?.shelf||'')}" id="shelf-input-${orderId}" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter')saveShelf('${orderId}');if(event.key==='Escape')renderShelf('${orderId}');"><button class="shelf-save-btn" onclick="saveShelf('${orderId}')">Save</button>`;
+  const input=document.getElementById('shelf-input-'+orderId);
+  if(input){input.focus();input.select();}
+}
+function renderShelf(orderId){
+  const o=findOrderProd(orderId);
+  const line=document.getElementById('shelf-line-'+orderId);
+  if(line&&o)line.outerHTML=shelfChip(o);
+}
+async function saveShelf(orderId){
+  const input=document.getElementById('shelf-input-'+orderId);
+  if(!input)return;
+  const val=input.value.trim().toUpperCase();
+  const btn=input.nextElementSibling;
+  if(btn){btn.textContent='...';btn.disabled=true;}
+  try{
+    const cv=JSON.stringify(JSON.stringify({[O_SHELF]:val}));
+    await mq(`mutation{change_multiple_column_values(board_id:${ORDERS_BOARD},item_id:${orderId},column_values:${cv}){id}}`);
+    for(const p of [...allUpcoming,...allActive])if(p.orderId===orderId)p.shelf=val;
+    renderShelf(orderId);
+  }catch(e){
+    alert('Could not save shelf location: '+e.message);
+    if(btn){btn.textContent='Save';btn.disabled=false;}
+  }
 }
 function buildProductRow(p,section){
   const _sc=p._sc||{};
