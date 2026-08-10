@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCB Rep Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--navy:#1B2A4A;--cyan:#00AEEF;--magenta:#EC008C;--yellow:#F5D53B;--bg:#E8EBF4;--white:#FFFFFF;--body:#374151;--muted:#6B7280;--subtle:#9CA3AF;--border:#D1D5DB;--border2:#E5E7EB;--green:#00A86B;--red:#D14343;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--navy);font-family:'Inter',sans-serif;min-height:100vh;font-size:15px;line-height:1.6;}
+
+  #loginGate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:500;}
+  .login-card{background:var(--white);border-radius:18px;padding:36px 32px;width:100%;max-width:340px;box-shadow:0 12px 40px rgba(27,42,74,.14);}
+  .login-title{font-size:20px;font-weight:800;margin-bottom:4px;}
+  .login-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+  .login-field{margin-bottom:12px;}
+  .login-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+  .login-field input{width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:9px;font-size:14px;font-family:'Inter',sans-serif;background:var(--bg);}
+  .login-field input:focus{outline:none;border-color:var(--cyan);background:var(--white);}
+  .login-btn{width:100%;padding:11px;border:none;border-radius:9px;background:var(--navy);color:#fff;font-weight:700;font-size:14px;cursor:pointer;margin-top:6px;}
+  .login-error{font-size:12.5px;color:var(--red);margin-top:8px;min-height:16px;}
+
+  #app{display:none;}
+  .header{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(27,42,74,.06);}
+  .header-left{display:flex;align-items:center;gap:14px;}
+  .page-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .rep-chip{font-size:12px;font-weight:600;color:var(--navy);background:var(--bg);padding:5px 10px;border-radius:20px;}
+  .back-btn,.logout-btn{background:none;border:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'Inter',sans-serif;}
+  .back-btn:hover,.logout-btn:hover{color:var(--navy);}
+  .rep-select{padding:6px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;background:var(--white);}
+
+  .page-wrap{max-width:900px;margin:0 auto;padding:24px 18px 80px;}
+  .page-title{font-size:24px;font-weight:800;margin-bottom:2px;}
+  .page-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+
+  .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+  .metric-card{background:var(--white);border:1px solid var(--border2);border-radius:14px;padding:16px 18px;}
+  .metric-val{font-size:24px;font-weight:800;color:var(--navy);}
+  .metric-lbl{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .metric-card.accent{border-color:var(--cyan);background:linear-gradient(135deg,#F0FAFF 0%,#fff 60%);}
+
+  .card{background:var(--white);border:1px solid var(--border2);border-radius:14px;padding:20px 22px;margin-bottom:16px;}
+  .card-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--subtle);margin-bottom:14px;}
+
+  .client-row{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border2);}
+  .client-row:last-child{border-bottom:none;}
+  .client-name{font-weight:700;font-size:14px;}
+  .loyalty-bar-track{height:8px;background:var(--bg);border-radius:20px;overflow:hidden;margin-top:5px;}
+  .loyalty-bar-fill{height:100%;background:var(--cyan);border-radius:20px;}
+  .loyalty-bar-fill.unlocked{background:var(--green);}
+  .loyalty-label{font-size:11px;color:var(--muted);margin-top:3px;}
+  .client-num{font-size:13.5px;font-weight:700;}
+  .client-sub{font-size:11px;color:var(--muted);}
+  .col-hdr{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--subtle);padding-bottom:8px;border-bottom:1.5px solid var(--border2);}
+
+  .trend-row{display:flex;align-items:flex-end;gap:8px;height:120px;padding-top:10px;}
+  .trend-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;}
+  .trend-bar{width:100%;max-width:36px;background:var(--cyan);border-radius:6px 6px 0 0;min-height:2px;}
+  .trend-val{font-size:10.5px;font-weight:700;margin-bottom:4px;}
+  .trend-month{font-size:10px;color:var(--muted);margin-top:6px;}
+
+  .empty-state{text-align:center;color:var(--subtle);font-size:13px;padding:20px 0;}
+  .loading{text-align:center;color:var(--muted);padding:40px 0;font-size:13.5px;}
+</style>
+</head>
+<body>
+
+<div id="loginGate">
+  <div class="login-card">
+    <div class="login-title">Rep Dashboard</div>
+    <div class="login-sub">Enter your password to see your numbers.</div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Log In</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="header">
+    <div class="header-left">
+      <button class="back-btn" onclick="location.href='index.html'">← Home</button>
+      <span class="page-label">Performance</span>
+    </div>
+    <div class="header-left">
+      <select class="rep-select" id="repSelect" style="display:none;" onchange="loadDashboard()"></select>
+      <span class="rep-chip" id="repChip"></span>
+      <button class="logout-btn" onclick="logout()">Log out</button>
+    </div>
+  </div>
+
+  <div class="page-wrap">
+    <div class="page-title" id="pageTitle">My Performance</div>
+    <div class="page-sub" id="pageSub"></div>
+    <div id="content"><div class="loading">Loading your numbers...</div></div>
+  </div>
+</div>
+
+<script>
+let session = null;
+const ALL_REPS = ['Chaz Lucius','Bailey McGraw','Jess Miller','Nick Miller','George Miller','Caitlin Hargraves','Bryce','Tucker'];
+
+async function doLogin(){
+  const password = document.getElementById('loginPassword').value;
+  const err = document.getElementById('loginError');
+  err.textContent = '';
+  try{
+    const r = await fetch('/api/rep/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});
+    const d = await r.json();
+    if(!d.ok){ err.textContent = d.error || 'Incorrect password'; return; }
+    session = d;
+    sessionStorage.setItem('ccb_rep_session', JSON.stringify(d));
+    enterApp();
+  }catch(e){ err.textContent = 'Login failed. Try again.'; }
+}
+function logout(){ sessionStorage.removeItem('ccb_rep_session'); location.reload(); }
+
+function enterApp(){
+  document.getElementById('loginGate').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('repChip').textContent = session.name + ' · ' + (session.role==='Admin'?'Admin':session.salesPerson);
+
+  if(session.role === 'Admin'){
+    const sel = document.getElementById('repSelect');
+    sel.style.display='inline-block';
+    sel.innerHTML = `<option value="__all__">All Reps (combined)</option>` + ALL_REPS.map(r=>`<option value="${r}">${r}</option>`).join('');
+  }
+  loadDashboard();
+}
+
+(function initAuth(){
+  const cached = sessionStorage.getItem('ccb_rep_session');
+  if(cached){ session = JSON.parse(cached); enterApp(); }
+})();
+
+async function loadDashboard(){
+  document.getElementById('content').innerHTML = '<div class="loading">Loading your numbers...</div>';
+  let salesPerson = session.salesPerson;
+  let isAdmin = 'false';
+  let viewLabel = salesPerson;
+
+  if(session.role === 'Admin'){
+    const sel = document.getElementById('repSelect').value;
+    if(sel === '__all__'){ isAdmin = 'true'; viewLabel = 'All Reps'; }
+    else { salesPerson = sel; viewLabel = sel; }
+  }
+
+  document.getElementById('pageTitle').textContent = session.role==='Admin' ? viewLabel+"'s Performance" : 'My Performance';
+  document.getElementById('pageSub').textContent = 'Rolling 12-month client revenue drives loyalty status ($50K threshold).';
+
+  try{
+    const r = await fetch(`/api/rep/dashboard?salesPerson=${encodeURIComponent(salesPerson||'')}&isAdmin=${isAdmin}`);
+    const d = await r.json();
+    renderDashboard(d);
+  }catch(e){
+    document.getElementById('content').innerHTML = '<div class="empty-state">Could not load data. Try refreshing.</div>';
+  }
+}
+
+function renderDashboard(d){
+  const maxTrend = Math.max(1, ...(d.monthlyCommission||[]).map(m=>m.amount));
+  const trendHtml = (d.monthlyCommission||[]).length ? `
+    <div class="card">
+      <div class="card-title">Commission Over Time</div>
+      <div class="trend-row">
+        ${d.monthlyCommission.map(m=>`
+          <div class="trend-bar-wrap">
+            <div class="trend-val">$${m.amount.toFixed(0)}</div>
+            <div class="trend-bar" style="height:${Math.max(4,(m.amount/maxTrend)*90)}px;"></div>
+            <div class="trend-month">${m.month}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>` : '';
+
+  const clientsHtml = (d.clients||[]).length ? `
+    <div class="card">
+      <div class="card-title">Clients &amp; Loyalty Progress</div>
+      <div class="client-row" style="border-bottom:none;">
+        <div class="col-hdr">Client</div>
+        <div class="col-hdr">Rolling 12mo Revenue</div>
+        <div class="col-hdr">Commission (Paid / Pending)</div>
+        <div class="col-hdr">Loyalty Progress</div>
+      </div>
+      ${d.clients.map(c=>`
+        <div class="client-row">
+          <div class="client-name">${c.name}</div>
+          <div><div class="client-num">$${c.revenue12mo.toLocaleString()}</div><div class="client-sub">all-time $${c.totalRevenue.toLocaleString()}</div></div>
+          <div><div class="client-num">$${c.commissionPaid.toLocaleString()}</div><div class="client-sub">$${c.commissionPending.toLocaleString()} pending</div></div>
+          <div>
+            <div class="loyalty-bar-track"><div class="loyalty-bar-fill${c.loyaltyUnlocked?' unlocked':''}" style="width:${c.loyaltyPct}%;"></div></div>
+            <div class="loyalty-label">${c.loyaltyUnlocked ? '🏆 Loyalty unlocked (25%)' : c.loyaltyPct+'% to $50K'}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>` : '<div class="card"><div class="empty-state">No client history yet.</div></div>';
+
+  document.getElementById('content').innerHTML = `
+    <div class="metrics-grid">
+      <div class="metric-card accent"><div class="metric-val">${d.quotesMade}</div><div class="metric-lbl">Quotes Made</div></div>
+      <div class="metric-card"><div class="metric-val">${d.winRate}%</div><div class="metric-lbl">Win Rate (${d.quotesWon} won / ${d.quotesLost} lost)</div></div>
+      <div class="metric-card"><div class="metric-val">$${d.totalRevenue.toLocaleString()}</div><div class="metric-lbl">Total Revenue</div></div>
+      <div class="metric-card"><div class="metric-val">$${d.totalCommission.toLocaleString()}</div><div class="metric-lbl">Total Commission</div></div>
+      <div class="metric-card"><div class="metric-val">$${d.commissionPaid.toLocaleString()}</div><div class="metric-lbl">Commission Paid Out</div></div>
+      <div class="metric-card"><div class="metric-val">$${d.commissionPending.toLocaleString()}</div><div class="metric-lbl">Commission Pending</div></div>
+    </div>
+    ${trendHtml}
+    ${clientsHtml}
+  `;
+}
+</script>
+</body>
+</html>

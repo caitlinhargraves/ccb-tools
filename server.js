@@ -12,7 +12,26 @@ const PORT = process.env.PORT || 3000;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 const MONDAY_API_KEY = process.env.MONDAY_API_KEY || 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY0OTQ0NjE4NywiYWFpIjoxMSwidWlkIjoxMDE3MTA4NjgsImlhZCI6IjIwMjYtMDQtMjNUMTU6Mzc6MTkuMDAwWiIsInBlciI6Im1lOndyaXRlIiwiYWN0aWQiOjM0NDk0MDk3LCJyZ24iOiJ1c2UxIn0.6FPYgwwTj-05GWXHxxq5lSstcJTGfVOqATNhk5FQBic';
 const ORDERS_BOARD_ID = '18407165363';
+const PRODUCTS_SUB_BOARD_ID = '18407165552';
+const QUOTES_BOARD_ID = '18425958662';
+const QUOTES_SUB_BOARD_ID = '18425958868';
+const REP_BOARD_ID = '18425958984';
 const CCB_EMAIL = 'info@ccbimprint.com';
+const pricing = require('./pricing-engine');
+const cryptoAuth = require('crypto');
+
+function hashRepPassword(pw) {
+  return cryptoAuth.createHash('sha256').update(String(pw) + ':ccb-rep-auth').digest('hex');
+}
+
+async function mondayQuery(query) {
+  const r = await fetch('https://api.monday.com/v2', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': MONDAY_API_KEY, 'API-Version': '2024-01' },
+    body: JSON.stringify({ query })
+  });
+  return r.json();
+}
 
 // ============================================================
 // Email transporter -- uses env vars set in Render dashboard
@@ -633,6 +652,410 @@ app.post('/api/download-zip', async (req, res) => {
   }
 });
 
+
+// ============================================================
+// REP AUTH -- password-gated pages, no separate Monday seats.
+// Rep Access board (REP_BOARD_ID) stores: Role, Password Hash,
+// Sales Person Match, Active.
+// ============================================================
+app.post('/api/rep/login', async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ error: 'Password required' });
+    const hash = hashRepPassword(password);
+    const query = `{boards(ids:[${REP_BOARD_ID}]){items_page(limit:100){items{id name column_values{id text value}}}}}`;
+    const data = await mondayQuery(query);
+    const items = data.data?.boards?.[0]?.items_page?.items || [];
+    for (const item of items) {
+      const cv = {};
+      item.column_values.forEach(c => cv[c.id] = c.text);
+      if (cv['text_mm63mwrn'] === hash && cv['color_mm635y4q'] === 'Active') {
+        return res.json({
+          ok: true,
+          repId: item.id,
+          name: item.name,
+          role: cv['color_mm63fnqv'] || 'Sales Rep',
+          salesPerson: cv['text_mm6380j8'] || ''
+        });
+      }
+    }
+    res.json({ ok: false, error: 'Incorrect password' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/rep/signup', async (req, res) => {
+  try {
+    const { name, salesPerson, password } = req.body;
+    if (!name || !salesPerson || !password) return res.status(400).json({ error: 'name, salesPerson, and password required' });
+    if (password.length < 4) return res.status(400).json({ error: 'Password must be at least 4 characters' });
+
+    // Prevent duplicate self-signup for the same sales person
+    const checkQuery = `{boards(ids:[${REP_BOARD_ID}]){items_page(limit:100){items{id column_values(ids:["text_mm6380j8"]){text}}}}}`;
+    const checkData = await mondayQuery(checkQuery);
+    const existing = (checkData.data?.boards?.[0]?.items_page?.items || [])
+      .some(i => (i.column_values?.[0]?.text || '').toLowerCase() === salesPerson.toLowerCase());
+    if (existing) return res.status(400).json({ error: `${salesPerson} already has a password set. Use the login screen, or ask an admin to reset it.` });
+
+    const hash = hashRepPassword(password);
+    const today = new Date().toISOString().slice(0, 10);
+    const cv = JSON.stringify({
+      'color_mm63fnqv': { label: 'Sales Rep' },
+      'text_mm63mwrn': hash,
+      'text_mm6380j8': salesPerson,
+      'color_mm635y4q': { label: 'Active' },
+      'date_mm63ed4m': { date: today }
+    });
+    const mutation = `mutation { create_item(board_id: ${REP_BOARD_ID}, item_name: ${JSON.stringify(name)}, column_values: ${JSON.stringify(cv)}) { id } }`;
+    const result = await mondayQuery(mutation);
+    if (result.errors) return res.status(400).json({ error: result.errors[0].message });
+    res.json({ ok: true, repId: result.data.create_item.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// QUOTES -- client history lookup (drives commission tier)
+// ============================================================
+app.get('/api/quote/client-history', async (req, res) => {
+  try {
+    const client = (req.query.client || '').trim();
+    if (!client) return res.json({ orderCount: 0, rolling12moRevenue: 0 });
+
+    const query = `{boards(ids:[${ORDERS_BOARD_ID}]){items_page(limit:500){items{id name column_values(ids:["date4","numeric_mm4wv7sc"]){id text}}}}}`;
+    const data = await mondayQuery(query);
+    const items = data.data?.boards?.[0]?.items_page?.items || [];
+    const now = Date.now();
+    const yearMs = 365 * 24 * 60 * 60 * 1000;
+
+    let orderCount = 0;
+    let rolling12moRevenue = 0;
+    for (const item of items) {
+      if ((item.name || '').trim().toLowerCase() !== client.toLowerCase()) continue;
+      orderCount++;
+      const dateStr = item.column_values.find(c => c.id === 'date4')?.text;
+      const revStr = item.column_values.find(c => c.id === 'numeric_mm4wv7sc')?.text;
+      const rev = parseFloat(revStr) || 0;
+      if (dateStr) {
+        const orderDate = new Date(dateStr).getTime();
+        if (!isNaN(orderDate) && (now - orderDate) <= yearMs) rolling12moRevenue += rev;
+      }
+    }
+    const commission = pricing.computeCommissionRate(orderCount, rolling12moRevenue);
+    res.json({ orderCount, rolling12moRevenue, commissionRate: commission.rate, commissionTier: commission.tier });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// QUOTES -- live pricing preview (no Monday writes)
+// body: { quoteType: 'Garment/Decoration'|'Custom Box', lines: [...] }
+// ============================================================
+app.post('/api/quote/price-preview', (req, res) => {
+  try {
+    const { quoteType, lines } = req.body;
+    const results = (lines || []).map(line => {
+      if (quoteType === 'Custom Box') return pricing.computeBoxLine(line);
+      return pricing.computeGarmentLine(line);
+    });
+    const totalRevenue = results.reduce((s, r) => s + (r.totalRevenue || 0), 0);
+    const totalCost = results.reduce((s, r) => s + (r.totalCost || 0), 0);
+    const grossProfit = totalRevenue - totalCost;
+    res.json({ lines: results, totals: { totalRevenue, totalCost, grossProfit } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// QUOTES -- save (create or update quote + line item subitems)
+// ============================================================
+app.post('/api/quote/save', async (req, res) => {
+  try {
+    const {
+      quoteId, client, contact, email, phone, salesPerson,
+      quoteType, orderType, notes, lines
+    } = req.body;
+    if (!client) return res.status(400).json({ error: 'Client name required' });
+
+    // Pricing + commission
+    const computed = (lines || []).map(line =>
+      quoteType === 'Custom Box' ? pricing.computeBoxLine(line) : pricing.computeGarmentLine(line)
+    );
+    const totalRevenue = computed.reduce((s, r) => s + (r.totalRevenue || 0), 0);
+    const totalCost = computed.reduce((s, r) => s + (r.totalCost || 0), 0);
+    const grossProfit = totalRevenue - totalCost;
+    const marginPct = totalRevenue > 0 ? grossProfit / totalRevenue : 0;
+
+    const histQuery = `{boards(ids:[${ORDERS_BOARD_ID}]){items_page(limit:500){items{id name column_values(ids:["date4","numeric_mm4wv7sc"]){id text}}}}}`;
+    const histData = await mondayQuery(histQuery);
+    const items = histData.data?.boards?.[0]?.items_page?.items || [];
+    const now = Date.now(); const yearMs = 365 * 24 * 60 * 60 * 1000;
+    let orderCount = 0, rolling12moRevenue = 0;
+    for (const item of items) {
+      if ((item.name || '').trim().toLowerCase() !== client.trim().toLowerCase()) continue;
+      orderCount++;
+      const dateStr = item.column_values.find(c => c.id === 'date4')?.text;
+      const rev = parseFloat(item.column_values.find(c => c.id === 'numeric_mm4wv7sc')?.text) || 0;
+      if (dateStr) { const d = new Date(dateStr).getTime(); if (!isNaN(d) && (now - d) <= yearMs) rolling12moRevenue += rev; }
+    }
+    const commission = pricing.computeCommissionRate(orderCount, rolling12moRevenue);
+    const commissionAmount = grossProfit * commission.rate;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const quoteCV = {
+      'dropdown_mm63w1e': { labels: [salesPerson] },
+      'text_mm639ee3': contact || '',
+      'email_mm63ex5f': email ? { email: email, text: email } : '',
+      'phone_mm635egd': phone || '',
+      'color_mm63gx38': { label: quoteType || 'Garment/Decoration' },
+      'color_mm639bpf': { label: orderType || 'New Order' },
+      'numeric_mm63tz48': orderCount + 1,
+      'numeric_mm63xaq7': Math.round(rolling12moRevenue * 100) / 100,
+      'numeric_mm63k849': commission.rate,
+      'numeric_mm63wrys': Math.round(totalRevenue * 100) / 100,
+      'numeric_mm63d3v6': Math.round(totalCost * 100) / 100,
+      'numeric_mm63wxbd': Math.round(grossProfit * 100) / 100,
+      'numeric_mm6381qx': Math.round(commissionAmount * 100) / 100,
+      'numeric_mm63jvbw': Math.round(marginPct * 10000) / 100,
+      'date_mm63wc7v': { date: today },
+      'long_text_mm63bzx4': notes || '',
+    };
+    if (!quoteId) quoteCV['color_mm63qxwk'] = { label: 'Draft' };
+
+    let finalQuoteId = quoteId;
+    if (quoteId) {
+      const mutation = `mutation { change_multiple_column_values(item_id: ${quoteId}, board_id: ${QUOTES_BOARD_ID}, column_values: ${JSON.stringify(JSON.stringify(quoteCV))}, create_labels_if_missing: true) { id } }`;
+      const result = await mondayQuery(mutation);
+      if (result.errors) return res.status(400).json({ error: result.errors[0].message });
+    } else {
+      const mutation = `mutation { create_item(board_id: ${QUOTES_BOARD_ID}, group_id: "topics", item_name: ${JSON.stringify(client)}, column_values: ${JSON.stringify(JSON.stringify(quoteCV))}, create_labels_if_missing: true) { id } }`;
+      const result = await mondayQuery(mutation);
+      if (result.errors) return res.status(400).json({ error: result.errors[0].message });
+      finalQuoteId = result.data.create_item.id;
+    }
+
+    // Remove existing subitems if updating, then recreate fresh (simplest way to keep line items in sync)
+    if (quoteId) {
+      const subQuery = `{items(ids:[${quoteId}]){subitems{id}}}`;
+      const subData = await mondayQuery(subQuery);
+      const existingSubs = subData.data?.items?.[0]?.subitems || [];
+      for (const s of existingSubs) {
+        await mondayQuery(`mutation { delete_item(item_id: ${s.id}) { id } }`);
+      }
+    }
+
+    const createdSubitemIds = [];
+    for (let i = 0; i < (lines || []).length; i++) {
+      const line = lines[i];
+      const calc = computed[i];
+      const lineName = line.productName || `Product ${i + 1}`;
+      const subCV = {
+        'numeric_mm63dqd9': line.quantity || 0,
+        'numeric_mm63e2t8': line.sellPricePerUnit || 0,
+        'text_mm63pdpj': line.artworkDescription || '',
+        'long_text_mm6365bn': line.notes || '',
+      };
+      if (quoteType === 'Custom Box') {
+        subCV['numeric_mm63p5ha'] = line.setupCostPerUnit || 0; // repurposed field for box setup cost
+      } else {
+        subCV['numeric_mm63p5ha'] = line.garmentCostPerUnit || 0;
+        subCV['numeric_mm63wt0j'] = line.screensRegular || 0;
+        subCV['numeric_mm63fc9y'] = line.screensLarge || 0;
+        subCV['numeric_mm638g7h'] = line.rushFeeFlat || 0;
+        subCV['numeric_mm63v7rq'] = line.artHours || 0;
+        const decos = line.decorations || [];
+        if (decos[0]) { subCV['dropdown_mm6390a0'] = { labels: [decos[0].type] }; subCV['text_mm63crtv'] = decos[0].colorOrSize || ''; }
+        if (decos[1]) { subCV['dropdown_mm63j73'] = { labels: [decos[1].type] }; subCV['text_mm63cqht'] = decos[1].colorOrSize || ''; }
+        if (decos[2]) { subCV['dropdown_mm633q95'] = { labels: [decos[2].type] }; subCV['text_mm632xb7'] = decos[2].colorOrSize || ''; }
+      }
+      subCV['numeric_mm63mz1e'] = Math.round(((calc.decoCostPerUnit || 0) + (calc.overheadPerUnit || 0)) * 100) / 100;
+      subCV['numeric_mm63hz7j'] = calc.minFloor != null ? Math.round(calc.minFloor * 100) / 100 : 0;
+      subCV['numeric_mm6311md'] = Math.round((calc.totalRevenue || 0) * 100) / 100;
+      subCV['numeric_mm63svmk'] = Math.round((calc.totalCost || 0) * 100) / 100;
+      subCV['numeric_mm6314ad'] = Math.round((calc.grossProfit || 0) * 100) / 100;
+
+      const subMutation = `mutation { create_subitem(parent_item_id: ${finalQuoteId}, item_name: ${JSON.stringify(lineName)}, column_values: ${JSON.stringify(JSON.stringify(subCV))}, create_labels_if_missing: true) { id } }`;
+      const subResult = await mondayQuery(subMutation);
+      if (subResult.errors) console.error('Subitem create error:', subResult.errors);
+      createdSubitemIds.push(subResult.data?.create_subitem?.id || null);
+    }
+
+    res.json({
+      ok: true, quoteId: finalQuoteId, subitemIds: createdSubitemIds,
+      totals: { totalRevenue, totalCost, grossProfit, commissionRate: commission.rate, commissionAmount, tier: commission.tier }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// QUOTES -- list (for quote builder "my quotes" + dashboards)
+// ============================================================
+app.get('/api/quote/list', async (req, res) => {
+  try {
+    const query = `{boards(ids:[${QUOTES_BOARD_ID}]){items_page(limit:200){items{id name group{id title} column_values{id text value} subitems{id name}}}}}`;
+    const data = await mondayQuery(query);
+    res.json({ items: data.data?.boards?.[0]?.items_page?.items || [] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// QUOTES -- promote to a real Order Intake item + Products
+// subitems. Quote item then moves to the archive group.
+// ============================================================
+app.post('/api/quote/promote', async (req, res) => {
+  try {
+    const { quoteId } = req.body;
+    if (!quoteId) return res.status(400).json({ error: 'quoteId required' });
+
+    const query = `{items(ids:[${quoteId}]){id name column_values{id text value} subitems{id name column_values{id text value}}}}`;
+    const data = await mondayQuery(query);
+    const quote = data.data?.items?.[0];
+    if (!quote) return res.status(404).json({ error: 'Quote not found' });
+    const cv = {}; quote.column_values.forEach(c => cv[c.id] = c.text);
+
+    const orderCV = JSON.stringify({
+      'dropdown_mm22w5rr': { labels: [cv['dropdown_mm63w1e'] || ''] },
+      'date4': { date: new Date().toISOString().slice(0, 10) },
+      'text_mm221kg3': cv['text_mm639ee3'] || '',
+      'email_mm22ap28': cv['email_mm63ex5f'] || '',
+      'phone_mm22ertc': cv['phone_mm635egd'] || '',
+      'color_mm27qyta': { label: 'New' },
+      'numeric_mm4wv7sc': parseFloat(cv['numeric_mm63wrys']) || 0,
+      'numeric_mm4wyq9k': parseFloat(cv['numeric_mm63wxbd']) || 0,
+      'numeric_mm4w38cv': parseFloat(cv['numeric_mm6381qx']) || 0,
+      'long_text_mm225vbf': cv['long_text_mm63bzx4'] || '',
+    });
+    const createOrder = `mutation { create_item(board_id: ${ORDERS_BOARD_ID}, group_id: "topics", item_name: ${JSON.stringify(quote.name)}, column_values: ${JSON.stringify(orderCV)}, create_labels_if_missing: true) { id } }`;
+    const orderResult = await mondayQuery(createOrder);
+    if (orderResult.errors) return res.status(400).json({ error: orderResult.errors[0].message });
+    const orderItemId = orderResult.data.create_item.id;
+
+    for (const sub of (quote.subitems || [])) {
+      const scv = {}; sub.column_values.forEach(c => scv[c.id] = c.text);
+      const prodCV = {
+        'color_mm2dd6d5': { label: 'In House Decoration' },
+        'text_mm22fv7y': sub.name || '',
+        'numeric_mm2299qw': parseFloat(scv['numeric_mm63e2t8']) || 0,
+        'numeric_mm266zz9': parseFloat(scv['numeric_mm63mz1e']) || 0,
+        'numeric_mm22crjt': parseFloat(scv['numeric_mm63dqd9']) || 0,
+        'text_mm2521d5': scv['text_mm63pdpj'] || '',
+        'long_text_mm27e9c4': scv['long_text_mm6365bn'] || '',
+      };
+      if (scv['dropdown_mm6390a0']) { prodCV['dropdown_mm2y4w39'] = { labels: [scv['dropdown_mm6390a0']] }; prodCV['text_mm2y2y6a'] = scv['text_mm63crtv'] || ''; }
+      if (scv['dropdown_mm63j73']) { prodCV['dropdown_mm2yaxxz'] = { labels: [scv['dropdown_mm63j73']] }; prodCV['text_mm2y5vn6'] = scv['text_mm63cqht'] || ''; }
+      if (scv['dropdown_mm633q95']) { prodCV['dropdown_mm2ygyew'] = { labels: [scv['dropdown_mm633q95']] }; prodCV['text_mm2y8bg8'] = scv['text_mm632xb7'] || ''; }
+
+      const createSub = `mutation { create_subitem(parent_item_id: ${orderItemId}, item_name: ${JSON.stringify(sub.name)}, column_values: ${JSON.stringify(JSON.stringify(prodCV))}, create_labels_if_missing: true) { id } }`;
+      const subResult = await mondayQuery(createSub);
+      if (subResult.errors) console.error('Promote subitem error:', subResult.errors);
+
+      // Carry the artwork file over from quote line item to production subitem
+      const artCol = sub.column_values.find(c => c.id === 'file_mm63pm92');
+      // Files aren't copyable via GraphQL text field -- flagged as a manual step for now (see notes to Caitlin)
+    }
+
+    // Move quote to archive group + mark Won-Promoted + link back
+    const archiveCV = JSON.stringify({
+      'color_mm63qxwk': { label: 'Won - Promoted' },
+      'link_mm63xyxz': { url: `https://ccbimprint.monday.com/boards/${ORDERS_BOARD_ID}/pulses/${orderItemId}`, text: 'View Order' },
+      'date_mm63mcnv': { date: new Date().toISOString().slice(0, 10) },
+    });
+    await mondayQuery(`mutation { change_multiple_column_values(item_id: ${quoteId}, board_id: ${QUOTES_BOARD_ID}, column_values: ${JSON.stringify(archiveCV)}, create_labels_if_missing: true) { id } }`);
+    await mondayQuery(`mutation { move_item_to_group(item_id: ${quoteId}, group_id: "group_mm63d5wt") { id } }`);
+
+    res.json({ ok: true, orderItemId, orderUrl: `https://ccbimprint.monday.com/boards/${ORDERS_BOARD_ID}/pulses/${orderItemId}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// REP DASHBOARD -- aggregate metrics for one rep or all (admin)
+// ============================================================
+app.get('/api/rep/dashboard', async (req, res) => {
+  try {
+    const { salesPerson, isAdmin } = req.query;
+    const quoteQuery = `{boards(ids:[${QUOTES_BOARD_ID}]){items_page(limit:200){items{id name group{id title} column_values{id text}}}}}`;
+    const orderQuery = `{boards(ids:[${ORDERS_BOARD_ID}]){items_page(limit:500){items{id name column_values{id text}}}}}`;
+    const [quoteData, orderData] = await Promise.all([mondayQuery(quoteQuery), mondayQuery(orderQuery)]);
+    const allQuotes = quoteData.data?.boards?.[0]?.items_page?.items || [];
+    const allOrders = orderData.data?.boards?.[0]?.items_page?.items || [];
+
+    const matchesRep = (cvArr, colId) => {
+      const val = cvArr.find(c => c.id === colId)?.text || '';
+      return isAdmin === 'true' || val.split(',').map(s => s.trim()).includes(salesPerson);
+    };
+
+    const myQuotes = allQuotes.filter(q => matchesRep(q.column_values, 'dropdown_mm63w1e'));
+    const myOrders = allOrders.filter(o => matchesRep(o.column_values, 'dropdown_mm22w5rr'));
+
+    const quotesMade = myQuotes.length;
+    const quotesWon = myQuotes.filter(q => q.group?.title?.includes('Won')).length;
+    const quotesLost = myQuotes.filter(q => q.group?.title?.includes('Lost')).length;
+    const winRate = quotesMade > 0 ? quotesWon / quotesMade : 0;
+
+    let totalRevenue = 0, totalCommission = 0, commissionPaid = 0, commissionPending = 0;
+    const byClient = {};
+    const byMonth = {};
+    const now = Date.now(); const yearMs = 365 * 24 * 60 * 60 * 1000;
+
+    for (const o of myOrders) {
+      const cv = {}; o.column_values.forEach(c => cv[c.id] = c.text);
+      const rev = parseFloat(cv['numeric_mm4wv7sc']) || 0;
+      const comm = parseFloat(cv['numeric_mm4w38cv']) || 0;
+      totalRevenue += rev;
+      totalCommission += comm;
+      const invStatus = cv['color_mm282b4b'];
+      if (invStatus === 'Paid') commissionPaid += comm; else commissionPending += comm;
+
+      const orderDateStr = cv['date4'];
+      if (orderDateStr) {
+        const monthKey = orderDateStr.slice(0, 7); // YYYY-MM
+        byMonth[monthKey] = (byMonth[monthKey] || 0) + comm;
+      }
+
+      const client = o.name;
+      if (!byClient[client]) byClient[client] = { revenue12mo: 0, totalRevenue: 0, commissionAccrued: 0, commissionPaid: 0 };
+      byClient[client].totalRevenue += rev;
+      byClient[client].commissionAccrued += comm;
+      if (invStatus === 'Paid') byClient[client].commissionPaid += comm;
+      const dateStr = cv['date4'];
+      if (dateStr) { const d = new Date(dateStr).getTime(); if (!isNaN(d) && (now - d) <= yearMs) byClient[client].revenue12mo += rev; }
+    }
+
+    const clients = Object.entries(byClient).map(([name, v]) => ({
+      name,
+      revenue12mo: Math.round(v.revenue12mo * 100) / 100,
+      totalRevenue: Math.round(v.totalRevenue * 100) / 100,
+      commissionAccrued: Math.round(v.commissionAccrued * 100) / 100,
+      commissionPaid: Math.round(v.commissionPaid * 100) / 100,
+      commissionPending: Math.round((v.commissionAccrued - v.commissionPaid) * 100) / 100,
+      loyaltyPct: Math.min(100, Math.round((v.revenue12mo / 50000) * 100)),
+      loyaltyUnlocked: v.revenue12mo >= 50000,
+    })).sort((a, b) => b.revenue12mo - a.revenue12mo);
+
+    res.json({
+      quotesMade, quotesWon, quotesLost, winRate: Math.round(winRate * 1000) / 10,
+      totalRevenue: Math.round(totalRevenue * 100) / 100,
+      totalCommission: Math.round(totalCommission * 100) / 100,
+      commissionPaid: Math.round(commissionPaid * 100) / 100,
+      commissionPending: Math.round(commissionPending * 100) / 100,
+      clients,
+      monthlyCommission: Object.entries(byMonth).sort((a, b) => a[0].localeCompare(b[0])).map(([month, amt]) => ({ month, amount: Math.round(amt * 100) / 100 })),
+      activeQuotes: myQuotes.filter(q => q.group?.title === 'Active Quotes').length,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`CCB Tools server running on port ${PORT}`);

@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCB Quotes</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--navy:#1B2A4A;--cyan:#00AEEF;--magenta:#EC008C;--yellow:#F5D53B;--bg:#E8EBF4;--white:#FFFFFF;--body:#374151;--muted:#6B7280;--subtle:#9CA3AF;--border:#D1D5DB;--border2:#E5E7EB;--green:#00A86B;--red:#D14343;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--navy);font-family:'Inter',sans-serif;min-height:100vh;font-size:15px;line-height:1.6;}
+
+  /* ---- LOGIN GATE ---- */
+  #loginGate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:500;}
+  .login-card{background:var(--white);border-radius:18px;padding:36px 32px;width:100%;max-width:340px;box-shadow:0 12px 40px rgba(27,42,74,.14);}
+  .login-title{font-size:20px;font-weight:800;margin-bottom:4px;}
+  .login-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+  .login-field{margin-bottom:12px;}
+  .login-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+  .login-field input,.login-field select{width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:9px;font-size:14px;font-family:'Inter',sans-serif;background:var(--bg);}
+  .login-field input:focus,.login-field select:focus{outline:none;border-color:var(--cyan);background:var(--white);}
+  .login-btn{width:100%;padding:11px;border:none;border-radius:9px;background:var(--navy);color:#fff;font-weight:700;font-size:14px;cursor:pointer;margin-top:6px;}
+  .login-btn:hover{opacity:.9;}
+  .login-switch{text-align:center;font-size:12.5px;color:var(--muted);margin-top:14px;cursor:pointer;}
+  .login-switch b{color:var(--cyan);}
+  .login-error{font-size:12.5px;color:var(--red);margin-top:8px;min-height:16px;}
+
+  /* ---- SHELL ---- */
+  #app{display:none;}
+  .header{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(27,42,74,.06);}
+  .header-left{display:flex;align-items:center;gap:14px;}
+  .page-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .rep-chip{font-size:12px;font-weight:600;color:var(--navy);background:var(--bg);padding:5px 10px;border-radius:20px;}
+  .back-btn,.logout-btn{background:none;border:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'Inter',sans-serif;}
+  .back-btn:hover,.logout-btn:hover{color:var(--navy);}
+
+  .page-wrap{max-width:760px;margin:0 auto;padding:20px 18px 100px;}
+  .page-title{font-size:24px;font-weight:800;margin-bottom:2px;}
+  .page-sub{font-size:13px;color:var(--muted);margin-bottom:18px;}
+
+  .card{background:var(--white);border:1px solid var(--border2);border-radius:14px;padding:18px 20px;margin-bottom:12px;}
+  .card-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--subtle);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;}
+  .field-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:12.5px;font-weight:500;color:var(--muted);}
+  .field input,.field select,.field textarea{padding:8px 11px;border:1.5px solid var(--border2);border-radius:8px;background:var(--bg);color:var(--navy);font-size:13.5px;font-family:'Inter',sans-serif;}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--cyan);background:var(--white);}
+
+  .type-toggle{display:flex;gap:6px;margin-bottom:12px;}
+  .ttbtn{flex:1;padding:8px;text-align:center;border:1.5px solid var(--border2);border-radius:9px;background:var(--white);cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);}
+  .ttbtn.active{border-color:var(--cyan);background:#EBF8FF;color:#0077AA;}
+
+  .hist-badge{margin-top:10px;padding:9px 12px;border-radius:9px;font-size:12.5px;display:none;}
+  .hist-badge.show{display:flex;justify-content:space-between;gap:8px;align-items:center;}
+  .hist-new{background:#E6FBF3;color:#00805A;}
+  .hist-standard{background:#EBF8FF;color:#0077AA;}
+  .hist-loyalty{background:#FFF6E0;color:#946200;}
+
+  /* STICKY TOTALS */
+  .totals-bar{position:sticky;bottom:0;left:0;right:0;background:var(--navy);color:#fff;padding:12px 18px;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 -4px 16px rgba(0,0,0,.12);margin:0 -18px;max-width:calc(760px + 36px);}
+  .tb-metric{text-align:center;}
+  .tb-val{font-size:15px;font-weight:800;}
+  .tb-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.08em;opacity:.7;}
+  .tb-actions{display:flex;gap:8px;}
+  .tb-btn{padding:9px 16px;border-radius:9px;border:none;font-weight:700;font-size:13px;cursor:pointer;}
+  .tb-btn.save{background:var(--cyan);color:#fff;}
+  .tb-btn.promote{background:var(--green);color:#fff;}
+  .tb-btn.save:disabled,.tb-btn.promote:disabled{opacity:.4;cursor:not-allowed;}
+
+  /* PRODUCT LINE CARDS -- collapsible so multi-product entry doesn't require a ton of scrolling */
+  .line-card{background:var(--white);border:1.5px solid var(--border2);border-radius:14px;margin-bottom:10px;overflow:hidden;}
+  .line-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;background:var(--bg);}
+  .line-hdr-left{display:flex;align-items:center;gap:10px;}
+  .line-num{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--subtle);background:var(--white);padding:3px 8px;border-radius:20px;}
+  .line-name{font-weight:700;font-size:14px;}
+  .line-summary{font-size:12px;color:var(--muted);}
+  .line-actions{display:flex;gap:10px;align-items:center;}
+  .line-remove{background:none;border:none;font-size:18px;color:var(--subtle);cursor:pointer;}
+  .line-remove:hover{color:var(--red);}
+  .line-chevron{font-size:12px;color:var(--subtle);transition:transform .15s;}
+  .line-body{padding:16px;display:none;}
+  .line-card.open .line-body{display:block;}
+  .line-card.open .line-chevron{transform:rotate(180deg);}
+
+  .deco-slot{border:1px dashed var(--border);border-radius:10px;padding:10px;margin-top:8px;}
+  .deco-slot-hdr{font-size:11px;font-weight:700;color:var(--subtle);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+  .add-deco-btn{font-size:12.5px;font-weight:600;color:var(--cyan);background:none;border:none;cursor:pointer;margin-top:6px;}
+
+  .line-calc{margin-top:12px;padding:10px 12px;background:var(--bg);border-radius:9px;font-size:12.5px;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px 12px;}
+  .lc-item b{display:block;font-size:13.5px;color:var(--navy);}
+  .lc-warn{color:var(--red);font-weight:700;}
+  .lc-good{color:var(--green);font-weight:700;}
+
+  .artwork-row{display:flex;align-items:center;gap:10px;margin-top:10px;}
+  .artwork-btn{padding:7px 12px;border:1.5px dashed var(--border);border-radius:8px;background:var(--white);font-size:12.5px;color:var(--muted);cursor:pointer;}
+  .artwork-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+  .artwork-status{font-size:12px;color:var(--green);}
+
+  .add-line-btn{width:100%;padding:12px;border:1.5px dashed var(--border);border-radius:12px;background:var(--white);color:var(--muted);font-weight:600;font-size:13.5px;cursor:pointer;margin-bottom:14px;}
+  .add-line-btn:hover{border-color:var(--cyan);color:#0077AA;}
+
+  .promote-success{background:#E6FBF3;border:1px solid #B8EDD8;border-radius:12px;padding:14px 16px;margin-bottom:12px;font-size:13.5px;color:#00805A;}
+  .promote-success a{color:#00805A;font-weight:700;}
+
+  @media(max-width:640px){.totals-bar{flex-direction:column;align-items:stretch;}.tb-actions{justify-content:stretch;}.tb-btn{flex:1;}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN GATE -->
+<div id="loginGate">
+  <div class="login-card">
+    <div id="loginPanel">
+      <div class="login-title">CCB Quotes</div>
+      <div class="login-sub">Enter your password to continue.</div>
+      <div class="login-field">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="login-btn" onclick="doLogin()">Log In</button>
+      <div class="login-error" id="loginError"></div>
+      <div class="login-switch" onclick="showSignup()">New rep? <b>Set up your password</b></div>
+    </div>
+    <div id="signupPanel" style="display:none;">
+      <div class="login-title">Set Up Access</div>
+      <div class="login-sub">Pick your name and set a password only you know.</div>
+      <div class="login-field">
+        <label>Your Name</label>
+        <input type="text" id="signupName" placeholder="Jane Doe">
+      </div>
+      <div class="login-field">
+        <label>Sales Person (must match Monday)</label>
+        <select id="signupSalesPerson">
+          <option value="">Select...</option>
+          <option>Chaz Lucius</option><option>Bailey McGraw</option><option>Jess Miller</option>
+          <option>Nick Miller</option><option>George Miller</option><option>Caitlin Hargraves</option>
+          <option>Bryce</option><option>Tucker</option>
+        </select>
+      </div>
+      <div class="login-field">
+        <label>New Password</label>
+        <input type="password" id="signupPassword" placeholder="At least 4 characters">
+      </div>
+      <button class="login-btn" onclick="doSignup()">Create My Password</button>
+      <div class="login-error" id="signupError"></div>
+      <div class="login-switch" onclick="showLogin()">Already set up? <b>Log in</b></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="header">
+    <div class="header-left">
+      <button class="back-btn" onclick="location.href='index.html'">← Home</button>
+      <span class="page-label">Quotes</span>
+    </div>
+    <div class="header-left">
+      <span class="rep-chip" id="repChip"></span>
+      <button class="logout-btn" onclick="logout()">Log out</button>
+    </div>
+  </div>
+
+  <div class="page-wrap">
+    <div class="page-title">New Quote</div>
+    <div class="page-sub">Quote a job, then promote it straight to an active order. No re-entering anything.</div>
+
+    <div id="promoteSuccess"></div>
+
+    <div class="card">
+      <div class="card-title">Client Info</div>
+      <div class="field-grid">
+        <div class="field" style="grid-column:1/-1;">
+          <label>Client / Company Name</label>
+          <input type="text" id="qClient" placeholder="Lonesome Pine" oninput="onClientChange()">
+        </div>
+        <div class="field"><label>Contact Name</label><input type="text" id="qContact"></div>
+        <div class="field"><label>Email</label><input type="email" id="qEmail"></div>
+        <div class="field"><label>Phone</label><input type="tel" id="qPhone"></div>
+        <div class="field"><label>Order Type</label>
+          <select id="qOrderType" onchange="recalc()">
+            <option>New Order</option><option>Reorder</option>
+          </select>
+        </div>
+      </div>
+      <div class="hist-badge" id="histBadge"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Quote Type</div>
+      <div class="type-toggle">
+        <div class="ttbtn active" id="tt-garment" onclick="setQuoteType('Garment/Decoration')">Garment / Decoration</div>
+        <div class="ttbtn" id="tt-box" onclick="setQuoteType('Custom Box')">Custom Box</div>
+      </div>
+    </div>
+
+    <div id="linesContainer"></div>
+    <button class="add-line-btn" onclick="addLine()">+ Add Product</button>
+  </div>
+
+  <div class="totals-bar">
+    <div class="tb-metric"><div class="tb-val" id="tb-revenue">$0</div><div class="tb-lbl">Revenue</div></div>
+    <div class="tb-metric"><div class="tb-val" id="tb-gp">$0</div><div class="tb-lbl">Gross Profit</div></div>
+    <div class="tb-metric"><div class="tb-val" id="tb-rate">—</div><div class="tb-lbl">Commission Rate</div></div>
+    <div class="tb-metric"><div class="tb-val" id="tb-comm">$0</div><div class="tb-lbl">Your Commission</div></div>
+    <div class="tb-actions">
+      <button class="tb-btn save" id="btnSave" onclick="saveQuote()">Save Quote</button>
+      <button class="tb-btn promote" id="btnPromote" onclick="promoteQuote()" disabled>Promote to Order</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DECORATION_TYPES = ['Screen Print','Embroidery','DTG / Direct to Film','Nylon Jackets & Bags','Numbering','Engraving','Patch'];
+const COLOR_OPTIONS = {
+  'Screen Print': ['1 Color','2 Color','3 Color','4 Color','5 Color','6 Color','7 Color'],
+  'Embroidery': ['Up to 5K','5K-10K','10K-15K','15K-25K','25K-30K'],
+  'DTG / Direct to Film': ['Under 4 in','4-12 in','12-18 in'],
+  'Nylon Jackets & Bags': ['1 Color','2 Color','3 Color','4 Color'],
+  'Numbering': ['1 Color','2 Color'],
+  'Engraving': [],
+  'Patch': ['Under 4 in','4-12 in','12-18 in'],
+};
+
+let session = null;
+let quoteType = 'Garment/Decoration';
+let quoteId = null;
+let lines = [];
+let lineCounter = 0;
+let clientHistory = { orderCount: 0, rolling12moRevenue: 0, commissionRate: null, commissionTier: null };
+
+// ---- AUTH ----
+function showSignup(){ document.getElementById('loginPanel').style.display='none'; document.getElementById('signupPanel').style.display='block'; }
+function showLogin(){ document.getElementById('signupPanel').style.display='none'; document.getElementById('loginPanel').style.display='block'; }
+
+async function doLogin(){
+  const password = document.getElementById('loginPassword').value;
+  const err = document.getElementById('loginError');
+  err.textContent = '';
+  try{
+    const r = await fetch('/api/rep/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});
+    const d = await r.json();
+    if(!d.ok){ err.textContent = d.error || 'Incorrect password'; return; }
+    session = d;
+    sessionStorage.setItem('ccb_rep_session', JSON.stringify(d));
+    enterApp();
+  }catch(e){ err.textContent = 'Login failed. Try again.'; }
+}
+
+async function doSignup(){
+  const name = document.getElementById('signupName').value.trim();
+  const salesPerson = document.getElementById('signupSalesPerson').value;
+  const password = document.getElementById('signupPassword').value;
+  const err = document.getElementById('signupError');
+  err.textContent = '';
+  if(!name || !salesPerson || !password){ err.textContent = 'Fill in all fields.'; return; }
+  try{
+    const r = await fetch('/api/rep/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,salesPerson,password})});
+    const d = await r.json();
+    if(!d.ok){ err.textContent = d.error || 'Could not create password.'; return; }
+    session = { ok:true, repId:d.repId, name, role:'Sales Rep', salesPerson };
+    sessionStorage.setItem('ccb_rep_session', JSON.stringify(session));
+    enterApp();
+  }catch(e){ err.textContent = 'Signup failed. Try again.'; }
+}
+
+function logout(){ sessionStorage.removeItem('ccb_rep_session'); location.reload(); }
+
+function enterApp(){
+  document.getElementById('loginGate').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('repChip').textContent = session.name + ' · ' + (session.role==='Admin'?'Admin':session.salesPerson);
+  if(lines.length===0) addLine();
+}
+
+(function initAuth(){
+  const cached = sessionStorage.getItem('ccb_rep_session');
+  if(cached){ session = JSON.parse(cached); enterApp(); }
+})();
+
+// ---- CLIENT HISTORY ----
+let clientDebounce;
+function onClientChange(){
+  clearTimeout(clientDebounce);
+  clientDebounce = setTimeout(async ()=>{
+    const client = document.getElementById('qClient').value.trim();
+    if(!client){ document.getElementById('histBadge').classList.remove('show'); return; }
+    const r = await fetch('/api/quote/client-history?client='+encodeURIComponent(client));
+    clientHistory = await r.json();
+    renderHistBadge();
+    recalc();
+  }, 500);
+}
+function renderHistBadge(){
+  const el = document.getElementById('histBadge');
+  el.classList.add('show');
+  el.className = 'hist-badge show';
+  const tier = clientHistory.commissionTier || '';
+  let cls = 'hist-standard';
+  if(tier.includes('New')) cls='hist-new';
+  if(tier.includes('Loyalty')) cls='hist-loyalty';
+  el.classList.add(cls);
+  const orderNum = (clientHistory.orderCount||0) + 1;
+  el.innerHTML = `<span>Order #${orderNum} for this client · $${(clientHistory.rolling12moRevenue||0).toLocaleString()} in the last 12 months</span><b>${tier}</b>`;
+}
+
+// ---- QUOTE TYPE ----
+function setQuoteType(t){
+  quoteType = t;
+  document.getElementById('tt-garment').classList.toggle('active', t==='Garment/Decoration');
+  document.getElementById('tt-box').classList.toggle('active', t==='Custom Box');
+  recalc();
+}
+
+// ---- LINE ITEMS ----
+function addLine(){
+  const id = 'line'+(++lineCounter);
+  lines.push({
+    id, subitemId:null, productName:'', quantity:'', sellPricePerUnit:'',
+    garmentCostPerUnit:'', screensRegular:'', screensLarge:'', rushFeeFlat:'', artHours:'',
+    setupCostPerUnit:'', artworkDescription:'', notes:'',
+    decorations:[{type:'',colorOrSize:''}],
+    open:true, calc:null,
+  });
+  lines.forEach(l=>{ if(l.id!==id) l.open=false; });
+  renderLines();
+}
+function removeLine(id){
+  lines = lines.filter(l=>l.id!==id);
+  renderLines(); recalc();
+}
+function toggleLine(id){
+  const line = lines.find(l=>l.id===id);
+  line.open = !line.open;
+  renderLines();
+}
+function updateLineField(id, field, value){
+  const line = lines.find(l=>l.id===id);
+  if(line) line[field] = value;
+  recalc();
+}
+function addDecoSlot(id){
+  const line = lines.find(l=>l.id===id);
+  if(line.decorations.length<3) line.decorations.push({type:'',colorOrSize:''});
+  renderLines();
+}
+function updateDeco(id, idx, field, value){
+  const line = lines.find(l=>l.id===id);
+  line.decorations[idx][field]=value;
+  recalc();
+}
+
+function decoSlotHtml(line, idx){
+  const d = line.decorations[idx];
+  const colorOpts = d.type ? (COLOR_OPTIONS[d.type]||[]) : [];
+  return `<div class="deco-slot">
+    <div class="deco-slot-hdr">Decoration ${idx+1}${idx>0?' (optional)':''}</div>
+    <div class="field-grid">
+      <div class="field"><label>Type</label>
+        <select onchange="updateDeco('${line.id}',${idx},'type',this.value)">
+          <option value="">${idx===0?'Select...':'None'}</option>
+          ${DECORATION_TYPES.map(t=>`<option value="${t}" ${d.type===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+      ${colorOpts.length ? `<div class="field"><label>Colors / Size / Stitch</label>
+        <select onchange="updateDeco('${line.id}',${idx},'colorOrSize',this.value)">
+          <option value="">Select...</option>
+          ${colorOpts.map(c=>`<option value="${c}" ${d.colorOrSize===c?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+
+function lineCalcHtml(line){
+  const c = line.calc;
+  if(!c) return '';
+  if(quoteType==='Custom Box'){
+    return `<div class="line-calc">
+      <div class="lc-item">Cost/unit<b>$${(c.totalCostPerUnit||0).toFixed(2)}</b></div>
+      <div class="lc-item">Min floor (40%)<b>$${(c.minFloor||0).toFixed(2)}</b></div>
+      <div class="lc-item">Revenue<b>$${(c.totalRevenue||0).toFixed(2)}</b></div>
+      <div class="lc-item">Gross Profit<b>$${(c.grossProfit||0).toFixed(2)}</b></div>
+      <div class="lc-item">Margin<b class="${c.meetsFloor===false?'lc-warn':'lc-good'}">${c.grossMarginPct!=null?(c.grossMarginPct*100).toFixed(1)+'%':'—'}</b></div>
+    </div>`;
+  }
+  return `<div class="line-calc">
+    <div class="lc-item">Deco cost/unit<b>$${(c.decoCostPerUnit||0).toFixed(2)}</b></div>
+    <div class="lc-item">Cost/unit (all-in)<b>$${(c.totalCostPerUnit||0).toFixed(2)}</b></div>
+    <div class="lc-item">Min floor (30%)<b>$${(c.minFloor||0).toFixed(2)}</b></div>
+    <div class="lc-item">Revenue<b>$${(c.totalRevenue||0).toFixed(2)}</b></div>
+    <div class="lc-item">Gross Profit<b>$${(c.grossProfit||0).toFixed(2)}</b></div>
+    <div class="lc-item">Margin<b class="${c.meetsFloor===false?'lc-warn':'lc-good'}">${c.grossMarginPct!=null?(c.grossMarginPct*100).toFixed(1)+'%':'—'}</b></div>
+    ${c.decoErrors && c.decoErrors.length ? `<div class="lc-item" style="grid-column:1/-1;"><span class="lc-warn">${c.decoErrors.join(' · ')}</span></div>` : ''}
+  </div>`;
+}
+
+function renderLines(){
+  const container = document.getElementById('linesContainer');
+  container.innerHTML = lines.map((line,i)=>{
+    const summary = line.quantity ? `${line.quantity} units · $${(line.calc?.totalRevenue||0).toFixed(0)}` : 'Not filled in yet';
+    const isBox = quoteType==='Custom Box';
+    return `<div class="line-card${line.open?' open':''}">
+      <div class="line-hdr" onclick="toggleLine('${line.id}')">
+        <div class="line-hdr-left">
+          <span class="line-num">#${i+1}</span>
+          <div>
+            <div class="line-name">${line.productName || 'Untitled Product'}</div>
+            <div class="line-summary">${summary}</div>
+          </div>
+        </div>
+        <div class="line-actions">
+          <button class="line-remove" onclick="event.stopPropagation();removeLine('${line.id}')" title="Remove">×</button>
+          <span class="line-chevron">▾</span>
+        </div>
+      </div>
+      <div class="line-body">
+        <div class="field-grid">
+          <div class="field" style="grid-column:1/-1;"><label>Product / Style</label>
+            <input type="text" value="${line.productName}" placeholder="e.g. Port Authority Fleece Jacket" oninput="updateLineField('${line.id}','productName',this.value); renderLineHeaderOnly('${line.id}')">
+          </div>
+          <div class="field"><label>Quantity</label>
+            <input type="number" value="${line.quantity}" oninput="updateLineField('${line.id}','quantity',this.value)">
+          </div>
+          <div class="field"><label>Sell Price / Unit ($)</label>
+            <input type="number" step="0.01" value="${line.sellPricePerUnit}" oninput="updateLineField('${line.id}','sellPricePerUnit',this.value)">
+          </div>
+          ${isBox ? `
+          <div class="field"><label>Setup Cost/Unit ($, optional)</label>
+            <input type="number" step="0.01" value="${line.setupCostPerUnit}" oninput="updateLineField('${line.id}','setupCostPerUnit',this.value)">
+          </div>` : `
+          <div class="field"><label>Garment Cost / Unit ($)</label>
+            <input type="number" step="0.01" value="${line.garmentCostPerUnit}" oninput="updateLineField('${line.id}','garmentCostPerUnit',this.value)">
+          </div>
+          <div class="field"><label># Screens (Regular)</label>
+            <input type="number" value="${line.screensRegular}" oninput="updateLineField('${line.id}','screensRegular',this.value)">
+          </div>
+          <div class="field"><label># Screens (Large)</label>
+            <input type="number" value="${line.screensLarge}" oninput="updateLineField('${line.id}','screensLarge',this.value)">
+          </div>
+          <div class="field"><label>Rush Fee ($, defaults to $75 flat if set)</label>
+            <input type="number" step="0.01" value="${line.rushFeeFlat}" oninput="updateLineField('${line.id}','rushFeeFlat',this.value)">
+          </div>
+          <div class="field"><label>Art / Design Hours (× $50/hr)</label>
+            <input type="number" step="0.25" value="${line.artHours}" oninput="updateLineField('${line.id}','artHours',this.value)">
+          </div>`}
+        </div>
+
+        ${!isBox ? line.decorations.map((d,idx)=>decoSlotHtml(line,idx)).join('') : ''}
+        ${!isBox && line.decorations.length<3 ? `<button class="add-deco-btn" onclick="addDecoSlot('${line.id}')">+ Add another decoration location</button>` : ''}
+
+        <div class="field-grid" style="margin-top:10px;">
+          <div class="field" style="grid-column:1/-1;"><label>Artwork Description</label>
+            <input type="text" value="${line.artworkDescription}" oninput="updateLineField('${line.id}','artworkDescription',this.value)">
+          </div>
+        </div>
+
+        <div class="artwork-row">
+          <input type="file" id="file-${line.id}" style="display:none" onchange="uploadArtwork('${line.id}')">
+          <button class="artwork-btn" onclick="document.getElementById('file-${line.id}').click()" ${!line.subitemId?'disabled title="Save the quote first"':''}>
+            📎 ${line.subitemId ? 'Upload artwork' : 'Save quote to enable artwork upload'}
+          </button>
+          <span class="artwork-status" id="artstatus-${line.id}"></span>
+        </div>
+
+        ${lineCalcHtml(line)}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderLineHeaderOnly(id){
+  // lightweight: full re-render is cheap enough here given small line counts
+}
+
+async function uploadArtwork(lineId){
+  const line = lines.find(l=>l.id===lineId);
+  if(!line || !line.subitemId) return;
+  const fileInput = document.getElementById('file-'+lineId);
+  if(!fileInput.files[0]) return;
+  const form = new FormData();
+  form.append('file', fileInput.files[0]);
+  form.append('itemId', line.subitemId);
+  form.append('columnId', 'file_mm63pm92');
+  document.getElementById('artstatus-'+lineId).textContent = 'Uploading...';
+  try{
+    const r = await fetch('/api/upload-file', { method:'POST', body: form });
+    const d = await r.json();
+    document.getElementById('artstatus-'+lineId).textContent = d.success ? '✓ Uploaded' : 'Upload failed';
+  }catch(e){
+    document.getElementById('artstatus-'+lineId).textContent = 'Upload failed';
+  }
+}
+
+// ---- RECALC (debounced live pricing preview) ----
+let recalcDebounce;
+function recalc(){
+  clearTimeout(recalcDebounce);
+  recalcDebounce = setTimeout(doRecalc, 250);
+}
+async function doRecalc(){
+  const payloadLines = lines.map(l=>({
+    quantity: parseFloat(l.quantity)||0,
+    sellPricePerUnit: parseFloat(l.sellPricePerUnit)||0,
+    orderType: document.getElementById('qOrderType').value,
+    garmentCostPerUnit: parseFloat(l.garmentCostPerUnit)||0,
+    setupCostPerUnit: parseFloat(l.setupCostPerUnit)||0,
+    screensRegular: parseFloat(l.screensRegular)||0,
+    screensLarge: parseFloat(l.screensLarge)||0,
+    rushFeeFlat: l.rushFeeFlat!==''&&l.rushFeeFlat!=null ? parseFloat(l.rushFeeFlat) : 75,
+    artHours: parseFloat(l.artHours)||0,
+    decorations: l.decorations,
+  }));
+  try{
+    const r = await fetch('/api/quote/price-preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({quoteType, lines:payloadLines})});
+    const d = await r.json();
+    lines.forEach((l,i)=>{ l.calc = d.lines[i]; });
+    renderLines();
+
+    const totalRevenue = d.totals.totalRevenue||0;
+    const totalGP = d.totals.grossProfit||0;
+    const rate = clientHistory.commissionRate;
+    const commission = rate!=null ? totalGP*rate : 0;
+    document.getElementById('tb-revenue').textContent = '$'+totalRevenue.toFixed(0);
+    document.getElementById('tb-gp').textContent = '$'+totalGP.toFixed(0);
+    document.getElementById('tb-rate').textContent = rate!=null ? (rate*100).toFixed(0)+'%' : '—';
+    document.getElementById('tb-comm').textContent = '$'+commission.toFixed(0);
+  }catch(e){ /* silent -- keep UI responsive even if a preview call fails */ }
+}
+
+// ---- SAVE / PROMOTE ----
+async function saveQuote(){
+  const client = document.getElementById('qClient').value.trim();
+  if(!client){ alert('Enter a client name first.'); return; }
+  if(lines.length===0){ alert('Add at least one product.'); return; }
+
+  const btn = document.getElementById('btnSave');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  const payload = {
+    quoteId,
+    client,
+    contact: document.getElementById('qContact').value,
+    email: document.getElementById('qEmail').value,
+    phone: document.getElementById('qPhone').value,
+    salesPerson: session.salesPerson,
+    quoteType,
+    orderType: document.getElementById('qOrderType').value,
+    lines: lines.map(l=>({
+      productName: l.productName,
+      quantity: parseFloat(l.quantity)||0,
+      sellPricePerUnit: parseFloat(l.sellPricePerUnit)||0,
+      garmentCostPerUnit: parseFloat(l.garmentCostPerUnit)||0,
+      setupCostPerUnit: parseFloat(l.setupCostPerUnit)||0,
+      screensRegular: parseFloat(l.screensRegular)||0,
+      screensLarge: parseFloat(l.screensLarge)||0,
+      rushFeeFlat: l.rushFeeFlat!==''&&l.rushFeeFlat!=null ? parseFloat(l.rushFeeFlat) : 75,
+      artHours: parseFloat(l.artHours)||0,
+      decorations: l.decorations,
+      artworkDescription: l.artworkDescription,
+      notes: l.notes,
+    })),
+  };
+
+  try{
+    const r = await fetch('/api/quote/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const d = await r.json();
+    if(!d.ok){ alert(d.error||'Save failed'); btn.disabled=false; btn.textContent='Save Quote'; return; }
+    quoteId = d.quoteId;
+    d.subitemIds.forEach((sid,i)=>{ if(lines[i]) lines[i].subitemId = sid; });
+    renderLines();
+    document.getElementById('btnPromote').disabled = false;
+    btn.textContent = 'Saved ✓';
+    setTimeout(()=>{ btn.textContent='Save Quote'; btn.disabled=false; }, 1500);
+  }catch(e){
+    alert('Save failed.'); btn.disabled=false; btn.textContent='Save Quote';
+  }
+}
+
+async function promoteQuote(){
+  if(!quoteId){ alert('Save the quote first.'); return; }
+  if(!confirm('Promote this quote to an active order? It will move off your active quotes and become a real order.')) return;
+  const btn = document.getElementById('btnPromote');
+  btn.disabled = true; btn.textContent = 'Promoting...';
+  try{
+    const r = await fetch('/api/quote/promote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({quoteId})});
+    const d = await r.json();
+    if(!d.ok){ alert(d.error||'Promote failed'); btn.disabled=false; btn.textContent='Promote to Order'; return; }
+    document.getElementById('promoteSuccess').innerHTML = `<div class="promote-success">Promoted! <a href="${d.orderUrl}" target="_blank">View the order on Monday →</a></div>`;
+    btn.textContent = 'Promoted ✓';
+    window.scrollTo({top:0,behavior:'smooth'});
+  }catch(e){
+    alert('Promote failed.'); btn.disabled=false; btn.textContent='Promote to Order';
+  }
+}
+</script>
+</body>
+</html>
