@@ -63,7 +63,17 @@
   .trend-val{font-size:10.5px;font-weight:700;margin-bottom:4px;}
   .trend-month{font-size:10px;color:var(--muted);margin-top:6px;}
 
-  .empty-state{text-align:center;color:var(--subtle);font-size:13px;padding:20px 0;}
+  .payout-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:16px;}
+  .payout-grid input{padding:8px 11px;border:1.5px solid var(--border2);border-radius:8px;font-size:13.5px;font-family:'Inter',sans-serif;}
+  .payout-btn{padding:9px 16px;border:none;border-radius:8px;background:var(--navy);color:#fff;font-weight:700;font-size:13px;cursor:pointer;}
+  .payout-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;}
+  .payout-metric{background:var(--bg);border-radius:10px;padding:12px 14px;}
+  .payout-val{font-size:19px;font-weight:800;}
+  .payout-lbl{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+  .payout-metric.highlight{background:#E6FBF3;}
+  .payout-metric.highlight .payout-val{color:var(--green);}
+  .rep-payout-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border2);font-size:13.5px;}
+  .rep-payout-row:last-child{border-bottom:none;}
   .loading{text-align:center;color:var(--muted);padding:40px 0;font-size:13.5px;}
 </style>
 </head>
@@ -98,6 +108,7 @@
   <div class="page-wrap">
     <div class="page-title" id="pageTitle">My Performance</div>
     <div class="page-sub" id="pageSub"></div>
+    <div id="payoutSection"></div>
     <div id="content"><div class="loading">Loading your numbers...</div></div>
   </div>
 </div>
@@ -132,6 +143,48 @@ function enterApp(){
     sel.innerHTML = `<option value="__all__">All Reps (combined)</option>` + ALL_REPS.map(r=>`<option value="${r}">${r}</option>`).join('');
   }
   loadDashboard();
+  renderPayoutSection();
+}
+
+function renderPayoutSection(){
+  const el = document.getElementById('payoutSection');
+  if(session.role !== 'Admin'){ el.innerHTML=''; return; }
+  const today = new Date();
+  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0,10);
+  const todayStr = today.toISOString().slice(0,10);
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title">Commission Payout Report</div>
+      <div class="payout-grid">
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:5px;">Pay Period Start</label><input type="date" id="payoutStart" value="${firstOfMonth}"></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:5px;">Pay Period End</label><input type="date" id="payoutEnd" value="${todayStr}"></div>
+        <button class="payout-btn" onclick="runPayoutReport()">Run Report</button>
+      </div>
+      <div id="payoutResults"></div>
+    </div>`;
+}
+
+async function runPayoutReport(){
+  const start = document.getElementById('payoutStart').value;
+  const end = document.getElementById('payoutEnd').value;
+  const resultsEl = document.getElementById('payoutResults');
+  resultsEl.innerHTML = '<div class="loading">Running report...</div>';
+  try{
+    const r = await fetch(`/api/rep/payout-report?start=${start}&end=${end}`);
+    const d = await r.json();
+    resultsEl.innerHTML = `
+      <div class="payout-summary">
+        <div class="payout-metric highlight"><div class="payout-val">$${d.totalPayable.toLocaleString()}</div><div class="payout-lbl">Commission Payable This Period</div></div>
+        <div class="payout-metric"><div class="payout-val">$${d.totalRevenue.toLocaleString()}</div><div class="payout-lbl">Revenue (Paid Invoices)</div></div>
+        <div class="payout-metric"><div class="payout-val">$${d.totalGrossProfit.toLocaleString()}</div><div class="payout-lbl">Gross Profit (Paid Invoices)</div></div>
+        <div class="payout-metric"><div class="payout-val">${d.pendingCount}</div><div class="payout-lbl">Unpaid Orders</div></div>
+        <div class="payout-metric"><div class="payout-val">$${d.pendingCommission.toLocaleString()}</div><div class="payout-lbl">Pending Commission</div></div>
+      </div>
+      ${d.byRep.length ? `<div style="margin-top:6px;"><div class="card-title" style="margin-bottom:8px;">By Rep</div>${d.byRep.map(r=>`<div class="rep-payout-row"><span>${r.name}</span><b>$${r.amount.toLocaleString()}</b></div>`).join('')}</div>` : ''}
+    `;
+  }catch(e){
+    resultsEl.innerHTML = '<div class="empty-state">Report failed to load.</div>';
+  }
 }
 
 (function initAuth(){

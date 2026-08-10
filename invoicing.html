@@ -250,6 +250,7 @@ const COL_INVOICE_STATUS = 'color_mm282b4b';
 const COL_INVOICE_NUM = 'text_mm22zrv9';
 const COL_INVOICE_DATE = 'date_mm28wq3r';
 const COL_INVOICE_SENT_DATE = 'date_mm2c9nmg';
+const COL_DATE_PAID = 'date_mm63ydka';
 const COL_INVOICED_AMOUNT = 'numeric_mm25x03r';
 const COL_NETSUITE = 'text_mm2943xp';
 const COL_CONTACT = 'text_mm221kg3';
@@ -922,7 +923,7 @@ async function saveNetsuite(orderId) {
     const mutation = `mutation {
       change_multiple_column_values(
         board_id: ${BOARD_ID}, item_id: ${orderId},
-        column_values: "{\\"${COL_INVOICE_STATUS}\\": {\\"index\\": 3}, \\"${COL_INVOICE_SENT_DATE}\\": {\\"date\\": \\"${today}\\"}}"
+        column_values: "{\\"${COL_INVOICE_STATUS}\\": {\\"index\\": 3}, \\"${COL_INVOICE_SENT_DATE}\\": {\\"date\\": \\"${today}\\"}, \\"${COL_DATE_PAID}\\": {\\"date\\": \\"${today}\\"}}"
       ) { id }
     }`;
     await mondayQuery(mutation);

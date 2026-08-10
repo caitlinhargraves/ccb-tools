@@ -1014,12 +1014,13 @@ app.get('/api/rep/dashboard', async (req, res) => {
       totalRevenue += rev;
       totalCommission += comm;
       const invStatus = cv['color_mm282b4b'];
+      const datePaid = cv['date_mm63ydka'];
       if (invStatus === 'Paid') commissionPaid += comm; else commissionPending += comm;
 
-      const orderDateStr = cv['date4'];
-      if (orderDateStr) {
-        const monthKey = orderDateStr.slice(0, 7); // YYYY-MM
-        byMonth[monthKey] = (byMonth[monthKey] || 0) + comm;
+      const trendDateStr = datePaid || cv['date4']; // paid date if paid, else order date as a placeholder
+      if (trendDateStr) {
+        const monthKey = trendDateStr.slice(0, 7); // YYYY-MM
+        byMonth[monthKey] = (byMonth[monthKey] || 0) + (invStatus === 'Paid' ? comm : 0);
       }
 
       const client = o.name;
@@ -1051,6 +1052,61 @@ app.get('/api/rep/dashboard', async (req, res) => {
       clients,
       monthlyCommission: Object.entries(byMonth).sort((a, b) => a[0].localeCompare(b[0])).map(([month, amt]) => ({ month, amount: Math.round(amt * 100) / 100 })),
       activeQuotes: myQuotes.filter(q => q.group?.title === 'Active Quotes').length,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// PAYOUT REPORT -- admin only. Mirrors the Excel Commission
+// Summary: pick a pay period, get the exact $ payable this
+// period (Invoice Status = Paid, Date Paid within range),
+// broken out per rep.
+// ============================================================
+app.get('/api/rep/payout-report', async (req, res) => {
+  try {
+    const { start, end } = req.query;
+    if (!start || !end) return res.status(400).json({ error: 'start and end dates required' });
+
+    const query = `{boards(ids:[${ORDERS_BOARD_ID}]){items_page(limit:500){items{id name column_values{id text}}}}}`;
+    const data = await mondayQuery(query);
+    const items = data.data?.boards?.[0]?.items_page?.items || [];
+
+    const startMs = new Date(start).getTime();
+    const endMs = new Date(end).getTime();
+    const byRep = {};
+    let totalPayable = 0, totalRevenue = 0, totalGP = 0, pendingCount = 0, pendingCommission = 0;
+
+    for (const item of items) {
+      const cv = {}; item.column_values.forEach(c => cv[c.id] = c.text);
+      const invStatus = cv['color_mm282b4b'];
+      const datePaid = cv['date_mm63ydka'];
+      const comm = parseFloat(cv['numeric_mm4w38cv']) || 0;
+      const rev = parseFloat(cv['numeric_mm4wv7sc']) || 0;
+      const gp = parseFloat(cv['numeric_mm4wyq9k']) || 0;
+      const rep = cv['dropdown_mm22w5rr'] || 'Unassigned';
+
+      if (invStatus === 'Paid' && datePaid) {
+        const paidMs = new Date(datePaid).getTime();
+        if (!isNaN(paidMs) && paidMs >= startMs && paidMs <= endMs) {
+          totalPayable += comm; totalRevenue += rev; totalGP += gp;
+          byRep[rep] = (byRep[rep] || 0) + comm;
+        }
+      } else if (invStatus !== 'Paid') {
+        pendingCount++;
+        pendingCommission += comm;
+      }
+    }
+
+    res.json({
+      start, end,
+      totalRevenue: Math.round(totalRevenue * 100) / 100,
+      totalGrossProfit: Math.round(totalGP * 100) / 100,
+      totalPayable: Math.round(totalPayable * 100) / 100,
+      pendingCount,
+      pendingCommission: Math.round(pendingCommission * 100) / 100,
+      byRep: Object.entries(byRep).map(([name, amount]) => ({ name, amount: Math.round(amount * 100) / 100 })).sort((a, b) => b.amount - a.amount),
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
