@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCB Approval Queue</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--navy:#1B2A4A;--cyan:#00AEEF;--bg:#E8EBF4;--white:#FFFFFF;--muted:#6B7280;--subtle:#9CA3AF;--border2:#E5E7EB;--green:#00A86B;--red:#D14343;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--navy);font-family:'Inter',sans-serif;min-height:100vh;font-size:15px;line-height:1.6;}
+  .header{background:var(--white);border-bottom:1px solid #D1D5DB;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;}
+  .back-btn,.refresh-btn{background:none;border:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;}
+  .page-wrap{max-width:800px;margin:0 auto;padding:24px 18px 80px;}
+  .page-title{font-size:24px;font-weight:800;margin-bottom:4px;}
+  .page-sub{font-size:13.5px;color:var(--muted);margin-bottom:20px;}
+  .stat-banner{background:var(--white);border:1px solid var(--border2);border-radius:14px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:14px;}
+  .stat-num{font-size:28px;font-weight:800;color:var(--navy);}
+  .stat-lbl{font-size:12.5px;color:var(--muted);}
+  .queue-card{background:var(--white);border:1px solid var(--border2);border-radius:14px;padding:16px 18px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;}
+  .queue-name{font-weight:700;font-size:15px;}
+  .queue-meta{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .approve-btn{padding:10px 18px;border:none;border-radius:9px;background:var(--green);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;}
+  .approve-btn:disabled{background:var(--border2);color:var(--subtle);cursor:not-allowed;}
+  .empty-state{text-align:center;color:var(--subtle);padding:60px 20px;}
+  .celebrate-emoji{font-size:44px;margin-bottom:8px;}
+  .loading{text-align:center;color:var(--muted);padding:60px 0;}
+</style>
+</head>
+<body>
+<div class="header">
+  <button class="back-btn" onclick="location.href='index.html'">← Back Home</button>
+  <button class="refresh-btn" onclick="loadQueue()">🔄 Refresh</button>
+</div>
+<div class="page-wrap">
+  <div class="page-title">Approval Queue</div>
+  <div class="page-sub">Products a worker has marked done, waiting for a final check before they're ready for packing and shipping.</div>
+  <div class="stat-banner" id="statBanner"></div>
+  <div id="content"><div class="loading">Loading...</div></div>
+</div>
+<script>
+let queue = [];
+
+async function loadQueue(){
+  document.getElementById('content').innerHTML = '<div class="loading">Loading...</div>';
+  try{
+    const r = await fetch('/api/production/approval-queue');
+    const d = await r.json();
+    queue = d.queue || [];
+    render();
+  }catch(e){
+    document.getElementById('content').innerHTML = '<div class="empty-state">Could not load the queue.</div>';
+  }
+}
+
+function render(){
+  document.getElementById('statBanner').innerHTML =
+    '<div class="stat-num">'+queue.length+'</div><div class="stat-lbl">waiting for approval</div>';
+
+  if(!queue.length){
+    document.getElementById('content').innerHTML = '<div class="empty-state"><div class="celebrate-emoji">✅</div>Nothing waiting -- everything approved is already headed to packing.</div>';
+    return;
+  }
+
+  document.getElementById('content').innerHTML = queue.map(function(q){
+    return '<div class="queue-card" id="qcard-'+q.subitemId+'">' +
+      '<div><div class="queue-name">'+q.name+'</div><div class="queue-meta">'+q.orderName+(q.styleSku?' · '+q.styleSku:'')+(q.qty?' · Qty '+q.qty:'')+'</div></div>' +
+      '<button class="approve-btn" onclick="approve(\''+q.subitemId+'\',\''+q.orderId+'\')">✓ Approve</button>' +
+    '</div>';
+  }).join('');
+}
+
+async function approve(subitemId, orderId){
+  const card = document.getElementById('qcard-'+subitemId);
+  const btn = card.querySelector('.approve-btn');
+  btn.disabled = true;
+  btn.textContent = 'Approving...';
+  try{
+    const r = await fetch('/api/production/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subitemId:subitemId,orderId:orderId})});
+    const d = await r.json();
+    if(!d.ok){ alert(d.error||'Approve failed'); btn.disabled=false; btn.textContent='✓ Approve'; return; }
+    card.style.opacity='0';
+    setTimeout(function(){
+      queue = queue.filter(function(q){return q.subitemId!==subitemId;});
+      render();
+    }, 300);
+  }catch(e){
+    alert('Approve failed. Try again.');
+    btn.disabled=false; btn.textContent='✓ Approve';
+  }
+}
+
+loadQueue();
+setInterval(loadQueue, 30000);
+</script>
+</body>
+</html>

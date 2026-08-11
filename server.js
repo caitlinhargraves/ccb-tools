@@ -17,6 +17,9 @@ const QUOTES_BOARD_ID = '18425958662';
 const QUOTES_SUB_BOARD_ID = '18425958868';
 const REP_BOARD_ID = '18425958984';
 const CLIENT_NOTES_BOARD_ID = '18426058971';
+const TIME_LOG_BOARD_ID = '18426071636';
+const DAMAGE_BOARD_ID = '18426071714';
+const PRODUCTS_BOARD_ID = '18407165552';
 const CCB_EMAIL = 'info@ccbimprint.com';
 const pricing = require('./pricing-engine');
 const cryptoAuth = require('crypto');
@@ -1400,6 +1403,195 @@ app.post('/api/legacy-orders/reassign-rep', async (req, res) => {
     const mutation = `mutation { change_multiple_column_values(board_id: ${ORDERS_BOARD_ID}, item_id: ${orderId}, column_values: ${cv}, create_labels_if_missing: true) { id } }`;
     const result = await mondayQuery(mutation);
     if (result.errors) return res.status(400).json({ error: result.errors[0].message });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// PRODUCTION TIME TRACKING -- start/pause/resume/stop per job
+// (job = one product line / subitem). Multiple workers can be
+// on the same job at once; each gets their own session row.
+// ============================================================
+app.get('/api/production/timer-status', async (req, res) => {
+  try {
+    const { subitemId } = req.query;
+    if (!subitemId) return res.status(400).json({ error: 'subitemId required' });
+    const items = await fetchAllItems(TIME_LOG_BOARD_ID, 'id name column_values{id text}');
+    const sessions = items
+      .filter(it => it.column_values.find(c => c.id === 'text_mm6496dd')?.text === String(subitemId))
+      .map(it => {
+        const cv = {}; it.column_values.forEach(c => cv[c.id] = c.text);
+        return {
+          id: it.id, worker: cv['dropdown_mm64pyar'] || '', status: cv['color_mm64srw8'] || '',
+          startTime: cv['text_mm64gtfw'] || '', lastResumeTime: cv['text_mm643txq'] || '',
+          accumulatedSeconds: parseFloat(cv['numeric_mm64wfkr']) || 0,
+        };
+      })
+      .filter(s => s.status === 'Active' || s.status === 'Paused');
+    res.json({ sessions });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/production/timer-start', async (req, res) => {
+  try {
+    const { subitemId, jobName, orderName, department, worker } = req.body;
+    if (!subitemId || !worker) return res.status(400).json({ error: 'subitemId and worker required' });
+    const now = new Date().toISOString();
+    const cv = JSON.stringify({
+      'dropdown_mm64pyar': { labels: [worker] },
+      'dropdown_mm64wccd': { labels: [department || ''] },
+      'text_mm6496dd': String(subitemId),
+      'text_mm643fsg': orderName || '',
+      'color_mm64srw8': { label: 'Active' },
+      'text_mm64gtfw': now,
+      'text_mm643txq': now,
+      'numeric_mm64wfkr': 0,
+    });
+    const mutation = `mutation { create_item(board_id: ${TIME_LOG_BOARD_ID}, item_name: ${JSON.stringify(jobName || 'Job')}, column_values: ${JSON.stringify(cv)}, create_labels_if_missing: true) { id } }`;
+    const result = await mondayQuery(mutation);
+    if (result.errors) return res.status(400).json({ error: result.errors[0].message });
+    res.json({ ok: true, logId: result.data.create_item.id, startTime: now });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/production/timer-pause', async (req, res) => {
+  try {
+    const { logId } = req.body;
+    if (!logId) return res.status(400).json({ error: 'logId required' });
+    const query = `{items(ids:[${logId}]){column_values(ids:["text_mm643txq","numeric_mm64wfkr"]){id text}}}`;
+    const data = await mondayQuery(query);
+    const cv = {}; (data.data?.items?.[0]?.column_values || []).forEach(c => cv[c.id] = c.text);
+    const lastResume = new Date(cv['text_mm643txq']).getTime();
+    const priorAccum = parseFloat(cv['numeric_mm64wfkr']) || 0;
+    const newAccum = priorAccum + Math.max(0, (Date.now() - lastResume) / 1000);
+    const updateCV = JSON.stringify(JSON.stringify({ 'color_mm64srw8': { label: 'Paused' }, 'numeric_mm64wfkr': Math.round(newAccum) }));
+    await mondayQuery(`mutation { change_multiple_column_values(board_id: ${TIME_LOG_BOARD_ID}, item_id: ${logId}, column_values: ${updateCV}) { id } }`);
+    res.json({ ok: true, accumulatedSeconds: Math.round(newAccum) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/production/timer-resume', async (req, res) => {
+  try {
+    const { logId } = req.body;
+    if (!logId) return res.status(400).json({ error: 'logId required' });
+    const now = new Date().toISOString();
+    const updateCV = JSON.stringify(JSON.stringify({ 'color_mm64srw8': { label: 'Active' }, 'text_mm643txq': now }));
+    await mondayQuery(`mutation { change_multiple_column_values(board_id: ${TIME_LOG_BOARD_ID}, item_id: ${logId}, column_values: ${updateCV}) { id } }`);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Stops every open (Active/Paused) session on a job -- called when the job is
+// marked done, since more than one worker might still have a session running.
+app.post('/api/production/timer-stop-all', async (req, res) => {
+  try {
+    const { subitemId } = req.body;
+    if (!subitemId) return res.status(400).json({ error: 'subitemId required' });
+    const items = await fetchAllItems(TIME_LOG_BOARD_ID, 'id column_values{id text}');
+    const now = new Date().toISOString();
+    const stopped = [];
+    for (const it of items) {
+      const cv = {}; it.column_values.forEach(c => cv[c.id] = c.text);
+      if (cv['text_mm6496dd'] !== String(subitemId)) continue;
+      if (cv['color_mm64srw8'] !== 'Active' && cv['color_mm64srw8'] !== 'Paused') continue;
+      let finalSeconds = parseFloat(cv['numeric_mm64wfkr']) || 0;
+      if (cv['color_mm64srw8'] === 'Active') {
+        const lastResume = new Date(cv['text_mm643txq']).getTime();
+        finalSeconds += Math.max(0, (Date.now() - lastResume) / 1000);
+      }
+      const updateCV = JSON.stringify(JSON.stringify({
+        'color_mm64srw8': { label: 'Completed' }, 'text_mm64fj60': now,
+        'numeric_mm64rs82': Math.round(finalSeconds), 'numeric_mm64wfkr': Math.round(finalSeconds),
+      }));
+      await mondayQuery(`mutation { change_multiple_column_values(board_id: ${TIME_LOG_BOARD_ID}, item_id: ${it.id}, column_values: ${updateCV}) { id } }`);
+      stopped.push({ logId: it.id, activeSeconds: Math.round(finalSeconds) });
+    }
+    res.json({ ok: true, stopped });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// DAMAGED GOODS -- tied to a specific job. Photo uploads reuse
+// the existing /api/upload-file relay after the log item exists.
+// ============================================================
+app.post('/api/production/damage-report', async (req, res) => {
+  try {
+    const { subitemId, jobName, orderName, department, worker, quantity, cost, reason } = req.body;
+    if (!subitemId || !worker || !quantity) return res.status(400).json({ error: 'subitemId, worker, and quantity required' });
+    const now = new Date().toISOString();
+    const cv = JSON.stringify({
+      'dropdown_mm64eknx': { labels: [worker] },
+      'dropdown_mm64p7xf': { labels: [department || ''] },
+      'text_mm644dat': orderName || '',
+      'text_mm64tbtf': String(subitemId),
+      'numeric_mm64whf6': Number(quantity) || 0,
+      'numeric_mm648zpa': Number(cost) || 0,
+      'long_text_mm64de88': reason || '',
+      'text_mm64zgx0': now,
+    });
+    const mutation = `mutation { create_item(board_id: ${DAMAGE_BOARD_ID}, item_name: ${JSON.stringify(jobName || 'Damaged item')}, column_values: ${JSON.stringify(cv)}, create_labels_if_missing: true) { id } }`;
+    const result = await mondayQuery(mutation);
+    if (result.errors) return res.status(400).json({ error: result.errors[0].message });
+    res.json({ ok: true, damageId: result.data.create_item.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// APPROVAL QUEUE -- the new gate between "worker marked done"
+// and "ready to ship". Workers moving a job to done sets it to
+// Pending Approval (not Decorated directly); an admin approves
+// it here, which flips it to Decorated and re-runs the same
+// "whole order ready" check that used to fire immediately.
+// ============================================================
+app.get('/api/production/approval-queue', async (req, res) => {
+  try {
+    const items = await fetchAllItems(PRODUCTS_BOARD_ID, 'id name column_values(ids:["color_mm25v786","text_mm22fv7y","numeric_mm22crjt"]){id text} parent_item{id name}');
+    const queue = items
+      .filter(it => it.column_values.find(c => c.id === 'color_mm25v786')?.text === 'Pending Approval')
+      .map(it => {
+        const cv = {}; it.column_values.forEach(c => cv[c.id] = c.text);
+        return {
+          subitemId: it.id, name: it.name, styleSku: cv['text_mm22fv7y'] || '',
+          qty: cv['numeric_mm22crjt'] || '', orderId: it.parent_item?.id, orderName: it.parent_item?.name || '',
+        };
+      });
+    res.json({ queue });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/production/approve', async (req, res) => {
+  try {
+    const { subitemId, orderId } = req.body;
+    if (!subitemId || !orderId) return res.status(400).json({ error: 'subitemId and orderId required' });
+
+    await mondayQuery(`mutation { change_column_value(board_id: ${PRODUCTS_BOARD_ID}, item_id: ${subitemId}, column_id: "color_mm25v786", value: "{\\"index\\":8}") { id } }`);
+
+    // Same "whole order ready" cascade that used to fire the moment a worker finished --
+    // now it fires once every in-house product on the order has cleared approval.
+    try {
+      const chk = await mondayQuery(`{items(ids:[${orderId}]){subitems{id column_values(ids:["color_mm25v786","color_mm2dd6d5"]){id text}}}}`);
+      const subs = chk.data?.items?.[0]?.subitems || [];
+      const ihSubs = subs.filter(s => { const sc = {}; s.column_values.forEach(c => sc[c.id] = c); return (sc['color_mm2dd6d5']?.text || '').toLowerCase() === 'in house decoration'; });
+      const allDone = ihSubs.every(s => { const sc = {}; s.column_values.forEach(c => sc[c.id] = c); return (sc['color_mm25v786']?.text || '').toLowerCase() === 'decorated'; });
+      if (allDone) await mondayQuery(`mutation { change_column_value(board_id: ${ORDERS_BOARD_ID}, item_id: ${orderId}, column_id: "color_mm27qyta", value: "{\\"index\\":2}") { id } }`);
+    } catch (e) { /* non-fatal -- order-level cascade is a nice-to-have, the approval itself already succeeded */ }
+
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

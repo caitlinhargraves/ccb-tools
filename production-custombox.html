@@ -174,6 +174,27 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px}
 .modal-decorated-btn:hover{opacity:.85}
 .modal-decorated-btn:disabled{opacity:.4;cursor:not-allowed}
 .modal-decorated-btn svg{width:16px;height:16px;stroke:white;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.timer-section{margin-top:10px;padding-top:10px;border-top:1px dashed #E5E7EB;}
+.timer-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12.5px;}
+.timer-worker{font-weight:600;flex:1;color:#1B2A4A;}
+.timer-clock{font-family:'SF Mono',monospace;font-weight:700;color:#1B2A4A;min-width:52px;}
+.timer-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.timer-status-dot.live{background:#00A86B;animation:tpulse 1.5s infinite;}
+.timer-status-dot.paused{background:#F5A623;}
+@keyframes tpulse{0%,100%{opacity:1}50%{opacity:.35}}
+.timer-btn{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;border:1px solid #D1D5DB;background:#fff;cursor:pointer;}
+.timer-btn:hover{border-color:#00AEEF;}
+.timer-actions{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;}
+.timer-add-btn{font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:6px;border:1px solid #00AEEF;background:#EBF8FF;color:#0077AA;cursor:pointer;}
+.damage-btn{font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:6px;border:1px solid #FECACA;background:#FEF2F2;color:#DC2626;cursor:pointer;}
+.worker-picker{margin-top:8px;padding:10px;background:#F8F9FC;border-radius:8px;}
+.worker-pick-btn{font-size:12px;font-weight:600;padding:6px 12px;border-radius:20px;border:1px solid #D1D5DB;background:#fff;cursor:pointer;margin:3px;}
+.worker-pick-btn:hover{border-color:#00AEEF;background:#EBF8FF;}
+.damage-form{margin-top:8px;padding:12px;background:#FEF6F6;border-radius:8px;border:1px solid #FECACA;}
+.damage-form label{font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px;margin-top:6px;}
+.damage-form input,.damage-form textarea,.damage-form select{width:100%;padding:7px 9px;border:1px solid #D1D5DB;border-radius:6px;font-size:12.5px;font-family:'Inter',sans-serif;}
+.damage-form-actions{display:flex;gap:8px;margin-top:10px;}
+.damage-form-actions .timer-btn{flex:1;}
 </style>
 </head>
 <body>
@@ -249,6 +270,7 @@ const STATION_URLS={Embroidery:'production-embroidery.html',Screenprint:'product
 const assetCache={};
 
 async function mq(q){const r=await fetch('/api/monday',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});const d=await r.json();if(d.errors)throw new Error(d.errors[0].message);return d.data;}
+const DEPT_NAME='Custom Box';
 
 async function downloadArtworkZip(assetIds, zipName) {
   if (!assetIds || !assetIds.length) return;
@@ -306,21 +328,121 @@ function saveSlotField(subId,colId,type,el){
 function showToast(msg,spinning=true){document.getElementById('toast-msg').textContent=msg;document.getElementById('toast-spinner').style.display=spinning?'block':'none';document.getElementById('toast').classList.add('visible');}
 function hideToast(d=1500){setTimeout(()=>document.getElementById('toast').classList.remove('visible'),d);}
 
+
+// ==================== PRODUCTION TIME TRACKING & DAMAGE REPORTING ====================
+const WORKER_LIST=['Noah Root','Jess Karas','Hudson Zinda','Jackie','Austin Otterness'];
+let jobSessions={};
+let tickInterval=null;
+
+function elapsedSecondsFor(s){let secs=s.accumulatedSeconds||0;if(s.status==='Active'&&s.lastResumeTime){secs+=Math.max(0,(Date.now()-new Date(s.lastResumeTime).getTime())/1000);}return Math.round(secs);}
+function fmtElapsed(secs){const h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60),ss=secs%60;return (h>0?h+':':'')+String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');}
+
+function esc1(s){return String(s==null?'':s).replace(/'/g,"\\'");}
+
+function timerSectionHtml(p){
+  const sessions=jobSessions[p.id]||[];
+  const rows=sessions.map(s=>`<div class="timer-row"><span class="timer-status-dot ${s.status==='Active'?'live':'paused'}"></span><span class="timer-worker">${s.worker}</span><span class="timer-clock" id="clock-${s.id}">${fmtElapsed(elapsedSecondsFor(s))}</span>${s.status==='Active'?`<button class="timer-btn" onclick="pauseTimer('${s.id}','${p.id}')">Pause</button>`:`<button class="timer-btn" onclick="resumeTimer('${s.id}','${p.id}')">Resume</button>`}</div>`).join('');
+  return `<div class="timer-section" id="timersec-${p.id}">${rows}
+    <div class="timer-actions">
+      <button class="timer-add-btn" onclick="toggleWorkerPicker('${p.id}')">+ Start Timer</button>
+      <button class="damage-btn" onclick="toggleDamageForm('${p.id}')">⚠ Report Damage</button>
+    </div>
+    <div id="workerpicker-${p.id}" class="worker-picker" style="display:none">${WORKER_LIST.map(w=>`<button class="worker-pick-btn" onclick="startTimerAs('${p.id}','${esc1(p.name)}','${esc1(p.orderName)}','${w}')">${w}</button>`).join('')}</div>
+    <div id="damageform-${p.id}" class="damage-form" style="display:none">
+      <label>Who's reporting?</label>
+      <select id="dmgworker-${p.id}">${WORKER_LIST.map(w=>`<option>${w}</option>`).join('')}</select>
+      <label>Quantity damaged</label>
+      <input type="number" id="dmgqty-${p.id}" placeholder="1" min="1">
+      <label>Estimated cost ($)</label>
+      <input type="number" step="0.01" id="dmgcost-${p.id}" placeholder="0.00">
+      <label>What happened?</label>
+      <textarea id="dmgreason-${p.id}" rows="2" placeholder="e.g. cracked during engraving"></textarea>
+      <label>Photo (optional)</label>
+      <input type="file" id="dmgphoto-${p.id}" accept="image/*">
+      <div class="damage-form-actions">
+        <button class="timer-btn" onclick="submitDamage('${p.id}')">Submit</button>
+        <button class="timer-btn" onclick="toggleDamageForm('${p.id}')">Cancel</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleWorkerPicker(subId){const el=document.getElementById('workerpicker-'+subId);if(el)el.style.display=el.style.display==='none'?'block':'none';}
+function toggleDamageForm(subId){const el=document.getElementById('damageform-'+subId);if(el)el.style.display=el.style.display==='none'?'block':'none';}
+
+async function startTimerAs(subId,jobName,orderName,worker){
+  showToast('Starting timer...');
+  try{
+    await fetch('/api/production/timer-start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subitemId:subId,jobName:jobName,orderName:orderName,department:DEPT_NAME,worker:worker})});
+    showToast('Timer started',false);hideToast();
+    toggleWorkerPicker(subId);
+    await loadJobSessions(subId);
+    refreshTimerSection(subId);
+  }catch(e){showToast('Error: '+e.message,false);hideToast(3000);}
+}
+async function pauseTimer(logId,subId){
+  try{await fetch('/api/production/timer-pause',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({logId:logId})});await loadJobSessions(subId);refreshTimerSection(subId);}catch(e){showToast('Error: '+e.message,false);hideToast(3000);}
+}
+async function resumeTimer(logId,subId){
+  try{await fetch('/api/production/timer-resume',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({logId:logId})});await loadJobSessions(subId);refreshTimerSection(subId);}catch(e){showToast('Error: '+e.message,false);hideToast(3000);}
+}
+async function loadJobSessions(subId){
+  try{const r=await fetch('/api/production/timer-status?subitemId='+encodeURIComponent(subId));const d=await r.json();jobSessions[subId]=d.sessions||[];}catch(e){jobSessions[subId]=jobSessions[subId]||[];}
+}
+function refreshTimerSection(subId){
+  const el=document.getElementById('timersec-'+subId);
+  const p=[...allActive,...allUpcoming].find(x=>x.id===subId);
+  if(el&&p)el.outerHTML=timerSectionHtml(p);
+}
+async function preloadAllSessions(){
+  const ids=[...allActive,...allUpcoming].map(p=>p.id);
+  await Promise.all(ids.map(id=>loadJobSessions(id)));
+  ids.forEach(id=>refreshTimerSection(id));
+  startTickInterval();
+}
+function startTickInterval(){
+  if(tickInterval)clearInterval(tickInterval);
+  tickInterval=setInterval(()=>{
+    for(const subId in jobSessions){
+      (jobSessions[subId]||[]).forEach(s=>{
+        if(s.status==='Active'){const el=document.getElementById('clock-'+s.id);if(el)el.textContent=fmtElapsed(elapsedSecondsFor(s));}
+      });
+    }
+  },1000);
+}
+
+async function submitDamage(subId){
+  const p=[...allActive,...allUpcoming].find(x=>x.id===subId);
+  const worker=document.getElementById('dmgworker-'+subId).value;
+  const qty=document.getElementById('dmgqty-'+subId).value;
+  const cost=document.getElementById('dmgcost-'+subId).value;
+  const reason=document.getElementById('dmgreason-'+subId).value;
+  const photoInput=document.getElementById('dmgphoto-'+subId);
+  if(!qty){alert('Enter how many were damaged.');return;}
+  showToast('Reporting damage...');
+  try{
+    const r=await fetch('/api/production/damage-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subitemId:subId,jobName:p?.name,orderName:p?.orderName,department:DEPT_NAME,worker:worker,quantity:qty,cost:cost,reason:reason})});
+    const d=await r.json();
+    if(photoInput.files[0]&&d.damageId){
+      const fd=new FormData();fd.append('file',photoInput.files[0]);fd.append('itemId',d.damageId);fd.append('columnId','file_mm64z1zr');
+      await fetch('/api/upload-file',{method:'POST',body:fd});
+    }
+    showToast('Damage reported',false);hideToast();
+    toggleDamageForm(subId);
+  }catch(e){showToast('Error: '+e.message,false);hideToast(3000);}
+}
+
 async function markDecorated(subId,orderId,btn){
   const p=allActive.find(x=>x.id===subId)||allUpcoming.find(x=>x.id===subId);
   if(btn){btn.disabled=true;btn.innerHTML='<svg viewBox="0 0 10 8" style="width:12px;height:12px;stroke:white;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round"><polyline points="1 4 4 7 9 1"/></svg> Updating...';}
-  showToast('Marking decorated...');
+  showToast('Stopping timers and sending for approval...');
   try{
-    await mq(`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"${S_STATUS}",value:"{\\"index\\":8}"){id}}`);
-    try{
-      const chk=await mq(`{items(ids:[${orderId}]){subitems{id column_values(ids:["${S_STATUS}","${S_TYPE}"]){id text}}}}`);
-      const subs=chk.items[0]?.subitems||[];
-      const ihSubs=subs.filter(s=>{const sc={};for(const c of s.column_values)sc[c.id]=c;return(sc[S_TYPE]?.text||'').toLowerCase()==='in house decoration';});
-      const allDone=ihSubs.every(s=>{const sc={};for(const c of s.column_values)sc[c.id]=c;return(sc[S_STATUS]?.text||'').toLowerCase()==='decorated'||s.id===subId;});
-      if(allDone)await mq(`mutation{change_column_value(board_id:${ORDERS_BOARD},item_id:${orderId},column_id:"${O_STATUS}",value:"{\\"index\\":2}"){id}}`);
-    }catch(e){}
+    try{await fetch('/api/production/timer-stop-all',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subitemId:subId})});}catch(e){}
+    // Status now goes to Pending Approval (index 7), not straight to Decorated (index 8) --
+    // an admin has to approve it on the Approval Queue page before it counts as truly done.
+    await mq(`mutation{change_column_value(board_id:${SUBS_BOARD},item_id:${subId},column_id:"${S_STATUS}",value:"{\\"index\\":7}"){id}}`);
     if(p){sessionDone.unshift(p);allActive=allActive.filter(x=>x.id!==subId);allUpcoming=allUpcoming.filter(x=>x.id!==subId);}
-    showToast('Decorated!',false);hideToast();
+    showToast('Sent for approval!',false);hideToast();
     closeModalDirect();
     const el=document.getElementById('card-'+subId);
     if(el){el.classList.add('fading');setTimeout(()=>{renderContent();renderRecentlyDone();updateStats();},400);}
@@ -382,7 +504,7 @@ function openProductModal(subId,section){
     if(decoSlotsHtml)decoSlotsHtml=`<div class="modal-section-title">Decoration Details</div>`+decoSlotsHtml;
   }
   const prodNotesHtml=p.prodNotes?`<div class="modal-section-title">Production Notes</div><div style="font-size:12px;color:var(--text2);background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:4px">${p.prodNotes}</div>`:'';
-  const decoratedBtn=section==='active'?`<button class="modal-decorated-btn" id="modal-dec-btn-${p.id}" onclick="markDecorated('${p.id}','${p.orderId}',this)"><svg viewBox="0 0 10 8"><polyline points="1 4 4 7 9 1"/></svg>Mark Decorated</button>`:'';
+  const decoratedBtn=section==='active'?`<button class="modal-decorated-btn" id="modal-dec-btn-${p.id}" onclick="markDecorated('${p.id}','${p.orderId}',this)"><svg viewBox="0 0 10 8"><polyline points="1 4 4 7 9 1"/></svg>Send for Approval</button>`:'';
   document.getElementById('modal-body').innerHTML=`${mockupHtml}<div class="modal-detail-grid">${fields}</div>${decoSlotsHtml}${prodNotesHtml}${decoratedBtn}`;
   document.getElementById('modal-overlay').classList.add('open');
 }
@@ -613,13 +735,14 @@ function buildCard(p,section){
       ${p.allSlots.length>1?`<div class="info-cell wide"><div class="info-lbl">Multi-decoration</div><div class="info-val muted">${p.allSlots.map((slot,i)=>{const t=p._sc?.[slot.style]?.text||'';const pl=p._sc?.[slot.place]?.text||'';return t?`<span style="font-weight:500">Deco ${slot.num}: ${t}</span>${pl?' · '+pl:''}`:null;}).filter(Boolean).join(' &nbsp;|&nbsp; ')}</div></div>`:''}
       ${p.prodNotes?`<div class="info-cell wide"><div class="info-lbl">Production Notes</div><div class="info-val muted">${p.prodNotes}</div></div>`:''}
     </div>
+    ${timerSectionHtml(p)}
     <div class="card-footer">
       <div class="footer-left">
         <span style="font-size:11px;color:var(--text3)">Station:</span>
         ${decoSel}
         <button class="media-btn" onclick="openProductModal('${p.id}','${section}')">Details</button>
       </div>
-      ${section==='active'?`<button class="decorated-btn" id="dec-btn-${p.id}" onclick="markDecorated('${p.id}','${p.orderId}',this)"><svg viewBox="0 0 10 8" style="width:12px;height:12px;stroke:white;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round"><polyline points="1 4 4 7 9 1"/></svg> Mark Decorated</button>`:''}
+      ${section==='active'?`<button class="decorated-btn" id="dec-btn-${p.id}" onclick="markDecorated('${p.id}','${p.orderId}',this)"><svg viewBox="0 0 10 8" style="width:12px;height:12px;stroke:white;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round"><polyline points="1 4 4 7 9 1"/></svg> Send for Approval</button>`:''}
     </div>
   </div>`;
 }
@@ -700,6 +823,7 @@ function renderContent(){
   else{try{html+=buildOrderGroups(combined)}catch(e){html+=`<div class="error-box"><strong>Error:</strong> ${e.message}</div>`;}}
   html+=`</div>`;
   document.getElementById('content').innerHTML=html;
+  preloadAllSessions();
   const _nac=document.getElementById('sec-count-ac')||document.getElementById('nav-count-ac');
   const _nup=document.getElementById('sec-count-up')||document.getElementById('nav-count-up');
   if(_nac)_nac.textContent=filtAc.length;
