@@ -20,6 +20,7 @@ const CLIENT_NOTES_BOARD_ID = '18426058971';
 const TIME_LOG_BOARD_ID = '18426071636';
 const DAMAGE_BOARD_ID = '18426071714';
 const PRODUCTS_BOARD_ID = '18407165552';
+const TASKS_BOARD_ID = '18426075295';
 const CCB_EMAIL = 'info@ccbimprint.com';
 const pricing = require('./pricing-engine');
 const cryptoAuth = require('crypto');
@@ -1665,6 +1666,95 @@ app.post('/api/production/approve', async (req, res) => {
     } catch (e) { /* non-fatal -- order-level cascade is a nice-to-have, the approval itself already succeeded */ }
 
     res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// REP TASKS -- big tasks assigned to reps: what it is, when it
+// started, current progress, what "done" looks like, and a way
+// to mark it complete. Admin creates one and can assign it to
+// any combination of reps at once (all get their own copy so
+// progress/completion is tracked per person).
+// ============================================================
+app.get('/api/rep/tasks', async (req, res) => {
+  try {
+    const { salesPerson, isAdmin } = req.query;
+    const items = await fetchAllItems(TASKS_BOARD_ID, 'id name column_values{id text}');
+    const tasks = items.map(it => {
+      const cv = {}; it.column_values.forEach(c => cv[c.id] = c.text);
+      return {
+        id: it.id, name: it.name,
+        salesPerson: cv['dropdown_mm64e4g3'] || '',
+        description: cv['long_text_mm64bnmb'] || '',
+        startedDate: cv['date_mm64ee0e'] || '',
+        progress: cv['color_mm64s1aj'] || 'Not Started',
+        progressNotes: cv['text_mm645cvp'] || '',
+        definitionOfDone: cv['long_text_mm64z08g'] || '',
+        completed: cv['boolean_mm64s7af'] === 'v',
+        completedDate: cv['date_mm64t4wb'] || '',
+      };
+    }).filter(t => isAdmin === 'true' || t.salesPerson === salesPerson);
+    res.json({ tasks: tasks.sort((a, b) => (a.completed - b.completed) || (b.startedDate || '').localeCompare(a.startedDate || '')) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/rep/tasks/create', async (req, res) => {
+  try {
+    const { taskName, description, definitionOfDone, assignTo } = req.body;
+    if (!taskName || !assignTo || !assignTo.length) return res.status(400).json({ error: 'taskName and at least one assignee required' });
+    const today = new Date().toISOString().slice(0, 10);
+    const groupId = Math.random().toString(36).slice(2, 10);
+    const createdIds = [];
+    for (const rep of assignTo) {
+      const cv = JSON.stringify({
+        'dropdown_mm64e4g3': { labels: [rep] },
+        'long_text_mm64bnmb': description || '',
+        'date_mm64ee0e': { date: today },
+        'color_mm64s1aj': { label: 'Not Started' },
+        'long_text_mm64z08g': definitionOfDone || '',
+        'boolean_mm64s7af': { checked: 'false' },
+        'text_mm642s41': groupId,
+      });
+      const mutation = `mutation { create_item(board_id: ${TASKS_BOARD_ID}, item_name: ${JSON.stringify(taskName)}, column_values: ${JSON.stringify(cv)}, create_labels_if_missing: true) { id } }`;
+      const result = await mondayQuery(mutation);
+      if (!result.errors) createdIds.push(result.data.create_item.id);
+    }
+    res.json({ ok: true, createdIds, groupId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/rep/tasks/progress', async (req, res) => {
+  try {
+    const { taskId, progress, progressNotes } = req.body;
+    if (!taskId) return res.status(400).json({ error: 'taskId required' });
+    const cv = {};
+    if (progress) cv['color_mm64s1aj'] = { label: progress };
+    if (progressNotes !== undefined) cv['text_mm645cvp'] = progressNotes;
+    const mutation = `mutation { change_multiple_column_values(board_id: ${TASKS_BOARD_ID}, item_id: ${taskId}, column_values: ${JSON.stringify(JSON.stringify(cv))}, create_labels_if_missing: true) { id } }`;
+    const result = await mondayQuery(mutation);
+    if (result.errors) return res.status(400).json({ error: result.errors[0].message });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/rep/tasks/complete', async (req, res) => {
+  try {
+    const { taskId } = req.body;
+    if (!taskId) return res.status(400).json({ error: 'taskId required' });
+    const today = new Date().toISOString().slice(0, 10);
+    const cv = JSON.stringify({ 'boolean_mm64s7af': { checked: 'true' }, 'color_mm64s1aj': { label: 'Done' }, 'date_mm64t4wb': { date: today } });
+    const mutation = `mutation { change_multiple_column_values(board_id: ${TASKS_BOARD_ID}, item_id: ${taskId}, column_values: ${JSON.stringify(cv)}, create_labels_if_missing: true) { id } }`;
+    const result = await mondayQuery(mutation);
+    if (result.errors) return res.status(400).json({ error: result.errors[0].message });
+    res.json({ ok: true, completedDate: today });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

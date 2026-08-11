@@ -131,6 +131,30 @@
   .rep-payout-row:last-child{border-bottom:none;}
 
   .empty-state{text-align:center;color:var(--subtle);font-size:13px;padding:20px 0;}
+  .task-card{border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin-bottom:10px;}
+  .task-card.completed{background:#F6FDFA;border-color:#B8EDD8;}
+  .task-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+  .task-name{font-weight:700;font-size:15px;}
+  .task-name.done{text-decoration:line-through;color:var(--muted);}
+  .task-meta{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .task-rep-badge{font-size:10.5px;font-weight:700;color:var(--muted);background:var(--bg);padding:3px 9px;border-radius:20px;}
+  .task-desc{font-size:13px;color:var(--body);margin-bottom:10px;}
+  .task-dod{font-size:12.5px;background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:10px;}
+  .task-dod b{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--subtle);margin-bottom:3px;}
+  .task-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .task-progress-select{padding:7px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:12.5px;font-family:'Inter',sans-serif;background:var(--white);}
+  .task-notes-input{flex:1;min-width:140px;padding:7px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:12.5px;font-family:'Inter',sans-serif;}
+  .task-complete-btn{padding:7px 14px;border:none;border-radius:8px;background:var(--green);color:#fff;font-weight:700;font-size:12.5px;cursor:pointer;}
+  .task-complete-btn:disabled{background:var(--border2);color:var(--subtle);cursor:not-allowed;}
+  .task-done-chip{font-size:12px;font-weight:700;color:var(--green);}
+  .new-task-form{background:var(--bg);border-radius:12px;padding:16px 18px;margin-top:12px;}
+  .new-task-form label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;margin-top:10px;}
+  .new-task-form input,.new-task-form textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border2);border-radius:8px;font-size:13.5px;font-family:'Inter',sans-serif;}
+  .assignee-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+  .assignee-chip{padding:5px 12px;border-radius:20px;border:1.5px solid var(--border2);background:var(--white);font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;}
+  .assignee-chip.selected{border-color:var(--navy);background:var(--navy);color:#fff;}
+  .new-task-btn{padding:9px 16px;border:none;border-radius:8px;background:var(--navy);color:#fff;font-weight:700;font-size:13px;cursor:pointer;margin-top:12px;}
+  .toggle-form-btn{font-size:12.5px;font-weight:600;color:var(--cyan);background:none;border:none;cursor:pointer;}
   .loading{text-align:center;color:var(--muted);padding:40px 0;font-size:13.5px;}
 
   @media(max-width:640px){
@@ -171,7 +195,7 @@
       <span class="page-label">Performance</span>
     </div>
     <div class="header-left">
-      <select class="rep-select" id="repSelect" style="display:none;" onchange="loadDashboard()"></select>
+      <select class="rep-select" id="repSelect" style="display:none;" onchange="loadDashboard();loadTasks()"></select>
       <span class="freshness" id="freshness"></span>
       <button class="refresh-btn" onclick="loadDashboard()">Refresh</button>
       <span class="rep-chip" id="repChip"></span>
@@ -183,6 +207,7 @@
     <div class="page-title" id="pageTitle">My Performance</div>
     <div class="page-sub" id="pageSub"></div>
     <div id="payoutSection"></div>
+    <div id="tasksSection"></div>
     <div id="content"><div class="loading">Loading your numbers...</div></div>
   </div>
 </div>
@@ -249,6 +274,7 @@ function enterApp(){
   }
   loadDashboard();
   renderPayoutSection();
+  loadTasks();
   if(autoRefreshTimer) clearInterval(autoRefreshTimer);
   autoRefreshTimer = setInterval(loadDashboard, 60000);
 }
@@ -458,6 +484,134 @@ async function addNote(clientName){
     noteDrafts[clientName].text = '';
     await loadDashboard();
   }catch(e){ alert('Could not save note. Try again.'); }
+}
+
+// ---- TASKS ----
+let tasksData = [];
+let showNewTaskForm = false;
+let newTaskAssignees = new Set();
+
+function currentViewedRep(){
+  if(session.role !== 'Admin') return { salesPerson: session.salesPerson, isAdmin: 'false' };
+  const sel = document.getElementById('repSelect').value;
+  return sel === '__all__' ? { salesPerson: '', isAdmin: 'true' } : { salesPerson: sel, isAdmin: 'false' };
+}
+
+async function loadTasks(){
+  const view = currentViewedRep();
+  try{
+    const r = await fetch('/api/rep/tasks?salesPerson='+encodeURIComponent(view.salesPerson)+'&isAdmin='+view.isAdmin);
+    const d = await r.json();
+    tasksData = d.tasks || [];
+    renderTasks();
+  }catch(e){
+    document.getElementById('tasksSection').innerHTML = '<div class="card"><div class="empty-state">Could not load tasks.</div></div>';
+  }
+}
+
+function renderTasks(){
+  const isAdminAllView = session.role==='Admin' && document.getElementById('repSelect').value==='__all__';
+  const cardsHtml = tasksData.length
+    ? tasksData.map(taskCardHtml).join('')
+    : '<div class="empty-state">No tasks assigned right now.</div>';
+
+  const newTaskFormHtml = session.role==='Admin' ? (
+    '<button class="toggle-form-btn" onclick="toggleNewTaskForm()">'+(showNewTaskForm?'Cancel':'+ Assign a New Task')+'</button>' +
+    (showNewTaskForm ? newTaskFormHtmlBuilder() : '')
+  ) : '';
+
+  document.getElementById('tasksSection').innerHTML =
+    '<div class="card">' +
+      '<div class="card-title">'+(isAdminAllView?'All Rep Tasks':'My Tasks')+'</div>' +
+      cardsHtml +
+      newTaskFormHtml +
+    '</div>';
+}
+
+function taskCardHtml(t){
+  const isAdminAllView = session.role==='Admin' && document.getElementById('repSelect').value==='__all__';
+  return '<div class="task-card'+(t.completed?' completed':'')+'">' +
+    '<div class="task-top">' +
+      '<div><div class="task-name'+(t.completed?' done':'')+'">'+t.name+'</div><div class="task-meta">Started '+(t.startedDate||'-')+(t.completed?' · Completed '+t.completedDate:'')+'</div></div>' +
+      (isAdminAllView ? '<span class="task-rep-badge">'+t.salesPerson+'</span>' : '') +
+    '</div>' +
+    (t.description ? '<div class="task-desc">'+t.description+'</div>' : '') +
+    (t.definitionOfDone ? '<div class="task-dod"><b>What finishing looks like</b>'+t.definitionOfDone+'</div>' : '') +
+    (t.completed
+      ? '<span class="task-done-chip">✓ Marked complete</span>'
+      : '<div class="task-controls">' +
+          '<select class="task-progress-select" id="progress-'+t.id+'" onchange="updateTaskProgress(\''+t.id+'\')">' +
+            ['Not Started','In Progress','Nearly Done','Done'].map(function(p){return '<option'+(p===t.progress?' selected':'')+'>'+p+'</option>';}).join('') +
+          '</select>' +
+          '<input class="task-notes-input" id="notes-'+t.id+'" placeholder="Add a quick progress note..." value="'+(t.progressNotes||'').replace(/"/g,'&quot;')+'" onblur="updateTaskProgress(\''+t.id+'\')">' +
+          '<button class="task-complete-btn" onclick="completeTask(\''+t.id+'\')">Mark Complete</button>' +
+        '</div>') +
+  '</div>';
+}
+
+async function updateTaskProgress(taskId){
+  const progress = document.getElementById('progress-'+taskId).value;
+  const progressNotes = document.getElementById('notes-'+taskId).value;
+  try{
+    await fetch('/api/rep/tasks/progress',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({taskId:taskId,progress:progress,progressNotes:progressNotes})});
+    const t = tasksData.find(function(x){return x.id===taskId;});
+    if(t){ t.progress = progress; t.progressNotes = progressNotes; }
+  }catch(e){ alert('Could not save. Try again.'); }
+}
+
+async function completeTask(taskId){
+  if(!confirm('Mark this task complete?')) return;
+  try{
+    const r = await fetch('/api/rep/tasks/complete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({taskId:taskId})});
+    const d = await r.json();
+    const t = tasksData.find(function(x){return x.id===taskId;});
+    if(t){ t.completed = true; t.completedDate = d.completedDate; t.progress = 'Done'; }
+    renderTasks();
+  }catch(e){ alert('Could not save. Try again.'); }
+}
+
+function toggleNewTaskForm(){
+  showNewTaskForm = !showNewTaskForm;
+  if(showNewTaskForm) newTaskAssignees = new Set();
+  renderTasks();
+}
+
+function newTaskFormHtmlBuilder(){
+  return '<div class="new-task-form">' +
+    '<label>Task Name</label><input type="text" id="newTaskName" placeholder="e.g. Follow up with all Q3 quotes">' +
+    '<label>Description</label><textarea id="newTaskDesc" rows="2" placeholder="What is this task about?"></textarea>' +
+    '<label>What Finishing Looks Like</label><textarea id="newTaskDod" rows="2" placeholder="How will we know it is done?"></textarea>' +
+    '<label>Assign To</label>' +
+    '<div class="assignee-row">' +
+      ALL_REPS.map(function(r){return '<button type="button" class="assignee-chip" id="assignee-'+r.replace(/\s/g,'')+'" onclick="toggleAssignee(\''+r+'\')">'+r+'</button>';}).join('') +
+      '<button type="button" class="assignee-chip" onclick="selectAllAssignees()">Everyone</button>' +
+    '</div>' +
+    '<button class="new-task-btn" onclick="submitNewTask()">Assign Task</button>' +
+  '</div>';
+}
+
+function toggleAssignee(rep){
+  if(newTaskAssignees.has(rep)) newTaskAssignees.delete(rep); else newTaskAssignees.add(rep);
+  const el = document.getElementById('assignee-'+rep.replace(/\s/g,''));
+  if(el) el.classList.toggle('selected', newTaskAssignees.has(rep));
+}
+function selectAllAssignees(){
+  ALL_REPS.forEach(function(r){ newTaskAssignees.add(r); const el = document.getElementById('assignee-'+r.replace(/\s/g,'')); if(el) el.classList.add('selected'); });
+}
+
+async function submitNewTask(){
+  const taskName = document.getElementById('newTaskName').value.trim();
+  const description = document.getElementById('newTaskDesc').value.trim();
+  const definitionOfDone = document.getElementById('newTaskDod').value.trim();
+  if(!taskName){ alert('Give the task a name.'); return; }
+  if(!newTaskAssignees.size){ alert('Pick at least one rep to assign this to.'); return; }
+  try{
+    const r = await fetch('/api/rep/tasks/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({taskName:taskName,description:description,definitionOfDone:definitionOfDone,assignTo:Array.from(newTaskAssignees)})});
+    const d = await r.json();
+    if(!d.ok){ alert(d.error||'Could not create task'); return; }
+    showNewTaskForm = false;
+    await loadTasks();
+  }catch(e){ alert('Could not create task. Try again.'); }
 }
 
 function renderPayoutSection(){
