@@ -131,6 +131,19 @@
   .rep-payout-row:last-child{border-bottom:none;}
 
   .empty-state{text-align:center;color:var(--subtle);font-size:13px;padding:20px 0;}
+  .toast{background:var(--navy);color:#fff;padding:12px 18px;border-radius:10px;font-size:13.5px;font-weight:600;box-shadow:0 8px 24px rgba(27,42,74,.25);animation:toastIn .25s ease-out;max-width:320px;}
+  .toast.error{background:var(--red);}
+  .toast.success{background:var(--green);}
+  @keyframes toastIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  .celebrate-burst{position:fixed;inset:0;pointer-events:none;z-index:700;display:flex;align-items:center;justify-content:center;}
+  .celebrate-burst span{font-size:60px;animation:burstPop .7s ease-out forwards;}
+  @keyframes burstPop{0%{transform:scale(0.3);opacity:0;}40%{transform:scale(1.15);opacity:1;}100%{transform:scale(1);opacity:0;}}
+  .metric-card.clickable{cursor:pointer;transition:transform .12s, box-shadow .12s;}
+  .metric-card.clickable:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(27,42,74,.1);}
+  .month-detail{margin-top:10px;padding:12px 14px;background:var(--bg);border-radius:10px;font-size:12.5px;}
+  .month-detail-row{display:flex;justify-content:space-between;padding:4px 0;}
+  .month-detail-close{font-size:11.5px;color:var(--muted);cursor:pointer;text-align:right;display:block;margin-top:6px;}
+  .trend-bar-wrap{cursor:pointer;}
   .task-card{border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin-bottom:10px;}
   .task-card.completed{background:#F6FDFA;border-color:#B8EDD8;}
   .task-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
@@ -185,6 +198,22 @@
       <button class="login-btn" onclick="doLogin()">Log In</button>
       <div class="login-error" id="loginError"></div>
     </div>
+    <div id="stepSetup" style="display:none;">
+      <div class="login-title">Set Up Your Password</div>
+      <div class="login-sub">First time here -- pick a password only you know. You'll use this to log in every time after.</div>
+      <div class="login-back" onclick="backToPick()">← Not you? Choose again</div>
+      <div class="selected-rep-chip" id="selectedRepChipSetup"></div>
+      <div class="login-field">
+        <label>Your Name</label>
+        <input type="text" id="setupName" placeholder="Jane Doe">
+      </div>
+      <div class="login-field">
+        <label>New Password</label>
+        <input type="password" id="setupPassword" placeholder="At least 4 characters" onkeydown="if(event.key==='Enter')doSetup()">
+      </div>
+      <button class="login-btn" onclick="doSetup()">Create My Password</button>
+      <div class="login-error" id="setupError"></div>
+    </div>
   </div>
 </div>
 
@@ -212,6 +241,8 @@
   </div>
 </div>
 
+<div id="toastContainer" style="position:fixed;bottom:20px;right:20px;z-index:600;display:flex;flex-direction:column;gap:8px;"></div>
+
 <script>
 let session = null;
 let selectedRepForLogin = null;
@@ -221,28 +252,93 @@ let clientSort = 'revenue12mo';
 let expandedClients = new Set();
 let noteDrafts = {};
 let autoRefreshTimer = null;
+let expandedMonth = null;
 const ALL_REPS = ['Chaz Lucius','Bailey McGraw','Jess Miller','Nick Miller','George Miller','Caitlin Hargraves','Bryce','Tucker'];
+
+function showRepToast(msg, type){
+  const container = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = 'toast'+(type?' '+type:'');
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(function(){ el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(function(){ el.remove(); }, 300); }, 2800);
+}
+
+function celebrate(emoji){
+  const el = document.createElement('div');
+  el.className = 'celebrate-burst';
+  el.innerHTML = '<span>'+(emoji||'🎉')+'</span>';
+  document.body.appendChild(el);
+  setTimeout(function(){ el.remove(); }, 700);
+}
 
 function renderRepPicker(){
   const grid = document.getElementById('repPickGrid');
   grid.innerHTML = ALL_REPS.map(r=>'<button class="rep-pick-btn" onclick="pickRep(\''+r+'\')">'+r+'</button>').join('')
     + '<button class="rep-pick-btn admin" onclick="pickRep(\'Admin\')">Admin / Owner</button>';
 }
-function pickRep(rep){
+async function pickRep(rep){
   selectedRepForLogin = rep;
   document.getElementById('stepPick').style.display='none';
-  document.getElementById('stepPassword').style.display='block';
-  document.getElementById('selectedRepChip').textContent = rep;
-  document.getElementById('loginPassword').value='';
-  document.getElementById('loginError').textContent='';
-  document.getElementById('loginPassword').focus();
+
+  if(rep === 'Admin'){
+    document.getElementById('stepPassword').style.display='block';
+    document.getElementById('selectedRepChip').textContent = rep;
+    document.getElementById('loginPassword').value='';
+    document.getElementById('loginError').textContent='';
+    document.getElementById('loginPassword').focus();
+    return;
+  }
+
+  // Check whether this rep has ever set a password. First time here -> straight to setup,
+  // no confusing "incorrect password" dead end.
+  try{
+    const r = await fetch('/api/rep/check-exists?salesPerson='+encodeURIComponent(rep));
+    const d = await r.json();
+    if(d.exists){
+      document.getElementById('stepPassword').style.display='block';
+      document.getElementById('selectedRepChip').textContent = rep;
+      document.getElementById('loginPassword').value='';
+      document.getElementById('loginError').textContent='';
+      document.getElementById('loginPassword').focus();
+    } else {
+      document.getElementById('stepSetup').style.display='block';
+      document.getElementById('selectedRepChipSetup').textContent = rep;
+      document.getElementById('setupName').value = rep;
+      document.getElementById('setupPassword').value='';
+      document.getElementById('setupError').textContent='';
+      document.getElementById('setupPassword').focus();
+    }
+  }catch(e){
+    // If the check fails for any reason, fall back to the normal password screen --
+    // doLogin's own error handling still covers the "no account yet" case.
+    document.getElementById('stepPassword').style.display='block';
+    document.getElementById('selectedRepChip').textContent = rep;
+  }
 }
 function backToPick(){
   selectedRepForLogin = null;
   document.getElementById('stepPassword').style.display='none';
+  document.getElementById('stepSetup').style.display='none';
   document.getElementById('stepPick').style.display='block';
 }
 renderRepPicker();
+
+async function doSetup(){
+  const name = document.getElementById('setupName').value.trim();
+  const password = document.getElementById('setupPassword').value;
+  const err = document.getElementById('setupError');
+  err.textContent = '';
+  if(!name){ err.textContent = 'Enter your name.'; return; }
+  if(!password || password.length < 4){ err.textContent = 'Password must be at least 4 characters.'; return; }
+  try{
+    const r = await fetch('/api/rep/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,salesPerson:selectedRepForLogin,password:password})});
+    const d = await r.json();
+    if(!d.ok){ err.textContent = d.error || 'Could not create password.'; return; }
+    session = { ok:true, repId:d.repId, name:name, role:'Sales Rep', salesPerson:selectedRepForLogin };
+    enterApp();
+  }catch(e){ err.textContent = 'Setup failed. Try again.'; }
+}
 
 async function doLogin(){
   const password = document.getElementById('loginPassword').value;
@@ -332,11 +428,11 @@ function renderDashboard(d){
   const trendHtml = allMonths.length ? (
     '<div class="card trend-card">' +
       '<div class="card-title">Revenue &amp; Commission Over Time</div>' +
-      '<div class="trend-legend"><span><span class="legend-dot" style="background:var(--border)"></span>Revenue</span><span><span class="legend-dot" style="background:var(--cyan)"></span>Commission</span></div>' +
+      '<div class="trend-legend"><span><span class="legend-dot" style="background:var(--border)"></span>Revenue</span><span><span class="legend-dot" style="background:var(--cyan)"></span>Commission</span><span style="color:var(--subtle)">(click a month for details)</span></div>' +
       '<div class="trend-row">' +
         allMonths.map(function(month){
           const rev = revByMonth[month]||0, comm = commByMonth[month]||0;
-          return '<div class="trend-bar-wrap">' +
+          return '<div class="trend-bar-wrap" onclick="toggleMonthDetail(\''+month+'\')">' +
             '<div class="trend-val" title="Revenue $'+rev.toFixed(0)+'">$'+comm.toFixed(0)+'</div>' +
             '<div class="trend-bar revenue" style="height:'+Math.max(2,(rev/maxTrend)*100)+'px;" title="Revenue: $'+rev.toFixed(2)+'"></div>' +
             '<div class="trend-bar commission" style="height:'+Math.max(2,(comm/maxTrend)*70)+'px;" title="Commission: $'+comm.toFixed(2)+'"></div>' +
@@ -344,6 +440,7 @@ function renderDashboard(d){
           '</div>';
         }).join('') +
       '</div>' +
+      (expandedMonth ? monthDetailHtml(expandedMonth, d) : '') +
     '</div>'
   ) : '';
 
@@ -387,12 +484,12 @@ function renderDashboard(d){
 
   document.getElementById('content').innerHTML =
     '<div class="metrics-grid">' +
-      '<div class="metric-card accent"><div class="metric-val">'+d.quotesMade+'</div><div class="metric-lbl">Quotes Made</div></div>' +
+      '<div class="metric-card accent clickable" onclick="jumpToQuotes()"><div class="metric-val">'+d.quotesMade+'</div><div class="metric-lbl">Quotes Made</div></div>' +
       '<div class="metric-card"><div class="metric-val">'+d.winRate+'%</div><div class="metric-lbl">Win Rate ('+d.quotesWon+' won / '+d.quotesLost+' lost)</div></div>' +
-      '<div class="metric-card"><div class="metric-val">$'+d.totalRevenue.toLocaleString()+'</div><div class="metric-lbl">Total Revenue (All Time)</div></div>' +
+      '<div class="metric-card clickable" onclick="sortClientsBy(\'totalRevenue\')"><div class="metric-val">$'+d.totalRevenue.toLocaleString()+'</div><div class="metric-lbl">Total Revenue (All Time)</div></div>' +
       '<div class="metric-card"><div class="metric-val">$'+d.totalCommission.toLocaleString()+'</div><div class="metric-lbl">Total Commission (All Time)</div></div>' +
       '<div class="metric-card"><div class="metric-val">$'+d.commissionPaid.toLocaleString()+'</div><div class="metric-lbl">Commission Paid Out</div></div>' +
-      '<div class="metric-card"><div class="metric-val">$'+d.commissionInvoicedAwaitingPayment.toLocaleString()+'</div><div class="metric-lbl">Invoiced, Awaiting Payment</div></div>' +
+      '<div class="metric-card clickable" onclick="sortClientsBy(\'commissionPending\')"><div class="metric-val">$'+d.commissionInvoicedAwaitingPayment.toLocaleString()+'</div><div class="metric-lbl">Invoiced, Awaiting Payment</div></div>' +
       '<div class="metric-card"><div class="metric-val">$'+d.commissionNotYetInvoiced.toLocaleString()+'</div><div class="metric-lbl">Not Yet Invoiced</div></div>' +
       '<div class="metric-card"><div class="metric-val">$'+d.thisMonthRevenue.toLocaleString()+'</div><div class="metric-lbl">This Month Revenue</div>'+deltaHtml(revDelta)+'</div>' +
       '<div class="metric-card"><div class="metric-val">$'+d.thisMonthCommission.toLocaleString()+'</div><div class="metric-lbl">This Month Commission</div>'+deltaHtml(commDelta)+'</div>' +
@@ -401,6 +498,47 @@ function renderDashboard(d){
 }
 
 function esc(s){ return String(s).replace(/'/g,"\\'"); }
+
+function toggleMonthDetail(month){
+  expandedMonth = expandedMonth === month ? null : month;
+  renderDashboard(dashboardData);
+}
+
+function monthDetailHtml(month, d){
+  const ordersInMonth = [];
+  (d.clients||[]).forEach(function(c){
+    (c.orders||[]).forEach(function(o){
+      if((o.date||'').slice(0,7) === month) ordersInMonth.push({client: c.name, date: o.date, revenue: o.revenue, commission: o.commission, status: o.invoiceStatus});
+    });
+  });
+  ordersInMonth.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  if(!ordersInMonth.length){
+    return '<div class="month-detail">No order-level detail available for '+month+'.<span class="month-detail-close" onclick="toggleMonthDetail(\''+month+'\')">Close</span></div>';
+  }
+  return '<div class="month-detail">' +
+    '<b>'+ordersInMonth.length+' order'+(ordersInMonth.length!==1?'s':'')+' in '+month+'</b>' +
+    ordersInMonth.map(function(o){
+      return '<div class="month-detail-row"><span>'+o.client+' · '+o.date+'</span><span>$'+o.revenue.toLocaleString()+' rev · $'+o.commission.toLocaleString()+' comm</span></div>';
+    }).join('') +
+    '<span class="month-detail-close" onclick="toggleMonthDetail(\''+month+'\')">Close</span>' +
+  '</div>';
+}
+
+function sortClientsBy(sortKey){
+  clientSort = sortKey;
+  renderDashboard(dashboardData);
+  setTimeout(function(){
+    const el = document.querySelector('.search-sort-row');
+    if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 50);
+}
+
+function jumpToQuotes(){
+  setTimeout(function(){
+    const heading = Array.from(document.querySelectorAll('.card-title')).find(function(el){return el.textContent.indexOf('Active Quotes')!==-1;});
+    if(heading) heading.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 50);
+}
 
 function clientCardHtml(c){
   const isOpen = expandedClients.has(c.name);
@@ -480,10 +618,11 @@ async function addNote(clientName){
   try{
     const r = await fetch('/api/rep/notes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({salesPerson:salesPerson,client:clientName,note:draft})});
     const d = await r.json();
-    if(!d.ok){ alert(d.error||'Could not save note'); return; }
+    if(!d.ok){ showRepToast(d.error||'Could not save note','error'); return; }
     noteDrafts[clientName].text = '';
     await loadDashboard();
-  }catch(e){ alert('Could not save note. Try again.'); }
+    showRepToast('Note saved','success');
+  }catch(e){ showRepToast('Could not save note. Try again.','error'); }
 }
 
 // ---- TASKS ----
@@ -556,7 +695,8 @@ async function updateTaskProgress(taskId){
     await fetch('/api/rep/tasks/progress',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({taskId:taskId,progress:progress,progressNotes:progressNotes})});
     const t = tasksData.find(function(x){return x.id===taskId;});
     if(t){ t.progress = progress; t.progressNotes = progressNotes; }
-  }catch(e){ alert('Could not save. Try again.'); }
+    showRepToast('Progress saved','success');
+  }catch(e){ showRepToast('Could not save. Try again.','error'); }
 }
 
 async function completeTask(taskId){
@@ -567,7 +707,9 @@ async function completeTask(taskId){
     const t = tasksData.find(function(x){return x.id===taskId;});
     if(t){ t.completed = true; t.completedDate = d.completedDate; t.progress = 'Done'; }
     renderTasks();
-  }catch(e){ alert('Could not save. Try again.'); }
+    celebrate('🎉');
+    showRepToast('Nice work -- task complete!','success');
+  }catch(e){ showRepToast('Could not save. Try again.','error'); }
 }
 
 function toggleNewTaskForm(){
@@ -603,15 +745,16 @@ async function submitNewTask(){
   const taskName = document.getElementById('newTaskName').value.trim();
   const description = document.getElementById('newTaskDesc').value.trim();
   const definitionOfDone = document.getElementById('newTaskDod').value.trim();
-  if(!taskName){ alert('Give the task a name.'); return; }
-  if(!newTaskAssignees.size){ alert('Pick at least one rep to assign this to.'); return; }
+  if(!taskName){ showRepToast('Give the task a name.','error'); return; }
+  if(!newTaskAssignees.size){ showRepToast('Pick at least one rep to assign this to.','error'); return; }
   try{
     const r = await fetch('/api/rep/tasks/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({taskName:taskName,description:description,definitionOfDone:definitionOfDone,assignTo:Array.from(newTaskAssignees)})});
     const d = await r.json();
-    if(!d.ok){ alert(d.error||'Could not create task'); return; }
+    if(!d.ok){ showRepToast(d.error||'Could not create task','error'); return; }
     showNewTaskForm = false;
     await loadTasks();
-  }catch(e){ alert('Could not create task. Try again.'); }
+    showRepToast('Task assigned to '+newTaskAssignees.size+' rep'+(newTaskAssignees.size!==1?'s':''),'success');
+  }catch(e){ showRepToast('Could not create task. Try again.','error'); }
 }
 
 function renderPayoutSection(){

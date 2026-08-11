@@ -734,6 +734,20 @@ app.post('/api/rep/login', async (req, res) => {
   }
 });
 
+app.get('/api/rep/check-exists', async (req, res) => {
+  try {
+    const { salesPerson } = req.query;
+    if (!salesPerson) return res.status(400).json({ error: 'salesPerson required' });
+    const query = `{boards(ids:[${REP_BOARD_ID}]){items_page(limit:100){items{id column_values(ids:["text_mm6380j8"]){text}}}}}`;
+    const data = await mondayQuery(query);
+    const items = data.data?.boards?.[0]?.items_page?.items || [];
+    const exists = items.some(i => (i.column_values?.[0]?.text || '').toLowerCase() === salesPerson.toLowerCase());
+    res.json({ exists });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/rep/signup', async (req, res) => {
   try {
     const { name, salesPerson, password } = req.body;
