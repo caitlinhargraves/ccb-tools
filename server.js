@@ -16,6 +16,7 @@ const PRODUCTS_SUB_BOARD_ID = '18407165552';
 const QUOTES_BOARD_ID = '18425958662';
 const QUOTES_SUB_BOARD_ID = '18425958868';
 const REP_BOARD_ID = '18425958984';
+const CLIENT_NOTES_BOARD_ID = '18426058971';
 const CCB_EMAIL = 'info@ccbimprint.com';
 const pricing = require('./pricing-engine');
 const cryptoAuth = require('crypto');
@@ -708,8 +709,9 @@ app.post('/api/download-zip', async (req, res) => {
 // ============================================================
 app.post('/api/rep/login', async (req, res) => {
   try {
-    const { password } = req.body;
+    const { password, selectedRep } = req.body;
     if (!password) return res.status(400).json({ error: 'Password required' });
+    if (!selectedRep) return res.status(400).json({ error: 'Select who you are first' });
     const hash = hashRepPassword(password);
     const query = `{boards(ids:[${REP_BOARD_ID}]){items_page(limit:100){items{id name column_values{id text value}}}}}`;
     const data = await mondayQuery(query);
@@ -717,17 +719,14 @@ app.post('/api/rep/login', async (req, res) => {
     for (const item of items) {
       const cv = {};
       item.column_values.forEach(c => cv[c.id] = c.text);
-      if (cv['text_mm63mwrn'] === hash && cv['color_mm635y4q'] === 'Active') {
-        return res.json({
-          ok: true,
-          repId: item.id,
-          name: item.name,
-          role: cv['color_mm63fnqv'] || 'Sales Rep',
-          salesPerson: cv['text_mm6380j8'] || ''
-        });
+      const role = cv['color_mm63fnqv'] || 'Sales Rep';
+      const salesPerson = cv['text_mm6380j8'] || '';
+      const isMatch = role === 'Admin' ? selectedRep === 'Admin' : salesPerson === selectedRep;
+      if (isMatch && cv['text_mm63mwrn'] === hash && cv['color_mm635y4q'] === 'Active') {
+        return res.json({ ok: true, repId: item.id, name: item.name, role, salesPerson });
       }
     }
-    res.json({ ok: false, error: 'Incorrect password' });
+    res.json({ ok: false, error: 'That password does not match the selected rep.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1065,11 +1064,15 @@ app.post('/api/quote/promote', async (req, res) => {
 app.get('/api/rep/dashboard', async (req, res) => {
   try {
     const { salesPerson, isAdmin } = req.query;
+    // Always pulled live from Monday on every request -- no server-side caching here,
+    // so the numbers reflect whatever is on the boards at this exact moment.
     const quoteQuery = `{boards(ids:[${QUOTES_BOARD_ID}]){items_page(limit:200){items{id name group{id title} column_values{id text}}}}}`;
     const orderQuery = `{boards(ids:[${ORDERS_BOARD_ID}]){items_page(limit:500){items{id name column_values{id text}}}}}`;
-    const [quoteData, orderData] = await Promise.all([mondayQuery(quoteQuery), mondayQuery(orderQuery)]);
+    const notesQuery = `{boards(ids:[${CLIENT_NOTES_BOARD_ID}]){items_page(limit:500){items{id name column_values{id text}}}}}`;
+    const [quoteData, orderData, notesData] = await Promise.all([mondayQuery(quoteQuery), mondayQuery(orderQuery), mondayQuery(notesQuery)]);
     const allQuotes = quoteData.data?.boards?.[0]?.items_page?.items || [];
     const allOrders = orderData.data?.boards?.[0]?.items_page?.items || [];
+    const allNotes = notesData.data?.boards?.[0]?.items_page?.items || [];
 
     const matchesRep = (cvArr, colId) => {
       const val = cvArr.find(c => c.id === colId)?.text || '';
@@ -1078,41 +1081,84 @@ app.get('/api/rep/dashboard', async (req, res) => {
 
     const myQuotes = allQuotes.filter(q => matchesRep(q.column_values, 'dropdown_mm63w1e'));
     const myOrders = allOrders.filter(o => matchesRep(o.column_values, 'dropdown_mm22w5rr'));
+    const myNotes = allNotes.filter(n => {
+      const cv = {}; n.column_values.forEach(c => cv[c.id] = c.text);
+      return isAdmin === 'true' || cv['dropdown_mm64sdqh'] === salesPerson;
+    });
 
     const quotesMade = myQuotes.length;
     const quotesWon = myQuotes.filter(q => q.group?.title?.includes('Won')).length;
     const quotesLost = myQuotes.filter(q => q.group?.title?.includes('Lost')).length;
+    const quotesActive = myQuotes.filter(q => q.group?.title === 'Active Quotes');
     const winRate = quotesMade > 0 ? quotesWon / quotesMade : 0;
+
+    const activeQuotesList = quotesActive.map(q => {
+      const cv = {}; q.column_values.forEach(c => cv[c.id] = c.text);
+      return {
+        id: q.id,
+        client: q.name,
+        totalRevenue: parseFloat(cv['numeric_mm63wrys']) || 0,
+        commissionAmount: parseFloat(cv['numeric_mm6381qx']) || 0,
+        quoteDate: cv['date_mm63wc7v'] || '',
+        status: cv['color_mm63qxwk'] || 'Draft',
+      };
+    }).sort((a, b) => (b.quoteDate || '').localeCompare(a.quoteDate || ''));
 
     let totalRevenue = 0, totalCommission = 0, commissionPaid = 0, commissionPending = 0;
     const byClient = {};
-    const byMonth = {};
+    const byMonthCommission = {};
+    const byMonthRevenue = {};
     const now = Date.now(); const yearMs = 365 * 24 * 60 * 60 * 1000;
+    const thisMonthKey = new Date().toISOString().slice(0, 7);
+    const lastMonthDate = new Date(); lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
+    const lastMonthKey = lastMonthDate.toISOString().slice(0, 7);
 
     for (const o of myOrders) {
       const cv = {}; o.column_values.forEach(c => cv[c.id] = c.text);
       const rev = parseFloat(cv['numeric_mm4wv7sc']) || 0;
+      const gp = parseFloat(cv['numeric_mm4wyq9k']) || 0;
       const comm = parseFloat(cv['numeric_mm4w38cv']) || 0;
-      totalRevenue += rev;
-      totalCommission += comm;
       const invStatus = cv['color_mm282b4b'];
       const datePaid = cv['date_mm63ydka'];
+      const orderDate = cv['date4'] || '';
+      totalRevenue += rev;
+      totalCommission += comm;
       if (invStatus === 'Paid') commissionPaid += comm; else commissionPending += comm;
 
-      const trendDateStr = datePaid || cv['date4']; // paid date if paid, else order date as a placeholder
+      const trendDateStr = datePaid || orderDate;
       if (trendDateStr) {
-        const monthKey = trendDateStr.slice(0, 7); // YYYY-MM
-        byMonth[monthKey] = (byMonth[monthKey] || 0) + (invStatus === 'Paid' ? comm : 0);
+        const monthKey = trendDateStr.slice(0, 7);
+        byMonthCommission[monthKey] = (byMonthCommission[monthKey] || 0) + (invStatus === 'Paid' ? comm : 0);
+      }
+      if (orderDate) {
+        const monthKey = orderDate.slice(0, 7);
+        byMonthRevenue[monthKey] = (byMonthRevenue[monthKey] || 0) + rev;
       }
 
       const client = o.name;
-      if (!byClient[client]) byClient[client] = { revenue12mo: 0, totalRevenue: 0, commissionAccrued: 0, commissionPaid: 0 };
+      if (!byClient[client]) byClient[client] = { revenue12mo: 0, totalRevenue: 0, commissionAccrued: 0, commissionPaid: 0, orders: [] };
       byClient[client].totalRevenue += rev;
       byClient[client].commissionAccrued += comm;
       if (invStatus === 'Paid') byClient[client].commissionPaid += comm;
-      const dateStr = cv['date4'];
-      if (dateStr) { const d = new Date(dateStr).getTime(); if (!isNaN(d) && (now - d) <= yearMs) byClient[client].revenue12mo += rev; }
+      if (orderDate) { const d = new Date(orderDate).getTime(); if (!isNaN(d) && (now - d) <= yearMs) byClient[client].revenue12mo += rev; }
+      byClient[client].orders.push({
+        id: o.id, date: orderDate, revenue: Math.round(rev * 100) / 100, grossProfit: Math.round(gp * 100) / 100,
+        commission: Math.round(comm * 100) / 100, invoiceStatus: invStatus || 'Not Invoiced', datePaid: datePaid || null,
+      });
     }
+
+    // Attach notes to their client (kept forever -- notes are never deleted by this app)
+    const notesByClient = {};
+    for (const n of myNotes) {
+      const cv = {}; n.column_values.forEach(c => cv[c.id] = c.text);
+      const client = n.name;
+      if (!notesByClient[client]) notesByClient[client] = [];
+      notesByClient[client].push({
+        id: n.id, note: cv['long_text_mm64gerz'] || '', date: cv['date_mm64h5jy'] || '',
+        loggedAt: cv['text_mm645vgh'] || '', salesPerson: cv['dropdown_mm64sdqh'] || '',
+      });
+    }
+    for (const client in notesByClient) notesByClient[client].sort((a, b) => (b.loggedAt || '').localeCompare(a.loggedAt || ''));
 
     const clients = Object.entries(byClient).map(([name, v]) => ({
       name,
@@ -1123,18 +1169,66 @@ app.get('/api/rep/dashboard', async (req, res) => {
       commissionPending: Math.round((v.commissionAccrued - v.commissionPaid) * 100) / 100,
       loyaltyPct: Math.min(100, Math.round((v.revenue12mo / 50000) * 100)),
       loyaltyUnlocked: v.revenue12mo >= 50000,
+      dollarsToLoyalty: Math.max(0, Math.round((50000 - v.revenue12mo) * 100) / 100),
+      orderCount: v.orders.length,
+      orders: v.orders.sort((a, b) => (b.date || '').localeCompare(a.date || '')),
+      notes: notesByClient[name] || [],
+      lastOrderDate: v.orders.reduce((max, o) => (o.date || '') > max ? (o.date || '') : max, ''),
     })).sort((a, b) => b.revenue12mo - a.revenue12mo);
 
+    // Clients with notes but zero orders on file still deserve a place in the notes UI
+    for (const clientName in notesByClient) {
+      if (!byClient[clientName]) {
+        clients.push({
+          name: clientName, revenue12mo: 0, totalRevenue: 0, commissionAccrued: 0, commissionPaid: 0,
+          commissionPending: 0, loyaltyPct: 0, loyaltyUnlocked: false, dollarsToLoyalty: 50000,
+          orderCount: 0, orders: [], notes: notesByClient[clientName], lastOrderDate: '',
+        });
+      }
+    }
+
     res.json({
+      generatedAt: new Date().toISOString(),
       quotesMade, quotesWon, quotesLost, winRate: Math.round(winRate * 1000) / 10,
       totalRevenue: Math.round(totalRevenue * 100) / 100,
       totalCommission: Math.round(totalCommission * 100) / 100,
       commissionPaid: Math.round(commissionPaid * 100) / 100,
       commissionPending: Math.round(commissionPending * 100) / 100,
+      thisMonthRevenue: Math.round((byMonthRevenue[thisMonthKey] || 0) * 100) / 100,
+      lastMonthRevenue: Math.round((byMonthRevenue[lastMonthKey] || 0) * 100) / 100,
+      thisMonthCommission: Math.round((byMonthCommission[thisMonthKey] || 0) * 100) / 100,
+      lastMonthCommission: Math.round((byMonthCommission[lastMonthKey] || 0) * 100) / 100,
       clients,
-      monthlyCommission: Object.entries(byMonth).sort((a, b) => a[0].localeCompare(b[0])).map(([month, amt]) => ({ month, amount: Math.round(amt * 100) / 100 })),
-      activeQuotes: myQuotes.filter(q => q.group?.title === 'Active Quotes').length,
+      activeQuotesList,
+      monthlyCommission: Object.entries(byMonthCommission).sort((a, b) => a[0].localeCompare(b[0])).map(([month, amt]) => ({ month, amount: Math.round(amt * 100) / 100 })),
+      monthlyRevenue: Object.entries(byMonthRevenue).sort((a, b) => a[0].localeCompare(b[0])).map(([month, amt]) => ({ month, amount: Math.round(amt * 100) / 100 })),
+      activeQuotes: quotesActive.length,
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// CLIENT NOTES -- permanent, timestamped call/conversation
+// recaps per client. Never deleted by this app; add-only.
+// ============================================================
+app.post('/api/rep/notes', async (req, res) => {
+  try {
+    const { salesPerson, client, note } = req.body;
+    if (!salesPerson || !client || !note) return res.status(400).json({ error: 'salesPerson, client, and note are required' });
+    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date().toISOString();
+    const cv = {
+      'dropdown_mm64sdqh': { labels: [salesPerson] },
+      'long_text_mm64gerz': note,
+      'date_mm64h5jy': { date: today },
+      'text_mm645vgh': now,
+    };
+    const mutation = `mutation { create_item(board_id: ${CLIENT_NOTES_BOARD_ID}, item_name: ${JSON.stringify(client)}, column_values: ${JSON.stringify(JSON.stringify(cv))}, create_labels_if_missing: true) { id } }`;
+    const result = await mondayQuery(mutation);
+    if (result.errors) return res.status(400).json({ error: result.errors[0].message });
+    res.json({ ok: true, noteId: result.data.create_item.id, date: today, loggedAt: now });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

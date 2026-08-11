@@ -13,55 +13,105 @@
   *{margin:0;padding:0;box-sizing:border-box;}
   body{background:var(--bg);color:var(--navy);font-family:'Inter',sans-serif;min-height:100vh;font-size:15px;line-height:1.6;}
 
-  #loginGate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:500;}
-  .login-card{background:var(--white);border-radius:18px;padding:36px 32px;width:100%;max-width:340px;box-shadow:0 12px 40px rgba(27,42,74,.14);}
+  #loginGate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
+  .login-card{background:var(--white);border-radius:18px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 12px 40px rgba(27,42,74,.14);}
   .login-title{font-size:20px;font-weight:800;margin-bottom:4px;}
   .login-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+  .rep-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+  .rep-pick-btn{padding:12px 10px;border:1.5px solid var(--border2);border-radius:10px;background:var(--bg);font-size:13.5px;font-weight:600;color:var(--navy);cursor:pointer;text-align:center;}
+  .rep-pick-btn:hover{border-color:var(--cyan);background:#EBF8FF;}
+  .rep-pick-btn.admin{grid-column:1/-1;background:#FDEEF6;border-color:#F8C7E3;color:#C2077A;}
   .login-field{margin-bottom:12px;}
   .login-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;}
   .login-field input{width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:9px;font-size:14px;font-family:'Inter',sans-serif;background:var(--bg);}
   .login-field input:focus{outline:none;border-color:var(--cyan);background:var(--white);}
   .login-btn{width:100%;padding:11px;border:none;border-radius:9px;background:var(--navy);color:#fff;font-weight:700;font-size:14px;cursor:pointer;margin-top:6px;}
+  .login-back{font-size:12.5px;color:var(--muted);cursor:pointer;margin-bottom:14px;display:inline-block;}
   .login-error{font-size:12.5px;color:var(--red);margin-top:8px;min-height:16px;}
+  .selected-rep-chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);padding:6px 12px;border-radius:20px;font-weight:700;font-size:13.5px;margin-bottom:16px;}
 
   #app{display:none;}
-  .header{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(27,42,74,.06);}
+  .header{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(27,42,74,.06);flex-wrap:wrap;gap:8px;}
   .header-left{display:flex;align-items:center;gap:14px;}
   .page-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
   .rep-chip{font-size:12px;font-weight:600;color:var(--navy);background:var(--bg);padding:5px 10px;border-radius:20px;}
-  .back-btn,.logout-btn{background:none;border:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'Inter',sans-serif;}
-  .back-btn:hover,.logout-btn:hover{color:var(--navy);}
+  .back-btn,.logout-btn,.refresh-btn{background:none;border:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'Inter',sans-serif;}
+  .back-btn:hover,.logout-btn:hover,.refresh-btn:hover{color:var(--navy);}
+  .refresh-btn{display:flex;align-items:center;gap:5px;}
   .rep-select{padding:6px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;background:var(--white);}
+  .freshness{font-size:11px;color:var(--subtle);}
+  .freshness.stale{color:var(--red);font-weight:600;}
 
-  .page-wrap{max-width:900px;margin:0 auto;padding:24px 18px 80px;}
+  .page-wrap{max-width:960px;margin:0 auto;padding:20px 18px 80px;}
   .page-title{font-size:24px;font-weight:800;margin-bottom:2px;}
-  .page-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+  .page-sub{font-size:13px;color:var(--muted);margin-bottom:18px;}
 
-  .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+  .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;}
   .metric-card{background:var(--white);border:1px solid var(--border2);border-radius:14px;padding:16px 18px;}
   .metric-val{font-size:24px;font-weight:800;color:var(--navy);}
   .metric-lbl{font-size:11.5px;color:var(--muted);margin-top:2px;}
   .metric-card.accent{border-color:var(--cyan);background:linear-gradient(135deg,#F0FAFF 0%,#fff 60%);}
+  .metric-delta{font-size:11px;font-weight:700;margin-top:4px;}
+  .metric-delta.up{color:var(--green);}
+  .metric-delta.down{color:var(--red);}
 
   .card{background:var(--white);border:1px solid var(--border2);border-radius:14px;padding:20px 22px;margin-bottom:16px;}
-  .card-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--subtle);margin-bottom:14px;}
+  .card-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--subtle);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
 
-  .client-row{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border2);}
-  .client-row:last-child{border-bottom:none;}
+  .search-sort-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .search-input{flex:1;min-width:160px;padding:8px 12px;border:1.5px solid var(--border2);border-radius:8px;font-size:13.5px;font-family:'Inter',sans-serif;}
+  .sort-select{padding:8px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;background:var(--white);}
+
+  .client-card{border:1px solid var(--border2);border-radius:12px;margin-bottom:10px;overflow:hidden;}
+  .client-hdr{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr auto;gap:12px;align-items:center;padding:12px 14px;cursor:pointer;background:var(--bg);}
   .client-name{font-weight:700;font-size:14px;}
-  .loyalty-bar-track{height:8px;background:var(--bg);border-radius:20px;overflow:hidden;margin-top:5px;}
+  .client-sub{font-size:11px;color:var(--muted);}
+  .loyalty-bar-track{height:7px;background:var(--white);border-radius:20px;overflow:hidden;margin-top:4px;}
   .loyalty-bar-fill{height:100%;background:var(--cyan);border-radius:20px;}
   .loyalty-bar-fill.unlocked{background:var(--green);}
-  .loyalty-label{font-size:11px;color:var(--muted);margin-top:3px;}
+  .loyalty-label{font-size:10.5px;color:var(--muted);margin-top:3px;}
   .client-num{font-size:13.5px;font-weight:700;}
-  .client-sub{font-size:11px;color:var(--muted);}
-  .col-hdr{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--subtle);padding-bottom:8px;border-bottom:1.5px solid var(--border2);}
+  .col-hdr{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--subtle);}
+  .client-chevron{font-size:12px;color:var(--subtle);transition:transform .15s;}
+  .client-card.open .client-chevron{transform:rotate(180deg);}
+  .client-body{display:none;padding:16px;border-top:1px solid var(--border2);}
+  .client-card.open .client-body{display:block;}
 
-  .trend-row{display:flex;align-items:flex-end;gap:8px;height:120px;padding-top:10px;}
-  .trend-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;}
-  .trend-bar{width:100%;max-width:36px;background:var(--cyan);border-radius:6px 6px 0 0;min-height:2px;}
-  .trend-val{font-size:10.5px;font-weight:700;margin-bottom:4px;}
+  .subtab-row{display:flex;gap:6px;margin-bottom:12px;}
+  .subtab-btn{padding:6px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--white);font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;}
+  .subtab-btn.active{border-color:var(--navy);background:var(--navy);color:#fff;}
+
+  .order-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:8px;padding:8px 0;border-bottom:1px solid var(--border2);font-size:12.5px;}
+  .order-row:last-child{border-bottom:none;}
+  .status-chip{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;}
+  .status-chip.paid{background:#E6FBF3;color:#00805A;}
+  .status-chip.pending{background:#FFF6E0;color:#946200;}
+
+  .note-item{padding:10px 0;border-bottom:1px solid var(--border2);}
+  .note-item:last-child{border-bottom:none;}
+  .note-date{font-size:11px;font-weight:700;color:var(--subtle);margin-bottom:3px;}
+  .note-text{font-size:13px;color:var(--body);white-space:pre-wrap;}
+  .note-add{margin-top:10px;}
+  .note-textarea{width:100%;min-height:70px;padding:10px 12px;border:1.5px solid var(--border2);border-radius:9px;font-size:13px;font-family:'Inter',sans-serif;resize:vertical;}
+  .note-add-btn{margin-top:8px;padding:8px 16px;border:none;border-radius:8px;background:var(--cyan);color:#fff;font-weight:700;font-size:12.5px;cursor:pointer;}
+  .note-add-btn:disabled{opacity:.5;cursor:not-allowed;}
+  .no-notes{font-size:12.5px;color:var(--subtle);padding:6px 0;}
+
+  .quote-row{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:10px;padding:10px 0;border-bottom:1px solid var(--border2);align-items:center;font-size:13px;}
+  .quote-row:last-child{border-bottom:none;}
+  .quote-status-chip{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--bg);color:var(--muted);display:inline-block;}
+
+  .trend-card{overflow-x:auto;}
+  .trend-row{display:flex;align-items:flex-end;gap:10px;height:140px;padding-top:10px;min-width:320px;}
+  .trend-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:28px;}
+  .trend-bar{width:100%;max-width:32px;border-radius:6px 6px 0 0;min-height:2px;cursor:default;}
+  .trend-bar.commission{background:var(--cyan);}
+  .trend-bar.revenue{background:var(--border);margin-bottom:2px;}
+  .trend-val{font-size:10px;font-weight:700;margin-bottom:4px;}
   .trend-month{font-size:10px;color:var(--muted);margin-top:6px;}
+  .trend-legend{display:flex;gap:14px;font-size:11px;color:var(--muted);margin-bottom:6px;}
+  .trend-legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend-dot{width:9px;height:9px;border-radius:2px;display:inline-block;}
 
   .payout-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:16px;}
   .payout-grid input{padding:8px 11px;border:1.5px solid var(--border2);border-radius:8px;font-size:13.5px;font-family:'Inter',sans-serif;}
@@ -74,21 +124,38 @@
   .payout-metric.highlight .payout-val{color:var(--green);}
   .rep-payout-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border2);font-size:13.5px;}
   .rep-payout-row:last-child{border-bottom:none;}
+
+  .empty-state{text-align:center;color:var(--subtle);font-size:13px;padding:20px 0;}
   .loading{text-align:center;color:var(--muted);padding:40px 0;font-size:13.5px;}
+
+  @media(max-width:640px){
+    .client-hdr{grid-template-columns:1.4fr 1fr auto;}
+    .client-hdr .col-revenue12,.client-hdr .col-commission{display:none;}
+    .order-row{grid-template-columns:1fr 1fr 1fr;font-size:11.5px;}
+    .order-row span:nth-child(4),.order-row span:nth-child(5){display:none;}
+  }
 </style>
 </head>
 <body>
 
 <div id="loginGate">
   <div class="login-card">
-    <div class="login-title">Rep Dashboard</div>
-    <div class="login-sub">Enter your password to see your numbers.</div>
-    <div class="login-field">
-      <label>Password</label>
-      <input type="password" id="loginPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    <div id="stepPick">
+      <div class="login-title">Rep Dashboard</div>
+      <div class="login-sub">Choose who you are.</div>
+      <div class="rep-grid" id="repPickGrid"></div>
     </div>
-    <button class="login-btn" onclick="doLogin()">Log In</button>
-    <div class="login-error" id="loginError"></div>
+    <div id="stepPassword" style="display:none;">
+      <div class="login-title">Enter Password</div>
+      <div class="login-back" onclick="backToPick()">← Not you? Choose again</div>
+      <div class="selected-rep-chip" id="selectedRepChip"></div>
+      <div class="login-field">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="********" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="login-btn" onclick="doLogin()">Log In</button>
+      <div class="login-error" id="loginError"></div>
+    </div>
   </div>
 </div>
 
@@ -100,6 +167,8 @@
     </div>
     <div class="header-left">
       <select class="rep-select" id="repSelect" style="display:none;" onchange="loadDashboard()"></select>
+      <span class="freshness" id="freshness"></span>
+      <button class="refresh-btn" onclick="loadDashboard()">Refresh</button>
       <span class="rep-chip" id="repChip"></span>
       <button class="logout-btn" onclick="logout()">Log out</button>
     </div>
@@ -115,85 +184,71 @@
 
 <script>
 let session = null;
+let selectedRepForLogin = null;
+let dashboardData = null;
+let clientFilter = '';
+let clientSort = 'revenue12mo';
+let expandedClients = new Set();
+let noteDrafts = {};
+let autoRefreshTimer = null;
 const ALL_REPS = ['Chaz Lucius','Bailey McGraw','Jess Miller','Nick Miller','George Miller','Caitlin Hargraves','Bryce','Tucker'];
+
+function renderRepPicker(){
+  const grid = document.getElementById('repPickGrid');
+  grid.innerHTML = ALL_REPS.map(r=>'<button class="rep-pick-btn" onclick="pickRep(\''+r+'\')">'+r+'</button>').join('')
+    + '<button class="rep-pick-btn admin" onclick="pickRep(\'Admin\')">Admin / Owner</button>';
+}
+function pickRep(rep){
+  selectedRepForLogin = rep;
+  document.getElementById('stepPick').style.display='none';
+  document.getElementById('stepPassword').style.display='block';
+  document.getElementById('selectedRepChip').textContent = rep;
+  document.getElementById('loginPassword').value='';
+  document.getElementById('loginError').textContent='';
+  document.getElementById('loginPassword').focus();
+}
+function backToPick(){
+  selectedRepForLogin = null;
+  document.getElementById('stepPassword').style.display='none';
+  document.getElementById('stepPick').style.display='block';
+}
+renderRepPicker();
 
 async function doLogin(){
   const password = document.getElementById('loginPassword').value;
   const err = document.getElementById('loginError');
   err.textContent = '';
   try{
-    const r = await fetch('/api/rep/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});
+    const r = await fetch('/api/rep/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:password,selectedRep:selectedRepForLogin})});
     const d = await r.json();
     if(!d.ok){ err.textContent = d.error || 'Incorrect password'; return; }
     session = d;
-    sessionStorage.setItem('ccb_rep_session', JSON.stringify(d));
     enterApp();
   }catch(e){ err.textContent = 'Login failed. Try again.'; }
 }
-function logout(){ sessionStorage.removeItem('ccb_rep_session'); location.reload(); }
+function logout(){
+  if(autoRefreshTimer) clearInterval(autoRefreshTimer);
+  session = null;
+  location.reload();
+}
 
 function enterApp(){
   document.getElementById('loginGate').style.display='none';
   document.getElementById('app').style.display='block';
-  document.getElementById('repChip').textContent = session.name + ' · ' + (session.role==='Admin'?'Admin':session.salesPerson);
+  document.getElementById('repChip').textContent = session.name + ' - ' + (session.role==='Admin'?'Admin':session.salesPerson);
 
   if(session.role === 'Admin'){
     const sel = document.getElementById('repSelect');
     sel.style.display='inline-block';
-    sel.innerHTML = `<option value="__all__">All Reps (combined)</option>` + ALL_REPS.map(r=>`<option value="${r}">${r}</option>`).join('');
+    sel.innerHTML = '<option value="__all__">All Reps (combined)</option>' + ALL_REPS.map(r=>'<option value="'+r+'">'+r+'</option>').join('');
   }
   loadDashboard();
   renderPayoutSection();
+  if(autoRefreshTimer) clearInterval(autoRefreshTimer);
+  autoRefreshTimer = setInterval(loadDashboard, 60000);
 }
-
-function renderPayoutSection(){
-  const el = document.getElementById('payoutSection');
-  if(session.role !== 'Admin'){ el.innerHTML=''; return; }
-  const today = new Date();
-  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0,10);
-  const todayStr = today.toISOString().slice(0,10);
-  el.innerHTML = `
-    <div class="card">
-      <div class="card-title">Commission Payout Report</div>
-      <div class="payout-grid">
-        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:5px;">Pay Period Start</label><input type="date" id="payoutStart" value="${firstOfMonth}"></div>
-        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:5px;">Pay Period End</label><input type="date" id="payoutEnd" value="${todayStr}"></div>
-        <button class="payout-btn" onclick="runPayoutReport()">Run Report</button>
-      </div>
-      <div id="payoutResults"></div>
-    </div>`;
-}
-
-async function runPayoutReport(){
-  const start = document.getElementById('payoutStart').value;
-  const end = document.getElementById('payoutEnd').value;
-  const resultsEl = document.getElementById('payoutResults');
-  resultsEl.innerHTML = '<div class="loading">Running report...</div>';
-  try{
-    const r = await fetch(`/api/rep/payout-report?start=${start}&end=${end}`);
-    const d = await r.json();
-    resultsEl.innerHTML = `
-      <div class="payout-summary">
-        <div class="payout-metric highlight"><div class="payout-val">$${d.totalPayable.toLocaleString()}</div><div class="payout-lbl">Commission Payable This Period</div></div>
-        <div class="payout-metric"><div class="payout-val">$${d.totalRevenue.toLocaleString()}</div><div class="payout-lbl">Revenue (Paid Invoices)</div></div>
-        <div class="payout-metric"><div class="payout-val">$${d.totalGrossProfit.toLocaleString()}</div><div class="payout-lbl">Gross Profit (Paid Invoices)</div></div>
-        <div class="payout-metric"><div class="payout-val">${d.pendingCount}</div><div class="payout-lbl">Unpaid Orders</div></div>
-        <div class="payout-metric"><div class="payout-val">$${d.pendingCommission.toLocaleString()}</div><div class="payout-lbl">Pending Commission</div></div>
-      </div>
-      ${d.byRep.length ? `<div style="margin-top:6px;"><div class="card-title" style="margin-bottom:8px;">By Rep</div>${d.byRep.map(r=>`<div class="rep-payout-row"><span>${r.name}</span><b>$${r.amount.toLocaleString()}</b></div>`).join('')}</div>` : ''}
-    `;
-  }catch(e){
-    resultsEl.innerHTML = '<div class="empty-state">Report failed to load.</div>';
-  }
-}
-
-(function initAuth(){
-  const cached = sessionStorage.getItem('ccb_rep_session');
-  if(cached){ session = JSON.parse(cached); enterApp(); }
-})();
 
 async function loadDashboard(){
-  document.getElementById('content').innerHTML = '<div class="loading">Loading your numbers...</div>';
   let salesPerson = session.salesPerson;
   let isAdmin = 'false';
   let viewLabel = salesPerson;
@@ -208,64 +263,226 @@ async function loadDashboard(){
   document.getElementById('pageSub').textContent = 'Rolling 12-month client revenue drives loyalty status ($50K threshold).';
 
   try{
-    const r = await fetch(`/api/rep/dashboard?salesPerson=${encodeURIComponent(salesPerson||'')}&isAdmin=${isAdmin}`);
+    const r = await fetch('/api/rep/dashboard?salesPerson='+encodeURIComponent(salesPerson||'')+'&isAdmin='+isAdmin);
     const d = await r.json();
+    dashboardData = d;
+    updateFreshness(d.generatedAt);
     renderDashboard(d);
   }catch(e){
     document.getElementById('content').innerHTML = '<div class="empty-state">Could not load data. Try refreshing.</div>';
   }
 }
 
+function updateFreshness(generatedAt){
+  const el = document.getElementById('freshness');
+  if(!generatedAt){ el.textContent=''; return; }
+  const t = new Date(generatedAt);
+  const secs = Math.round((Date.now()-t.getTime())/1000);
+  el.textContent = 'Updated ' + (secs<5 ? 'just now' : secs+'s ago') + ' - live from Monday';
+  el.className = 'freshness';
+}
+setInterval(function(){ if(dashboardData) updateFreshness(dashboardData.generatedAt); }, 1000);
+
+function pctDelta(cur,prev){
+  if(!prev) return null;
+  return Math.round(((cur-prev)/prev)*1000)/10;
+}
+
 function renderDashboard(d){
-  const maxTrend = Math.max(1, ...(d.monthlyCommission||[]).map(m=>m.amount));
-  const trendHtml = (d.monthlyCommission||[]).length ? `
-    <div class="card">
-      <div class="card-title">Commission Over Time</div>
-      <div class="trend-row">
-        ${d.monthlyCommission.map(m=>`
-          <div class="trend-bar-wrap">
-            <div class="trend-val">$${m.amount.toFixed(0)}</div>
-            <div class="trend-bar" style="height:${Math.max(4,(m.amount/maxTrend)*90)}px;"></div>
-            <div class="trend-month">${m.month}</div>
-          </div>
-        `).join('')}
-      </div>
-    </div>` : '';
+  const revDelta = pctDelta(d.thisMonthRevenue, d.lastMonthRevenue);
+  const commDelta = pctDelta(d.thisMonthCommission, d.lastMonthCommission);
+  const deltaHtml = function(delta){ return delta==null ? '' : '<div class="metric-delta '+(delta>=0?'up':'down')+'">'+(delta>=0?'UP ':'DOWN ')+Math.abs(delta)+'% vs last month</div>'; };
 
-  const clientsHtml = (d.clients||[]).length ? `
-    <div class="card">
-      <div class="card-title">Clients &amp; Loyalty Progress</div>
-      <div class="client-row" style="border-bottom:none;">
-        <div class="col-hdr">Client</div>
-        <div class="col-hdr">Rolling 12mo Revenue</div>
-        <div class="col-hdr">Commission (Paid / Pending)</div>
-        <div class="col-hdr">Loyalty Progress</div>
-      </div>
-      ${d.clients.map(c=>`
-        <div class="client-row">
-          <div class="client-name">${c.name}</div>
-          <div><div class="client-num">$${c.revenue12mo.toLocaleString()}</div><div class="client-sub">all-time $${c.totalRevenue.toLocaleString()}</div></div>
-          <div><div class="client-num">$${c.commissionPaid.toLocaleString()}</div><div class="client-sub">$${c.commissionPending.toLocaleString()} pending</div></div>
-          <div>
-            <div class="loyalty-bar-track"><div class="loyalty-bar-fill${c.loyaltyUnlocked?' unlocked':''}" style="width:${c.loyaltyPct}%;"></div></div>
-            <div class="loyalty-label">${c.loyaltyUnlocked ? '🏆 Loyalty unlocked (25%)' : c.loyaltyPct+'% to $50K'}</div>
-          </div>
-        </div>
-      `).join('')}
-    </div>` : '<div class="card"><div class="empty-state">No client history yet.</div></div>';
+  const maxTrend = Math.max(1, ...(d.monthlyRevenue||[]).map(function(m){return m.amount;}), ...(d.monthlyCommission||[]).map(function(m){return m.amount;}));
+  const revByMonth = {}; (d.monthlyRevenue||[]).forEach(function(m){revByMonth[m.month]=m.amount;});
+  const commByMonth = {}; (d.monthlyCommission||[]).forEach(function(m){commByMonth[m.month]=m.amount;});
+  const allMonths = Array.from(new Set([].concat((d.monthlyRevenue||[]).map(function(m){return m.month;}),(d.monthlyCommission||[]).map(function(m){return m.month;})))).sort();
 
-  document.getElementById('content').innerHTML = `
-    <div class="metrics-grid">
-      <div class="metric-card accent"><div class="metric-val">${d.quotesMade}</div><div class="metric-lbl">Quotes Made</div></div>
-      <div class="metric-card"><div class="metric-val">${d.winRate}%</div><div class="metric-lbl">Win Rate (${d.quotesWon} won / ${d.quotesLost} lost)</div></div>
-      <div class="metric-card"><div class="metric-val">$${d.totalRevenue.toLocaleString()}</div><div class="metric-lbl">Total Revenue</div></div>
-      <div class="metric-card"><div class="metric-val">$${d.totalCommission.toLocaleString()}</div><div class="metric-lbl">Total Commission</div></div>
-      <div class="metric-card"><div class="metric-val">$${d.commissionPaid.toLocaleString()}</div><div class="metric-lbl">Commission Paid Out</div></div>
-      <div class="metric-card"><div class="metric-val">$${d.commissionPending.toLocaleString()}</div><div class="metric-lbl">Commission Pending</div></div>
-    </div>
-    ${trendHtml}
-    ${clientsHtml}
-  `;
+  const trendHtml = allMonths.length ? (
+    '<div class="card trend-card">' +
+      '<div class="card-title">Revenue &amp; Commission Over Time</div>' +
+      '<div class="trend-legend"><span><span class="legend-dot" style="background:var(--border)"></span>Revenue</span><span><span class="legend-dot" style="background:var(--cyan)"></span>Commission</span></div>' +
+      '<div class="trend-row">' +
+        allMonths.map(function(month){
+          const rev = revByMonth[month]||0, comm = commByMonth[month]||0;
+          return '<div class="trend-bar-wrap">' +
+            '<div class="trend-val" title="Revenue $'+rev.toFixed(0)+'">$'+comm.toFixed(0)+'</div>' +
+            '<div class="trend-bar revenue" style="height:'+Math.max(2,(rev/maxTrend)*100)+'px;" title="Revenue: $'+rev.toFixed(2)+'"></div>' +
+            '<div class="trend-bar commission" style="height:'+Math.max(2,(comm/maxTrend)*70)+'px;" title="Commission: $'+comm.toFixed(2)+'"></div>' +
+            '<div class="trend-month">'+month+'</div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>'
+  ) : '';
+
+  const quotesHtml = (d.activeQuotesList||[]).length ? (
+    '<div class="card">' +
+      '<div class="card-title">Active Quotes In Progress ('+d.activeQuotesList.length+')</div>' +
+      '<div class="quote-row" style="font-weight:700;color:var(--subtle);font-size:10.5px;text-transform:uppercase;"><span>Client</span><span>Quoted Revenue</span><span>Your Commission</span><span>Status</span></div>' +
+      d.activeQuotesList.map(function(q){
+        return '<div class="quote-row"><span>'+q.client+'</span><span>$'+q.totalRevenue.toLocaleString()+'</span><span>$'+q.commissionAmount.toLocaleString()+'</span><span class="quote-status-chip">'+q.status+(q.quoteDate?' - '+q.quoteDate:'')+'</span></div>';
+      }).join('') +
+    '</div>'
+  ) : '';
+
+  let clients = (d.clients||[]).filter(function(c){ return !clientFilter || c.name.toLowerCase().indexOf(clientFilter.toLowerCase())!==-1; });
+  const sorters = {
+    revenue12mo: function(a,b){return b.revenue12mo-a.revenue12mo;},
+    totalRevenue: function(a,b){return b.totalRevenue-a.totalRevenue;},
+    name: function(a,b){return a.name.localeCompare(b.name);},
+    loyalty: function(a,b){return b.loyaltyPct-a.loyaltyPct;},
+    lastOrder: function(a,b){return (b.lastOrderDate||'').localeCompare(a.lastOrderDate||'');},
+    commissionPending: function(a,b){return b.commissionPending-a.commissionPending;},
+  };
+  clients = clients.sort(sorters[clientSort]||sorters.revenue12mo);
+
+  const clientsHtml =
+    '<div class="card">' +
+      '<div class="card-title">Clients, Order History &amp; Notes</div>' +
+      '<div class="search-sort-row">' +
+        '<input class="search-input" placeholder="Search clients..." value="'+clientFilter+'" oninput="clientFilter=this.value;renderDashboard(dashboardData)">' +
+        '<select class="sort-select" onchange="clientSort=this.value;renderDashboard(dashboardData)">' +
+          '<option value="revenue12mo"'+(clientSort==='revenue12mo'?' selected':'')+'>Sort: 12mo Revenue</option>' +
+          '<option value="totalRevenue"'+(clientSort==='totalRevenue'?' selected':'')+'>Sort: All-Time Revenue</option>' +
+          '<option value="commissionPending"'+(clientSort==='commissionPending'?' selected':'')+'>Sort: Commission Pending</option>' +
+          '<option value="loyalty"'+(clientSort==='loyalty'?' selected':'')+'>Sort: Loyalty Progress</option>' +
+          '<option value="lastOrder"'+(clientSort==='lastOrder'?' selected':'')+'>Sort: Most Recent Order</option>' +
+          '<option value="name"'+(clientSort==='name'?' selected':'')+'>Sort: Name (A-Z)</option>' +
+        '</select>' +
+      '</div>' +
+      (clients.length ? clients.map(clientCardHtml).join('') : '<div class="empty-state">No clients match.</div>') +
+    '</div>';
+
+  document.getElementById('content').innerHTML =
+    '<div class="metrics-grid">' +
+      '<div class="metric-card accent"><div class="metric-val">'+d.quotesMade+'</div><div class="metric-lbl">Quotes Made</div></div>' +
+      '<div class="metric-card"><div class="metric-val">'+d.winRate+'%</div><div class="metric-lbl">Win Rate ('+d.quotesWon+' won / '+d.quotesLost+' lost)</div></div>' +
+      '<div class="metric-card"><div class="metric-val">$'+d.totalRevenue.toLocaleString()+'</div><div class="metric-lbl">Total Revenue (All Time)</div></div>' +
+      '<div class="metric-card"><div class="metric-val">$'+d.totalCommission.toLocaleString()+'</div><div class="metric-lbl">Total Commission (All Time)</div></div>' +
+      '<div class="metric-card"><div class="metric-val">$'+d.commissionPaid.toLocaleString()+'</div><div class="metric-lbl">Commission Paid Out</div></div>' +
+      '<div class="metric-card"><div class="metric-val">$'+d.commissionPending.toLocaleString()+'</div><div class="metric-lbl">Commission Pending</div></div>' +
+      '<div class="metric-card"><div class="metric-val">$'+d.thisMonthRevenue.toLocaleString()+'</div><div class="metric-lbl">This Month Revenue</div>'+deltaHtml(revDelta)+'</div>' +
+      '<div class="metric-card"><div class="metric-val">$'+d.thisMonthCommission.toLocaleString()+'</div><div class="metric-lbl">This Month Commission</div>'+deltaHtml(commDelta)+'</div>' +
+    '</div>' +
+    trendHtml + quotesHtml + clientsHtml;
+}
+
+function esc(s){ return String(s).replace(/'/g,"\\'"); }
+
+function clientCardHtml(c){
+  const isOpen = expandedClients.has(c.name);
+  const activeTab = (noteDrafts[c.name] && noteDrafts[c.name].tab) || 'orders';
+  return '<div class="client-card'+(isOpen?' open':'')+'">' +
+    '<div class="client-hdr" onclick="toggleClient(\''+esc(c.name)+'\')">' +
+      '<div><div class="client-name">'+c.name+'</div><div class="client-sub">'+c.orderCount+' order'+(c.orderCount!==1?'s':'')+(c.notes.length?' - '+c.notes.length+' note'+(c.notes.length!==1?'s':''):'')+'</div></div>' +
+      '<div class="col-revenue12"><div class="client-num">$'+c.revenue12mo.toLocaleString()+'</div><div class="client-sub">12mo revenue</div></div>' +
+      '<div class="col-commission"><div class="client-num">$'+c.commissionPending.toLocaleString()+'</div><div class="client-sub">pending</div></div>' +
+      '<div><div class="loyalty-bar-track"><div class="loyalty-bar-fill'+(c.loyaltyUnlocked?' unlocked':'')+'" style="width:'+c.loyaltyPct+'%;"></div></div><div class="loyalty-label">'+(c.loyaltyUnlocked ? 'Loyalty unlocked (25%)' : '$'+c.dollarsToLoyalty.toLocaleString()+' to $50K')+'</div></div>' +
+      '<span class="client-chevron">v</span>' +
+    '</div>' +
+    '<div class="client-body">' +
+      '<div class="subtab-row">' +
+        '<button class="subtab-btn'+(activeTab==='orders'?' active':'')+'" onclick="event.stopPropagation();setClientTab(\''+esc(c.name)+'\',\'orders\')">Order History ('+c.orderCount+')</button>' +
+        '<button class="subtab-btn'+(activeTab==='notes'?' active':'')+'" onclick="event.stopPropagation();setClientTab(\''+esc(c.name)+'\',\'notes\')">Notes ('+c.notes.length+')</button>' +
+      '</div>' +
+      (activeTab==='orders' ? orderHistoryHtml(c) : notesHtml(c)) +
+    '</div>' +
+  '</div>';
+}
+
+function orderHistoryHtml(c){
+  if(!c.orders.length) return '<div class="empty-state">No orders on file for this client yet.</div>';
+  return '<div class="order-row" style="font-weight:700;color:var(--subtle);font-size:10.5px;text-transform:uppercase;"><span>Date</span><span>Revenue</span><span>Gross Profit</span><span>Commission</span><span>Status</span></div>' +
+    c.orders.map(function(o){
+      return '<div class="order-row"><span>'+(o.date||'-')+'</span><span>$'+o.revenue.toLocaleString()+'</span><span>$'+o.grossProfit.toLocaleString()+'</span><span>$'+o.commission.toLocaleString()+'</span><span class="status-chip '+(o.invoiceStatus==='Paid'?'paid':'pending')+'">'+o.invoiceStatus+'</span></div>';
+    }).join('');
+}
+
+function notesHtml(c){
+  const notesListHtml = c.notes.length
+    ? c.notes.map(function(n){ return '<div class="note-item"><div class="note-date">'+formatNoteDate(n.loggedAt||n.date)+' - '+n.salesPerson+'</div><div class="note-text">'+escapeHtml(n.note)+'</div></div>'; }).join('')
+    : '<div class="no-notes">No notes yet. Add one below after a call or conversation so nothing gets forgotten.</div>';
+  const key = c.name;
+  const draft = (noteDrafts[key] && noteDrafts[key].text) || '';
+  return notesListHtml +
+    '<div class="note-add">' +
+      '<textarea class="note-textarea" placeholder="Recap a call or conversation with '+c.name+'..." oninput="noteDrafts[\''+esc(key)+'\']=noteDrafts[\''+esc(key)+'\']||{};noteDrafts[\''+esc(key)+'\'].text=this.value">'+escapeHtml(draft)+'</textarea>' +
+      '<button class="note-add-btn" onclick="addNote(\''+esc(key)+'\')">Save Note</button>' +
+    '</div>';
+}
+
+function escapeHtml(s){
+  const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML;
+}
+function formatNoteDate(iso){
+  if(!iso) return '-';
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' at '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+}
+
+function toggleClient(name){
+  if(expandedClients.has(name)) expandedClients.delete(name); else expandedClients.add(name);
+  renderDashboard(dashboardData);
+}
+function setClientTab(name,tab){
+  noteDrafts[name] = noteDrafts[name]||{};
+  noteDrafts[name].tab = tab;
+  renderDashboard(dashboardData);
+}
+
+async function addNote(clientName){
+  const draft = noteDrafts[clientName] && noteDrafts[clientName].text ? noteDrafts[clientName].text.trim() : '';
+  if(!draft) return;
+  const salesPerson = session.role==='Admin' ? (document.getElementById('repSelect').value==='__all__' ? session.name : document.getElementById('repSelect').value) : session.salesPerson;
+  try{
+    const r = await fetch('/api/rep/notes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({salesPerson:salesPerson,client:clientName,note:draft})});
+    const d = await r.json();
+    if(!d.ok){ alert(d.error||'Could not save note'); return; }
+    noteDrafts[clientName].text = '';
+    await loadDashboard();
+  }catch(e){ alert('Could not save note. Try again.'); }
+}
+
+function renderPayoutSection(){
+  const el = document.getElementById('payoutSection');
+  if(session.role !== 'Admin'){ el.innerHTML=''; return; }
+  const today = new Date();
+  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0,10);
+  const todayStr = today.toISOString().slice(0,10);
+  el.innerHTML =
+    '<div class="card">' +
+      '<div class="card-title">Commission Payout Report</div>' +
+      '<div class="payout-grid">' +
+        '<div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:5px;">Pay Period Start</label><input type="date" id="payoutStart" value="'+firstOfMonth+'"></div>' +
+        '<div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:5px;">Pay Period End</label><input type="date" id="payoutEnd" value="'+todayStr+'"></div>' +
+        '<button class="payout-btn" onclick="runPayoutReport()">Run Report</button>' +
+      '</div>' +
+      '<div id="payoutResults"></div>' +
+    '</div>';
+}
+
+async function runPayoutReport(){
+  const start = document.getElementById('payoutStart').value;
+  const end = document.getElementById('payoutEnd').value;
+  const resultsEl = document.getElementById('payoutResults');
+  resultsEl.innerHTML = '<div class="loading">Running report...</div>';
+  try{
+    const r = await fetch('/api/rep/payout-report?start='+start+'&end='+end);
+    const d = await r.json();
+    resultsEl.innerHTML =
+      '<div class="payout-summary">' +
+        '<div class="payout-metric highlight"><div class="payout-val">$'+d.totalPayable.toLocaleString()+'</div><div class="payout-lbl">Commission Payable This Period</div></div>' +
+        '<div class="payout-metric"><div class="payout-val">$'+d.totalRevenue.toLocaleString()+'</div><div class="payout-lbl">Revenue (Paid Invoices)</div></div>' +
+        '<div class="payout-metric"><div class="payout-val">$'+d.totalGrossProfit.toLocaleString()+'</div><div class="payout-lbl">Gross Profit (Paid Invoices)</div></div>' +
+        '<div class="payout-metric"><div class="payout-val">'+d.pendingCount+'</div><div class="payout-lbl">Unpaid Orders</div></div>' +
+        '<div class="payout-metric"><div class="payout-val">$'+d.pendingCommission.toLocaleString()+'</div><div class="payout-lbl">Pending Commission</div></div>' +
+      '</div>' +
+      (d.byRep.length ? ('<div style="margin-top:6px;"><div class="card-title" style="margin-bottom:8px;">By Rep</div>' + d.byRep.map(function(r){return '<div class="rep-payout-row"><span>'+r.name+'</span><b>$'+r.amount.toLocaleString()+'</b></div>';}).join('') + '</div>') : '');
+  }catch(e){
+    resultsEl.innerHTML = '<div class="empty-state">Report failed to load.</div>';
+  }
 }
 </script>
 </body>
