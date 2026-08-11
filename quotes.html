@@ -88,6 +88,9 @@
   .deco-slot{border:1px dashed var(--border);border-radius:10px;padding:10px;margin-top:8px;}
   .deco-slot-hdr{font-size:11px;font-weight:700;color:var(--subtle);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
   .add-deco-btn{font-size:12.5px;font-weight:600;color:var(--cyan);background:none;border:none;cursor:pointer;margin-top:6px;}
+  .dept-bar{display:flex;flex-wrap:wrap;gap:6px;}
+  .dept-btn{padding:6px 10px;border:1.5px solid var(--border2);border-radius:20px;background:var(--white);font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;}
+  .dept-btn.active{border-color:var(--magenta);background:#FDEEF6;color:#C2077A;}
 
   .line-calc{margin-top:12px;padding:10px 12px;background:var(--bg);border-radius:9px;font-size:12.5px;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px 12px;}
   .lc-item b{display:block;font-size:13.5px;color:var(--navy);}
@@ -225,6 +228,12 @@ const COLOR_OPTIONS = {
   'Patch': ['Under 4 in','4-12 in','12-18 in'],
 };
 
+const DEPARTMENTS = [
+  {v:'Embroidery', icon:'🧵'}, {v:'Screenprint', icon:'🖨️'}, {v:'DTG', icon:'👕'},
+  {v:'DTF', icon:'🎞️'}, {v:'UV Print', icon:'☀️'}, {v:'Engrave', icon:'✏️'},
+  {v:'Other', icon:'⚙️'}, {v:'Custom Box', icon:'📦'},
+];
+
 let session = null;
 let quoteType = 'Garment/Decoration';
 let quoteId = null;
@@ -319,10 +328,10 @@ function setQuoteType(t){
 function addLine(){
   const id = 'line'+(++lineCounter);
   lines.push({
-    id, subitemId:null, productName:'', quantity:'', sellPricePerUnit:'',
+    id, subitemId:null, productName:'', styleSku:'', quantity:'', sellPricePerUnit:'',
     garmentCostPerUnit:'', screensRegular:'', screensLarge:'', rushFeeFlat:'', artHours:'',
-    setupCostPerUnit:'', artworkDescription:'', notes:'',
-    decorations:[{type:'',colorOrSize:''}],
+    setupCostPerUnit:'', notes:'', mockupUploaded:false,
+    decorations:[{type:'',colorOrSize:'',department:'',placement:'',artworkDescription:'',screenCount:'',artworkUploaded:false}],
     open:true, calc:null,
   });
   lines.forEach(l=>{ if(l.id!==id) l.open=false; });
@@ -344,22 +353,28 @@ function updateLineField(id, field, value){
 }
 function addDecoSlot(id){
   const line = lines.find(l=>l.id===id);
-  if(line.decorations.length<3) line.decorations.push({type:'',colorOrSize:''});
+  if(line.decorations.length<3) line.decorations.push({type:'',colorOrSize:'',department:'',placement:'',artworkDescription:'',screenCount:'',artworkUploaded:false});
   renderLines();
 }
 function updateDeco(id, idx, field, value){
   const line = lines.find(l=>l.id===id);
   line.decorations[idx][field]=value;
-  recalc();
+  if(field==='type') renderLines(); else recalc();
+}
+function setDecoDepartment(id, idx, dept){
+  const line = lines.find(l=>l.id===id);
+  line.decorations[idx].department = line.decorations[idx].department===dept ? '' : dept;
+  renderLines();
 }
 
 function decoSlotHtml(line, idx){
   const d = line.decorations[idx];
   const colorOpts = d.type ? (COLOR_OPTIONS[d.type]||[]) : [];
+  const artColId = ['file_mm63pm92','file_mm64b6m8','file_mm648efm'][idx];
   return `<div class="deco-slot">
     <div class="deco-slot-hdr">Decoration ${idx+1}${idx>0?' (optional)':''}</div>
     <div class="field-grid">
-      <div class="field"><label>Type</label>
+      <div class="field"><label>Type (for pricing)</label>
         <select onchange="updateDeco('${line.id}',${idx},'type',this.value)">
           <option value="">${idx===0?'Select...':'None'}</option>
           ${DECORATION_TYPES.map(t=>`<option value="${t}" ${d.type===t?'selected':''}>${t}</option>`).join('')}
@@ -372,28 +387,54 @@ function decoSlotHtml(line, idx){
         </select>
       </div>` : ''}
     </div>
+
+    <div class="field" style="margin-top:10px;">
+      <label>Production Department</label>
+      <div class="dept-bar">
+        ${DEPARTMENTS.map(dep=>`<button type="button" class="dept-btn${d.department===dep.v?' active':''}" onclick="setDecoDepartment('${line.id}',${idx},'${dep.v}')">${dep.icon} ${dep.v}</button>`).join('')}
+      </div>
+    </div>
+
+    <div class="field-grid" style="margin-top:8px;">
+      <div class="field"><label>Placement</label>
+        <input type="text" value="${d.placement||''}" placeholder="Left Chest, Full Back..." oninput="updateDeco('${line.id}',${idx},'placement',this.value)">
+      </div>
+      <div class="field"><label>Artwork Description</label>
+        <input type="text" value="${d.artworkDescription||''}" placeholder="Logo name or description" oninput="updateDeco('${line.id}',${idx},'artworkDescription',this.value)">
+      </div>
+      <div class="field"><label>Screen Count</label>
+        <input type="number" value="${d.screenCount||''}" min="0" oninput="updateDeco('${line.id}',${idx},'screenCount',this.value)">
+      </div>
+    </div>
+
+    <div class="artwork-row">
+      <input type="file" id="artfile-${line.id}-${idx}" style="display:none" onchange="uploadDecoArtwork('${line.id}',${idx})">
+      <button class="artwork-btn" onclick="document.getElementById('artfile-${line.id}-${idx}').click()" ${!line.subitemId?'disabled title="Save the quote first"':''}>
+        📎 ${line.subitemId ? (d.artworkUploaded?'Replace artwork file':'Upload artwork file') : 'Save quote to enable upload'}
+      </button>
+      <span class="artwork-status" id="artstatus-${line.id}-${idx}">${d.artworkUploaded?'✓ Uploaded':''}</span>
+    </div>
   </div>`;
 }
 
 function lineCalcHtml(line){
   const c = line.calc;
   if(!c) return '';
+  const marginText = c.grossMarginPct!=null ? (c.grossMarginPct*100).toFixed(1)+'%' : '—';
   if(quoteType==='Custom Box'){
     return `<div class="line-calc">
       <div class="lc-item">Cost/unit<b>$${(c.totalCostPerUnit||0).toFixed(2)}</b></div>
-      <div class="lc-item">Min floor (40%)<b>$${(c.minFloor||0).toFixed(2)}</b></div>
       <div class="lc-item">Revenue<b>$${(c.totalRevenue||0).toFixed(2)}</b></div>
       <div class="lc-item">Gross Profit<b>$${(c.grossProfit||0).toFixed(2)}</b></div>
-      <div class="lc-item">Margin<b class="${c.meetsFloor===false?'lc-warn':'lc-good'}">${c.grossMarginPct!=null?(c.grossMarginPct*100).toFixed(1)+'%':'—'}</b></div>
+      <div class="lc-item">Your Margin<b>${marginText}</b></div>
     </div>`;
   }
   return `<div class="line-calc">
     <div class="lc-item">Deco cost/unit<b>$${(c.decoCostPerUnit||0).toFixed(2)}</b></div>
     <div class="lc-item">Cost/unit (all-in)<b>$${(c.totalCostPerUnit||0).toFixed(2)}</b></div>
-    <div class="lc-item">Min floor (30%)<b>$${(c.minFloor||0).toFixed(2)}</b></div>
     <div class="lc-item">Revenue<b>$${(c.totalRevenue||0).toFixed(2)}</b></div>
     <div class="lc-item">Gross Profit<b>$${(c.grossProfit||0).toFixed(2)}</b></div>
-    <div class="lc-item">Margin<b class="${c.meetsFloor===false?'lc-warn':'lc-good'}">${c.grossMarginPct!=null?(c.grossMarginPct*100).toFixed(1)+'%':'—'}</b></div>
+    <div class="lc-item">Your Margin<b>${marginText}</b></div>
     ${c.decoErrors && c.decoErrors.length ? `<div class="lc-item" style="grid-column:1/-1;"><span class="lc-warn">${c.decoErrors.join(' · ')}</span></div>` : ''}
   </div>`;
 }
@@ -419,8 +460,11 @@ function renderLines(){
       </div>
       <div class="line-body">
         <div class="field-grid">
-          <div class="field" style="grid-column:1/-1;"><label>Product / Style</label>
+          <div class="field"><label>Product Name</label>
             <input type="text" value="${line.productName}" placeholder="e.g. Port Authority Fleece Jacket" oninput="updateLineField('${line.id}','productName',this.value); renderLineHeaderOnly('${line.id}')">
+          </div>
+          <div class="field"><label>Style # / SKU</label>
+            <input type="text" value="${line.styleSku||''}" placeholder="e.g. ME0EK01S" oninput="updateLineField('${line.id}','styleSku',this.value)">
           </div>
           <div class="field"><label>Quantity</label>
             <input type="number" value="${line.quantity}" oninput="updateLineField('${line.id}','quantity',this.value)">
@@ -452,18 +496,12 @@ function renderLines(){
         ${!isBox ? line.decorations.map((d,idx)=>decoSlotHtml(line,idx)).join('') : ''}
         ${!isBox && line.decorations.length<3 ? `<button class="add-deco-btn" onclick="addDecoSlot('${line.id}')">+ Add another decoration location</button>` : ''}
 
-        <div class="field-grid" style="margin-top:10px;">
-          <div class="field" style="grid-column:1/-1;"><label>Artwork Description</label>
-            <input type="text" value="${line.artworkDescription}" oninput="updateLineField('${line.id}','artworkDescription',this.value)">
-          </div>
-        </div>
-
-        <div class="artwork-row">
-          <input type="file" id="file-${line.id}" style="display:none" onchange="uploadArtwork('${line.id}')">
-          <button class="artwork-btn" onclick="document.getElementById('file-${line.id}').click()" ${!line.subitemId?'disabled title="Save the quote first"':''}>
-            📎 ${line.subitemId ? 'Upload artwork' : 'Save quote to enable artwork upload'}
+        <div class="artwork-row" style="margin-top:12px;">
+          <input type="file" id="mockupfile-${line.id}" style="display:none" accept="image/*" multiple onchange="uploadMockups('${line.id}')">
+          <button class="artwork-btn" onclick="document.getElementById('mockupfile-${line.id}').click()" ${!line.subitemId?'disabled title="Save the quote first"':''}>
+            🖼️ ${line.subitemId ? (line.mockupUploaded?'Replace mockups':'Upload mockups (up to 4 images)') : 'Save quote to enable upload'}
           </button>
-          <span class="artwork-status" id="artstatus-${line.id}"></span>
+          <span class="artwork-status" id="mockupstatus-${line.id}">${line.mockupUploaded?'✓ Uploaded':''}</span>
         </div>
 
         ${lineCalcHtml(line)}
@@ -476,23 +514,50 @@ function renderLineHeaderOnly(id){
   // lightweight: full re-render is cheap enough here given small line counts
 }
 
-async function uploadArtwork(lineId){
+async function uploadDecoArtwork(lineId, idx){
   const line = lines.find(l=>l.id===lineId);
   if(!line || !line.subitemId) return;
-  const fileInput = document.getElementById('file-'+lineId);
+  const fileInput = document.getElementById(`artfile-${lineId}-${idx}`);
   if(!fileInput.files[0]) return;
+  const artColId = ['file_mm63pm92','file_mm64b6m8','file_mm648efm'][idx];
   const form = new FormData();
   form.append('file', fileInput.files[0]);
   form.append('itemId', line.subitemId);
-  form.append('columnId', 'file_mm63pm92');
-  document.getElementById('artstatus-'+lineId).textContent = 'Uploading...';
+  form.append('columnId', artColId);
+  const statusEl = document.getElementById(`artstatus-${lineId}-${idx}`);
+  statusEl.textContent = 'Uploading...';
   try{
     const r = await fetch('/api/upload-file', { method:'POST', body: form });
     const d = await r.json();
-    document.getElementById('artstatus-'+lineId).textContent = d.success ? '✓ Uploaded' : 'Upload failed';
+    if(d.success){ line.decorations[idx].artworkUploaded = true; }
+    statusEl.textContent = d.success ? '✓ Uploaded' : 'Upload failed';
   }catch(e){
-    document.getElementById('artstatus-'+lineId).textContent = 'Upload failed';
+    statusEl.textContent = 'Upload failed';
   }
+}
+
+async function uploadMockups(lineId){
+  const line = lines.find(l=>l.id===lineId);
+  if(!line || !line.subitemId) return;
+  const fileInput = document.getElementById(`mockupfile-${lineId}`);
+  const files = Array.from(fileInput.files || []).slice(0,4);
+  if(!files.length) return;
+  const statusEl = document.getElementById(`mockupstatus-${lineId}`);
+  statusEl.textContent = 'Uploading...';
+  let anyOk = false;
+  for(const file of files){
+    const form = new FormData();
+    form.append('file', file);
+    form.append('itemId', line.subitemId);
+    form.append('columnId', 'file_mm64jda5');
+    try{
+      const r = await fetch('/api/upload-file', { method:'POST', body: form });
+      const d = await r.json();
+      if(d.success) anyOk = true;
+    }catch(e){ /* continue with remaining files */ }
+  }
+  if(anyOk) line.mockupUploaded = true;
+  statusEl.textContent = anyOk ? '✓ Uploaded' : 'Upload failed';
 }
 
 // ---- RECALC (debounced live pricing preview) ----
@@ -551,6 +616,7 @@ async function saveQuote(){
     orderType: document.getElementById('qOrderType').value,
     lines: lines.map(l=>({
       productName: l.productName,
+      styleSku: l.styleSku,
       quantity: parseFloat(l.quantity)||0,
       sellPricePerUnit: parseFloat(l.sellPricePerUnit)||0,
       garmentCostPerUnit: parseFloat(l.garmentCostPerUnit)||0,
@@ -560,7 +626,6 @@ async function saveQuote(){
       rushFeeFlat: l.rushFeeFlat!==''&&l.rushFeeFlat!=null ? parseFloat(l.rushFeeFlat) : 75,
       artHours: parseFloat(l.artHours)||0,
       decorations: l.decorations,
-      artworkDescription: l.artworkDescription,
       notes: l.notes,
     })),
   };

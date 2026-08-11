@@ -24,6 +24,9 @@ function hashRepPassword(pw) {
   return cryptoAuth.createHash('sha256').update(String(pw) + ':ccb-rep-auth').digest('hex');
 }
 
+const FormDataNode = require('form-data');
+const DEPT_LABEL_TO_ID = { 'Embroidery': 1, 'Screenprint': 2, 'DTG': 3, 'DTF': 4, 'UV Print': 8, 'Engrave': 5, 'Other': 6, 'Custom Box': 9 };
+
 async function mondayQuery(query) {
   const r = await fetch('https://api.monday.com/v2', {
     method: 'POST',
@@ -31,6 +34,51 @@ async function mondayQuery(query) {
     body: JSON.stringify({ query })
   });
   return r.json();
+}
+
+// Copies a file from one item's file column to another item's file column
+// (download the asset bytes, re-upload -- Monday has no native "copy" mutation).
+async function copyFileColumn(sourceItemId, sourceColumnId, targetItemId, targetColumnId) {
+  try {
+    const valQuery = `{items(ids:[${sourceItemId}]){column_values(ids:["${sourceColumnId}"]){value}}}`;
+    const valData = await mondayQuery(valQuery);
+    const rawValue = valData.data?.items?.[0]?.column_values?.[0]?.value;
+    if (!rawValue) return { copied: 0 };
+    const parsed = JSON.parse(rawValue);
+    const files = parsed.files || [];
+    if (!files.length) return { copied: 0 };
+
+    let copied = 0;
+    for (const f of files) {
+      const assetId = f.assetId;
+      if (!assetId) continue;
+      const assetQuery = `{assets(ids:[${assetId}]){public_url name}}`;
+      const assetData = await mondayQuery(assetQuery);
+      const asset = assetData.data?.assets?.[0];
+      if (!asset?.public_url) continue;
+
+      const fileRes = await fetch(asset.public_url);
+      if (!fileRes.ok) continue;
+      const buffer = Buffer.from(await fileRes.arrayBuffer());
+
+      const form = new FormDataNode();
+      const mutation = `mutation add_file($file: File!) { add_file_to_column(item_id: ${targetItemId}, column_id: "${targetColumnId}", file: $file) { id } }`;
+      form.append('query', mutation);
+      form.append('variables[file]', buffer, { filename: asset.name || 'file', knownLength: buffer.length });
+
+      const uploadRes = await fetch('https://api.monday.com/v2/file', {
+        method: 'POST',
+        headers: { 'Authorization': MONDAY_API_KEY, ...form.getHeaders() },
+        body: form
+      });
+      const uploadData = await uploadRes.json();
+      if (!uploadData.errors) copied++;
+    }
+    return { copied };
+  } catch (err) {
+    console.error('copyFileColumn error:', err.message);
+    return { copied: 0, error: err.message };
+  }
 }
 
 // ============================================================
@@ -856,6 +904,7 @@ app.post('/api/quote/save', async (req, res) => {
       const subCV = {
         'numeric_mm63dqd9': line.quantity || 0,
         'numeric_mm63e2t8': line.sellPricePerUnit || 0,
+        'text_mm64r1ka': line.styleSku || '',
         'text_mm63pdpj': line.artworkDescription || '',
         'long_text_mm6365bn': line.notes || '',
       };
@@ -868,9 +917,21 @@ app.post('/api/quote/save', async (req, res) => {
         subCV['numeric_mm638g7h'] = line.rushFeeFlat || 0;
         subCV['numeric_mm63v7rq'] = line.artHours || 0;
         const decos = line.decorations || [];
-        if (decos[0]) { subCV['dropdown_mm6390a0'] = { labels: [decos[0].type] }; subCV['text_mm63crtv'] = decos[0].colorOrSize || ''; }
-        if (decos[1]) { subCV['dropdown_mm63j73'] = { labels: [decos[1].type] }; subCV['text_mm63cqht'] = decos[1].colorOrSize || ''; }
-        if (decos[2]) { subCV['dropdown_mm633q95'] = { labels: [decos[2].type] }; subCV['text_mm632xb7'] = decos[2].colorOrSize || ''; }
+        const deptCols = ['dropdown_mm64kdgh', 'dropdown_mm64m4m8', 'dropdown_mm64a9eh'];
+        const placeCols = ['text_mm647jqe', 'text_mm64wvjr', 'text_mm64fbdj'];
+        const artDescCols = ['text_mm63pdpj', 'text_mm64962g', 'text_mm64ax4a'];
+        const screenCountCols = ['numeric_mm64z758', 'numeric_mm64hx1r', 'numeric_mm64v4nq'];
+        const decoTypeCols = ['dropdown_mm6390a0', 'dropdown_mm63j73', 'dropdown_mm633q95'];
+        const colorSizeCols = ['text_mm63crtv', 'text_mm63cqht', 'text_mm632xb7'];
+        decos.slice(0, 3).forEach((d, i) => {
+          if (!d || !d.type) return;
+          subCV[decoTypeCols[i]] = { labels: [d.type] };
+          if (d.colorOrSize) subCV[colorSizeCols[i]] = d.colorOrSize;
+          if (d.department) subCV[deptCols[i]] = { labels: [d.department] };
+          if (d.placement) subCV[placeCols[i]] = d.placement;
+          if (d.artworkDescription) subCV[artDescCols[i]] = d.artworkDescription;
+          if (d.screenCount) subCV[screenCountCols[i]] = Number(d.screenCount) || 0;
+        });
       }
       subCV['numeric_mm63mz1e'] = Math.round(((calc.decoCostPerUnit || 0) + (calc.overheadPerUnit || 0)) * 100) / 100;
       subCV['numeric_mm63hz7j'] = calc.minFloor != null ? Math.round(calc.minFloor * 100) / 100 : 0;
@@ -921,19 +982,19 @@ app.post('/api/quote/promote', async (req, res) => {
     if (!quote) return res.status(404).json({ error: 'Quote not found' });
     const cv = {}; quote.column_values.forEach(c => cv[c.id] = c.text);
 
-    const orderCV = JSON.stringify({
+    const orderCV = {
       'dropdown_mm22w5rr': { labels: [cv['dropdown_mm63w1e'] || ''] },
       'date4': { date: new Date().toISOString().slice(0, 10) },
       'text_mm221kg3': cv['text_mm639ee3'] || '',
-      'email_mm22ap28': cv['email_mm63ex5f'] || '',
-      'phone_mm22ertc': cv['phone_mm635egd'] || '',
       'color_mm27qyta': { label: 'New' },
       'numeric_mm4wv7sc': parseFloat(cv['numeric_mm63wrys']) || 0,
       'numeric_mm4wyq9k': parseFloat(cv['numeric_mm63wxbd']) || 0,
       'numeric_mm4w38cv': parseFloat(cv['numeric_mm6381qx']) || 0,
       'long_text_mm225vbf': cv['long_text_mm63bzx4'] || '',
-    });
-    const createOrder = `mutation { create_item(board_id: ${ORDERS_BOARD_ID}, group_id: "topics", item_name: ${JSON.stringify(quote.name)}, column_values: ${JSON.stringify(orderCV)}, create_labels_if_missing: true) { id } }`;
+    };
+    if (cv['email_mm63ex5f']) orderCV['email_mm22ap28'] = { email: cv['email_mm63ex5f'], text: cv['email_mm63ex5f'] };
+    if (cv['phone_mm635egd']) orderCV['phone_mm22ertc'] = cv['phone_mm635egd'];
+    const createOrder = `mutation { create_item(board_id: ${ORDERS_BOARD_ID}, group_id: "topics", item_name: ${JSON.stringify(quote.name)}, column_values: ${JSON.stringify(JSON.stringify(orderCV))}, create_labels_if_missing: true) { id } }`;
     const orderResult = await mondayQuery(createOrder);
     if (orderResult.errors) return res.status(400).json({ error: orderResult.errors[0].message });
     const orderItemId = orderResult.data.create_item.id;
@@ -942,24 +1003,45 @@ app.post('/api/quote/promote', async (req, res) => {
       const scv = {}; sub.column_values.forEach(c => scv[c.id] = c.text);
       const prodCV = {
         'color_mm2dd6d5': { label: 'In House Decoration' },
-        'text_mm22fv7y': sub.name || '',
+        'text_mm22fv7y': scv['text_mm64r1ka'] || '', // Style # / SKU -- matches original order form's item number field
         'numeric_mm2299qw': parseFloat(scv['numeric_mm63e2t8']) || 0,
         'numeric_mm266zz9': parseFloat(scv['numeric_mm63mz1e']) || 0,
         'numeric_mm22crjt': parseFloat(scv['numeric_mm63dqd9']) || 0,
-        'text_mm2521d5': scv['text_mm63pdpj'] || '',
         'long_text_mm27e9c4': scv['long_text_mm6365bn'] || '',
       };
-      if (scv['dropdown_mm6390a0']) { prodCV['dropdown_mm2y4w39'] = { labels: [scv['dropdown_mm6390a0']] }; prodCV['text_mm2y2y6a'] = scv['text_mm63crtv'] || ''; }
-      if (scv['dropdown_mm63j73']) { prodCV['dropdown_mm2yaxxz'] = { labels: [scv['dropdown_mm63j73']] }; prodCV['text_mm2y5vn6'] = scv['text_mm63cqht'] || ''; }
-      if (scv['dropdown_mm633q95']) { prodCV['dropdown_mm2ygyew'] = { labels: [scv['dropdown_mm633q95']] }; prodCV['text_mm2y8bg8'] = scv['text_mm632xb7'] || ''; }
+
+      // Production routing: which department (Embroidery/Screenprint/DTG/etc.) picks this up --
+      // this is separate from the pricing "Decoration Type" used for cost lookup, and uses the
+      // SAME numeric option ids the original order form writes ({ids:[N]}, not label text).
+      const deptCols = [
+        { dept: 'dropdown_mm64kdgh', place: 'text_mm647jqe', desc: 'text_mm63pdpj', screens: 'numeric_mm64z758', colors: 'text_mm63crtv', artFile: 'file_mm63pm92', prodDept: 'dropdown_mm2y4w39', prodPlace: 'text_mm2y6g62', prodDesc: 'text_mm2y3mb9', prodScreens: 'numeric_mm2yn2nb', prodColors: 'text_mm2y2y6a', prodArtFile: 'file_mm2y1yem' },
+        { dept: 'dropdown_mm64m4m8', place: 'text_mm64wvjr', desc: 'text_mm64962g', screens: 'numeric_mm64hx1r', colors: 'text_mm63cqht', artFile: 'file_mm64b6m8', prodDept: 'dropdown_mm2yaxxz', prodPlace: 'text_mm2yge79', prodDesc: 'text_mm2ymf5k', prodScreens: 'numeric_mm2ynqby', prodColors: 'text_mm2y5vn6', prodArtFile: 'file_mm2ya55c' },
+        { dept: 'dropdown_mm64a9eh', place: 'text_mm64fbdj', desc: 'text_mm64ax4a', screens: 'numeric_mm64v4nq', colors: 'text_mm632xb7', artFile: 'file_mm648efm', prodDept: 'dropdown_mm2ygyew', prodPlace: 'text_mm2y1j6j', prodDesc: 'text_mm2yjq0z', prodScreens: 'numeric_mm2y55qh', prodColors: 'text_mm2y8bg8', prodArtFile: 'file_mm2yjme2' },
+      ];
+
+      const filesToCopy = []; // { sourceCol, targetCol } resolved after subitem is created
+      for (const slot of deptCols) {
+        const deptLabel = scv[slot.dept];
+        if (!deptLabel) continue;
+        const deptId = DEPT_LABEL_TO_ID[deptLabel];
+        if (deptId) prodCV[slot.prodDept] = { ids: [deptId] };
+        if (scv[slot.place]) prodCV[slot.prodPlace] = scv[slot.place];
+        if (scv[slot.desc]) prodCV[slot.prodDesc] = scv[slot.desc];
+        if (scv[slot.screens]) prodCV[slot.prodScreens] = parseFloat(scv[slot.screens]) || 0;
+        if (scv[slot.colors]) prodCV[slot.prodColors] = scv[slot.colors];
+        filesToCopy.push({ sourceCol: slot.artFile, targetCol: slot.prodArtFile });
+      }
 
       const createSub = `mutation { create_subitem(parent_item_id: ${orderItemId}, item_name: ${JSON.stringify(sub.name)}, column_values: ${JSON.stringify(JSON.stringify(prodCV))}, create_labels_if_missing: true) { id } }`;
       const subResult = await mondayQuery(createSub);
-      if (subResult.errors) console.error('Promote subitem error:', subResult.errors);
+      if (subResult.errors) { console.error('Promote subitem error:', subResult.errors); continue; }
+      const newSubId = subResult.data.create_subitem.id;
 
-      // Carry the artwork file over from quote line item to production subitem
-      const artCol = sub.column_values.find(c => c.id === 'file_mm63pm92');
-      // Files aren't copyable via GraphQL text field -- flagged as a manual step for now (see notes to Caitlin)
+      // Carry over every artwork file + the Mockups file, exactly once, so nothing gets re-uploaded
+      for (const f of filesToCopy) {
+        await copyFileColumn(sub.id, f.sourceCol, newSubId, f.targetCol);
+      }
+      await copyFileColumn(sub.id, 'file_mm64jda5', newSubId, 'file_mm26e29h'); // Mockups
     }
 
     // Move quote to archive group + mark Won-Promoted + link back
