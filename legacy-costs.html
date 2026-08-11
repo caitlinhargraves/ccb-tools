@@ -7,61 +7,75 @@
 <title>CCB Legacy Cost Review</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root{--navy:#1B2A4A;--cyan:#00AEEF;--bg:#E8EBF4;--white:#FFFFFF;--muted:#6B7280;--subtle:#9CA3AF;--border2:#E5E7EB;--green:#00A86B;--red:#D14343;}
+  :root{--navy:#1B2A4A;--cyan:#00AEEF;--magenta:#EC008C;--bg:#E8EBF4;--white:#FFFFFF;--muted:#6B7280;--subtle:#9CA3AF;--border:#D1D5DB;--border2:#E5E7EB;--green:#00A86B;--red:#D14343;}
   *{margin:0;padding:0;box-sizing:border-box;}
-  body{background:var(--bg);color:var(--navy);font-family:'Inter',sans-serif;min-height:100vh;font-size:16px;line-height:1.6;}
+  body{background:var(--bg);color:var(--navy);font-family:'Inter',sans-serif;min-height:100vh;font-size:15px;line-height:1.6;}
 
   #loginGate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
   .login-card{background:var(--white);border-radius:18px;padding:32px 28px;width:100%;max-width:340px;box-shadow:0 12px 40px rgba(27,42,74,.14);}
-  .login-title{font-size:22px;font-weight:800;margin-bottom:4px;}
-  .login-sub{font-size:14px;color:var(--muted);margin-bottom:20px;}
-  .login-field label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px;}
-  .login-field input{width:100%;padding:12px 14px;border:1.5px solid var(--border2);border-radius:10px;font-size:16px;font-family:'Inter',sans-serif;background:var(--bg);margin-bottom:14px;}
-  .login-btn{width:100%;padding:13px;border:none;border-radius:10px;background:var(--navy);color:#fff;font-weight:700;font-size:15px;cursor:pointer;}
-  .login-error{font-size:13px;color:var(--red);margin-top:8px;min-height:16px;}
+  .login-title{font-size:20px;font-weight:800;margin-bottom:4px;}
+  .login-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+  .login-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+  .login-field input{width:100%;padding:11px 13px;border:1.5px solid var(--border2);border-radius:9px;font-size:15px;font-family:'Inter',sans-serif;background:var(--bg);margin-bottom:12px;}
+  .login-btn{width:100%;padding:12px;border:none;border-radius:9px;background:var(--navy);color:#fff;font-weight:700;font-size:14px;cursor:pointer;}
+  .login-error{font-size:12.5px;color:var(--red);margin-top:8px;min-height:16px;}
 
   #app{display:none;}
-  .header{background:var(--white);border-bottom:1px solid #D1D5DB;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;}
-  .back-btn{background:none;border:none;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;}
+  .header{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(27,42,74,.06);}
+  .back-btn{background:none;border:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;}
+  .back-btn:hover{color:var(--navy);}
 
-  .page-wrap{max-width:640px;margin:0 auto;padding:28px 18px 100px;}
-  .page-title{font-size:26px;font-weight:800;margin-bottom:8px;}
-  .page-sub{font-size:15px;color:var(--muted);margin-bottom:24px;}
+  .page-wrap{max-width:840px;margin:0 auto;padding:24px 18px 100px;}
+  .page-title{font-size:24px;font-weight:800;margin-bottom:4px;}
+  .page-sub{font-size:13.5px;color:var(--muted);margin-bottom:20px;max-width:600px;}
 
-  .progress-banner{background:var(--white);border:1px solid var(--border2);border-radius:16px;padding:18px 20px;margin-bottom:24px;text-align:center;}
-  .progress-num{font-size:34px;font-weight:800;color:var(--navy);}
-  .progress-lbl{font-size:14px;color:var(--muted);margin-top:2px;}
+  .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;}
+  .stat-card{background:var(--white);border:1px solid var(--border2);border-radius:14px;padding:16px 18px;}
+  .stat-card.accent{border-color:var(--cyan);background:linear-gradient(135deg,#F0FAFF 0%,#fff 60%);}
+  .stat-val{font-size:24px;font-weight:800;color:var(--navy);}
+  .stat-lbl{font-size:11.5px;color:var(--muted);margin-top:2px;}
 
-  .done-state{text-align:center;padding:60px 20px;}
-  .done-emoji{font-size:48px;margin-bottom:10px;}
-  .done-title{font-size:20px;font-weight:800;margin-bottom:6px;}
-  .done-sub{font-size:14px;color:var(--muted);}
+  .toolbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+  .search-input{flex:1;min-width:180px;padding:9px 13px;border:1.5px solid var(--border2);border-radius:9px;font-size:13.5px;font-family:'Inter',sans-serif;background:var(--white);}
+  .filter-toggle{display:flex;border:1.5px solid var(--border2);border-radius:9px;overflow:hidden;}
+  .filter-btn{padding:9px 14px;border:none;background:var(--white);font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;}
+  .filter-btn.active{background:var(--navy);color:#fff;}
+  .sort-select{padding:9px 12px;border:1.5px solid var(--border2);border-radius:9px;font-size:13px;font-family:'Inter',sans-serif;background:var(--white);}
 
-  .order-card{background:var(--white);border:1px solid var(--border2);border-radius:18px;padding:22px 22px 24px;margin-bottom:16px;}
-  .order-name{font-size:19px;font-weight:800;margin-bottom:4px;}
-  .order-line{font-size:14.5px;color:var(--muted);margin-bottom:18px;}
-  .order-line b{color:var(--navy);}
+  .order-card{background:var(--white);border:1px solid var(--border2);border-radius:14px;padding:16px 18px;margin-bottom:10px;transition:opacity .3s, transform .3s;}
+  .order-card.done{border-color:#B8EDD8;background:#F6FDFA;}
+  .order-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+  .order-name{font-weight:700;font-size:15px;}
+  .order-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+  .order-meta b{color:var(--navy);}
+  .rep-pill{font-size:11.5px;font-weight:600;color:var(--muted);background:var(--bg);padding:4px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:6px;}
+  .rep-pill select{border:none;background:none;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:600;color:var(--navy);cursor:pointer;}
+  .rep-pill select:focus{outline:none;}
 
-  .big-label{font-size:15px;font-weight:700;margin-bottom:8px;display:block;}
-  .cost-input-wrap{position:relative;margin-bottom:6px;}
-  .dollar-sign{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:20px;font-weight:700;color:var(--subtle);}
-  .cost-input{width:100%;padding:14px 14px 14px 32px;border:2px solid var(--border2);border-radius:12px;font-size:22px;font-weight:700;font-family:'Inter',sans-serif;}
+  .cost-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .cost-input-wrap{position:relative;flex:0 0 160px;}
+  .dollar-sign{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:700;color:var(--subtle);}
+  .cost-input{width:100%;padding:9px 10px 9px 24px;border:1.5px solid var(--border2);border-radius:9px;font-size:14.5px;font-weight:700;font-family:'Inter',sans-serif;}
   .cost-input:focus{outline:none;border-color:var(--cyan);}
-  .cost-hint{font-size:13px;color:var(--subtle);margin-bottom:18px;}
-
-  .result-box{background:var(--bg);border-radius:12px;padding:14px 16px;margin-bottom:18px;font-size:15px;display:none;}
-  .result-box.show{display:block;}
-  .result-box b{color:var(--navy);}
-
-  .rep-row{display:flex;align-items:center;gap:10px;margin-bottom:20px;font-size:14.5px;color:var(--muted);}
-  .rep-row select{padding:8px 12px;border:1.5px solid var(--border2);border-radius:8px;font-size:14.5px;font-family:'Inter',sans-serif;background:var(--white);color:var(--navy);font-weight:600;}
-
-  .save-btn{width:100%;padding:15px;border:none;border-radius:12px;background:var(--cyan);color:#fff;font-weight:700;font-size:16px;cursor:pointer;}
+  .preview-chip{font-size:12.5px;color:var(--muted);flex:1;min-width:180px;}
+  .preview-chip b{color:var(--navy);}
+  .save-btn{padding:9px 16px;border:none;border-radius:9px;background:var(--cyan);color:#fff;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;}
   .save-btn:disabled{background:var(--border2);color:var(--subtle);cursor:not-allowed;}
-  .skip-btn{width:100%;padding:12px;border:none;background:none;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;}
+  .locked-chip{font-size:12.5px;font-weight:700;color:var(--green);display:flex;align-items:center;gap:6px;}
 
-  .saved-flash{text-align:center;padding:14px;background:#E6FBF3;border-radius:12px;color:var(--green);font-weight:700;font-size:15px;}
-  .loading{text-align:center;color:var(--muted);padding:60px 0;font-size:15px;}
+  .empty-state{text-align:center;color:var(--subtle);padding:60px 20px;font-size:14px;}
+  .celebrate{text-align:center;padding:60px 20px;}
+  .celebrate-emoji{font-size:44px;margin-bottom:8px;}
+  .celebrate-title{font-size:19px;font-weight:800;margin-bottom:4px;}
+  .celebrate-sub{font-size:13.5px;color:var(--muted);}
+  .loading{text-align:center;color:var(--muted);padding:60px 0;font-size:14px;}
+
+  @media(max-width:560px){
+    .order-top{flex-direction:column;}
+    .cost-row{flex-direction:column;align-items:stretch;}
+    .cost-input-wrap{flex:none;}
+    .save-btn{width:100%;}
+  }
 </style>
 </head>
 <body>
@@ -82,8 +96,10 @@
     <button class="back-btn" onclick="location.reload()">Log out</button>
   </div>
   <div class="page-wrap">
-    <div class="page-title">Fix an old order's numbers</div>
-    <div class="page-sub">These are orders from before the Quotes tool. They never had a real cost on file, so we don't know their true profit yet. Just tell us what it actually cost, one at a time.</div>
+    <div class="page-title">Legacy Cost Review</div>
+    <div class="page-sub">These orders predate the Quotes tool and never had a real cost on file, so their margin shows as 100%. Enter the actual cost once per order to fix Gross Profit and Commission -- it locks right after you save.</div>
+    <div class="stats-row" id="statsRow"></div>
+    <div class="toolbar" id="toolbar"></div>
     <div id="content"><div class="loading">Loading...</div></div>
   </div>
 </div>
@@ -91,7 +107,10 @@
 <script>
 const ALL_REPS = ['Chaz Lucius','Bailey McGraw','Jess Miller','Nick Miller','George Miller','Caitlin Hargraves','Bryce','Tucker'];
 let orders = [];
-let currentIndex = 0;
+let doneIds = new Set();
+let searchFilter = '';
+let showFilter = 'todo'; // todo | done | all
+let sortBy = 'revenue';
 
 async function doLogin(){
   const password = document.getElementById('loginPassword').value;
@@ -112,88 +131,134 @@ async function loadOrders(){
     const r = await fetch('/api/legacy-orders/needs-review');
     const d = await r.json();
     orders = d.orders || [];
-    currentIndex = 0;
     render();
   }catch(e){
-    document.getElementById('content').innerHTML = '<div class="loading">Could not load orders. Try refreshing the page.</div>';
+    document.getElementById('content').innerHTML = '<div class="empty-state">Could not load orders. Try refreshing.</div>';
   }
+}
+
+function renderToolbar(){
+  document.getElementById('toolbar').innerHTML =
+    '<input class="search-input" placeholder="Search by client name..." value="'+searchFilter+'" oninput="searchFilter=this.value;render()">' +
+    '<div class="filter-toggle">' +
+      '<button class="filter-btn'+(showFilter==='todo'?' active':'')+'" onclick="showFilter=\'todo\';render()">To Do</button>' +
+      '<button class="filter-btn'+(showFilter==='done'?' active':'')+'" onclick="showFilter=\'done\';render()">Done ('+doneIds.size+')</button>' +
+      '<button class="filter-btn'+(showFilter==='all'?' active':'')+'" onclick="showFilter=\'all\';render()">All</button>' +
+    '</div>' +
+    '<select class="sort-select" onchange="sortBy=this.value;render()">' +
+      '<option value="revenue"'+(sortBy==='revenue'?' selected':'')+'>Sort: Revenue (high to low)</option>' +
+      '<option value="date"'+(sortBy==='date'?' selected':'')+'>Sort: Most Recent</option>' +
+      '<option value="name"'+(sortBy==='name'?' selected':'')+'>Sort: Name (A-Z)</option>' +
+    '</select>';
 }
 
 function render(){
+  renderToolbar();
+
   const total = orders.length;
+  const doneCount = orders.filter(function(o){return doneIds.has(o.id);}).length;
+  const remaining = total - doneCount;
+  const revenueRemaining = orders.filter(function(o){return !doneIds.has(o.id);}).reduce(function(s,o){return s+o.revenue;},0);
+
+  document.getElementById('statsRow').innerHTML =
+    '<div class="stat-card accent"><div class="stat-val">'+remaining+'</div><div class="stat-lbl">Still need a real cost</div></div>' +
+    '<div class="stat-card"><div class="stat-val">'+doneCount+'</div><div class="stat-lbl">Fixed so far</div></div>' +
+    '<div class="stat-card"><div class="stat-val">$'+revenueRemaining.toLocaleString()+'</div><div class="stat-lbl">Revenue still unreviewed</div></div>';
+
   if(total === 0){
-    document.getElementById('content').innerHTML =
-      '<div class="done-state"><div class="done-emoji">🎉</div><div class="done-title">All caught up!</div><div class="done-sub">Every old order has a real cost on file now.</div></div>';
+    document.getElementById('content').innerHTML = '<div class="celebrate"><div class="celebrate-emoji">🎉</div><div class="celebrate-title">All caught up!</div><div class="celebrate-sub">Every legacy order already has a real cost on file.</div></div>';
     return;
   }
 
-  const o = orders[0]; // always work the top of the list; finished ones get removed
-  const remaining = total;
+  let visible = orders.filter(function(o){
+    const isDone = doneIds.has(o.id);
+    if(showFilter==='todo' && isDone) return false;
+    if(showFilter==='done' && !isDone) return false;
+    if(searchFilter && o.name.toLowerCase().indexOf(searchFilter.toLowerCase())===-1) return false;
+    return true;
+  });
 
-  document.getElementById('content').innerHTML =
-    '<div class="progress-banner"><div class="progress-num">'+remaining+'</div><div class="progress-lbl">order'+(remaining!==1?'s':'')+' still need a real cost</div></div>' +
-    '<div class="order-card">' +
-      '<div class="order-name">'+o.name+'</div>' +
-      '<div class="order-line">Sold for <b>$'+o.revenue.toLocaleString()+'</b>'+(o.date?' on '+o.date:'')+'</div>' +
+  const sorters = {
+    revenue: function(a,b){return b.revenue-a.revenue;},
+    date: function(a,b){return (b.date||'').localeCompare(a.date||'');},
+    name: function(a,b){return a.name.localeCompare(b.name);},
+  };
+  visible = visible.sort(sorters[sortBy]);
 
-      '<label class="big-label">What did this order actually cost?</label>' +
-      '<div class="cost-input-wrap"><span class="dollar-sign">$</span><input type="number" step="0.01" class="cost-input" id="costInput" placeholder="0.00" oninput="updatePreview()"></div>' +
-      '<div class="cost-hint">Total cost of goods for this whole order (garments, decoration, everything).</div>' +
+  if(!visible.length){
+    document.getElementById('content').innerHTML = '<div class="empty-state">Nothing matches here.</div>';
+    return;
+  }
 
-      '<div class="result-box" id="resultBox"></div>' +
+  document.getElementById('content').innerHTML = visible.map(orderCardHtml).join('');
 
-      '<div class="rep-row">Sales rep on this order: <select id="repSelect">'+ALL_REPS.map(function(r){return '<option'+(r===o.salesPerson?' selected':'')+'>'+r+'</option>';}).join('')+'</select></div>' +
-
-      '<button class="save-btn" id="saveBtn" disabled onclick="saveCost(\''+o.id+'\')">Save This Cost</button>' +
-      '<button class="skip-btn" onclick="skipOrder()">Skip for now, come back later →</button>' +
-    '</div>';
+  visible.forEach(function(o){
+    if(doneIds.has(o.id)) return;
+    const input = document.getElementById('cost-'+o.id);
+    if(input) input.addEventListener('input', function(){ updatePreview(o.id); });
+  });
 }
 
-function updatePreview(){
-  const cost = parseFloat(document.getElementById('costInput').value);
-  const box = document.getElementById('resultBox');
-  const btn = document.getElementById('saveBtn');
+function orderCardHtml(o){
+  const isDone = doneIds.has(o.id);
+  if(isDone){
+    return '<div class="order-card done">' +
+      '<div class="order-top">' +
+        '<div><div class="order-name">'+o.name+'</div><div class="order-meta">'+(o.date||'')+' · Revenue $'+o.revenue.toLocaleString()+'</div></div>' +
+        '<div class="locked-chip">✓ Saved &amp; locked</div>' +
+      '</div>' +
+    '</div>';
+  }
+  return '<div class="order-card" id="card-'+o.id+'">' +
+    '<div class="order-top">' +
+      '<div><div class="order-name">'+o.name+'</div><div class="order-meta">'+(o.date||'no date')+' · Revenue <b>$'+o.revenue.toLocaleString()+'</b> · '+(o.commissionRate*100).toFixed(0)+'% commission rate</div></div>' +
+      '<div class="rep-pill">Rep: <select id="rep-'+o.id+'">'+ALL_REPS.map(function(r){return '<option'+(r===o.salesPerson?' selected':'')+'>'+r+'</option>';}).join('')+'</select></div>' +
+    '</div>' +
+    '<div class="cost-row">' +
+      '<div class="cost-input-wrap"><span class="dollar-sign">$</span><input type="number" step="0.01" class="cost-input" id="cost-'+o.id+'" placeholder="0.00"></div>' +
+      '<div class="preview-chip" id="preview-'+o.id+'">Enter the real total cost for this order</div>' +
+      '<button class="save-btn" id="savebtn-'+o.id+'" disabled onclick="saveCost(\''+o.id+'\')">Save</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function updatePreview(orderId){
+  const o = orders.find(function(x){return x.id===orderId;});
+  const cost = parseFloat(document.getElementById('cost-'+orderId).value);
+  const preview = document.getElementById('preview-'+orderId);
+  const btn = document.getElementById('savebtn-'+orderId);
   if(isNaN(cost) || cost < 0){
-    box.classList.remove('show');
+    preview.textContent = 'Enter the real total cost for this order';
     btn.disabled = true;
     return;
   }
-  const o = orders[0];
   const profit = o.revenue - cost;
   const commission = profit * o.commissionRate;
-  box.classList.add('show');
-  box.innerHTML = 'That leaves <b>$'+profit.toFixed(2)+'</b> in profit, so the commission on this order will be <b>$'+commission.toFixed(2)+'</b>.';
+  preview.innerHTML = 'New profit: <b>$'+profit.toFixed(2)+'</b> · New commission: <b>$'+commission.toFixed(2)+'</b>';
   btn.disabled = false;
 }
 
-function skipOrder(){
-  const skipped = orders.shift();
-  orders.push(skipped);
-  render();
-}
-
 async function saveCost(orderId){
-  const cost = parseFloat(document.getElementById('costInput').value);
-  const repSelect = document.getElementById('repSelect');
-  const o = orders[0];
-  const btn = document.getElementById('saveBtn');
+  const cost = parseFloat(document.getElementById('cost-'+orderId).value);
+  const repSelect = document.getElementById('rep-'+orderId);
+  const o = orders.find(function(x){return x.id===orderId;});
+  const btn = document.getElementById('savebtn-'+orderId);
   btn.disabled = true;
   btn.textContent = 'Saving...';
 
   try{
     if(repSelect.value !== o.salesPerson){
       await fetch('/api/legacy-orders/reassign-rep',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId:orderId,salesPerson:repSelect.value})});
+      o.salesPerson = repSelect.value;
     }
     const r = await fetch('/api/legacy-orders/edit-cost',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId:orderId,cost:cost})});
     const d = await r.json();
-    if(!d.ok){ alert(d.error||'Save failed'); btn.disabled=false; btn.textContent='Save This Cost'; return; }
-
-    document.getElementById('content').insertAdjacentHTML('afterbegin', '<div class="saved-flash">Saved and locked in ✓</div>');
-    orders.shift();
-    setTimeout(render, 900);
+    if(!d.ok){ alert(d.error||'Save failed'); btn.disabled=false; btn.textContent='Save'; return; }
+    doneIds.add(orderId);
+    render();
   }catch(e){
     alert('Save failed. Try again.');
-    btn.disabled=false; btn.textContent='Save This Cost';
+    btn.disabled=false; btn.textContent='Save';
   }
 }
 </script>
