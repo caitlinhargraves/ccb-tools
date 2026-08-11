@@ -37,6 +37,24 @@ async function mondayQuery(query) {
   return r.json();
 }
 
+// Fetches every item on a board regardless of count -- items_page caps at 500 per
+// call, so this follows cursor pagination until Monday reports no more pages.
+// Used anywhere "all orders" or "all quotes" needs to mean ALL, not just the first 500.
+async function fetchAllItems(boardId, itemsFragment) {
+  let allItems = [];
+  let cursor = null;
+  do {
+    const pageArg = cursor ? `cursor: ${JSON.stringify(cursor)}` : 'limit: 500';
+    const query = `{boards(ids:[${boardId}]){items_page(${pageArg}){cursor items{${itemsFragment}}}}}`;
+    const data = await mondayQuery(query);
+    const page = data.data?.boards?.[0]?.items_page;
+    if (!page) break;
+    allItems = allItems.concat(page.items || []);
+    cursor = page.cursor;
+  } while (cursor);
+  return allItems;
+}
+
 // Copies a file from one item's file column to another item's file column
 // (download the asset bytes, re-upload -- Monday has no native "copy" mutation).
 async function copyFileColumn(sourceItemId, sourceColumnId, targetItemId, targetColumnId) {
@@ -187,29 +205,16 @@ async function fetchFromMonday() {
   cache.isLoading = true;
   console.log('Fetching from Monday...', new Date().toISOString());
   try {
-    const query = `{
-      boards(ids: [${ORDERS_BOARD_ID}]) {
-        items_page(limit: 500) {
-          items {
-            id name created_at updated_at
-            group { id }
-            column_values { id text value }
-            subitems {
-              id name
-              column_values { id text value }
-            }
-          }
-        }
+    const itemsFragment = `
+      id name created_at updated_at
+      group { id }
+      column_values { id text value }
+      subitems {
+        id name
+        column_values { id text value }
       }
-    }`;
-    const response = await fetch('https://api.monday.com/v2', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': MONDAY_API_KEY, 'API-Version': '2024-01' },
-      body: JSON.stringify({ query })
-    });
-    const data = await response.json();
-    if (data.errors) { console.error('Monday API errors:', data.errors); cache.isLoading = false; return; }
-    cache.orders = data.data.boards[0].items_page.items;
+    `;
+    cache.orders = await fetchAllItems(ORDERS_BOARD_ID, itemsFragment);
     cache.lastUpdated = new Date().toISOString();
     console.log(`Cache updated: ${cache.orders.length} orders`);
   } catch (err) {
@@ -551,14 +556,7 @@ app.post('/api/upload-file', upload.single('file'), async (req, res) => {
 // ============================================================
 app.get('/api/next-order-number', async (req, res) => {
   try {
-    const query = `{boards(ids:[${ORDERS_BOARD_ID}]){items_page(limit:500){items{column_values(ids:["text_mm29djkk"]){id text}}}}}`;
-    const r = await fetch('https://api.monday.com/v2', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': MONDAY_API_KEY, 'API-Version': '2024-01' },
-      body: JSON.stringify({ query })
-    });
-    const data = await r.json();
-    const items = data.data?.boards[0]?.items_page?.items || [];
+    const items = await fetchAllItems(ORDERS_BOARD_ID, 'column_values(ids:["text_mm29djkk"]){id text}');
     let max = 116; // start from CCB-00117
     for (const item of items) {
       const txt = item.column_values?.find(c => c.id === 'text_mm29djkk')?.text || '';
@@ -771,9 +769,7 @@ app.get('/api/quote/client-history', async (req, res) => {
     const client = (req.query.client || '').trim();
     if (!client) return res.json({ orderCount: 0, rolling12moRevenue: 0 });
 
-    const query = `{boards(ids:[${ORDERS_BOARD_ID}]){items_page(limit:500){items{id name column_values(ids:["date4","numeric_mm4wv7sc"]){id text}}}}}`;
-    const data = await mondayQuery(query);
-    const items = data.data?.boards?.[0]?.items_page?.items || [];
+    const items = await fetchAllItems(ORDERS_BOARD_ID, 'id name column_values(ids:["date4","numeric_mm4wv7sc"]){id text}');
     const now = Date.now();
     const yearMs = 365 * 24 * 60 * 60 * 1000;
 
@@ -837,9 +833,7 @@ app.post('/api/quote/save', async (req, res) => {
     const grossProfit = totalRevenue - totalCost;
     const marginPct = totalRevenue > 0 ? grossProfit / totalRevenue : 0;
 
-    const histQuery = `{boards(ids:[${ORDERS_BOARD_ID}]){items_page(limit:500){items{id name column_values(ids:["date4","numeric_mm4wv7sc"]){id text}}}}}`;
-    const histData = await mondayQuery(histQuery);
-    const items = histData.data?.boards?.[0]?.items_page?.items || [];
+    const items = await fetchAllItems(ORDERS_BOARD_ID, 'id name column_values(ids:["date4","numeric_mm4wv7sc"]){id text}');
     const now = Date.now(); const yearMs = 365 * 24 * 60 * 60 * 1000;
     let orderCount = 0, rolling12moRevenue = 0;
     for (const item of items) {
@@ -958,9 +952,8 @@ app.post('/api/quote/save', async (req, res) => {
 // ============================================================
 app.get('/api/quote/list', async (req, res) => {
   try {
-    const query = `{boards(ids:[${QUOTES_BOARD_ID}]){items_page(limit:200){items{id name group{id title} column_values{id text value} subitems{id name}}}}}`;
-    const data = await mondayQuery(query);
-    res.json({ items: data.data?.boards?.[0]?.items_page?.items || [] });
+    const items = await fetchAllItems(QUOTES_BOARD_ID, 'id name group{id title} column_values{id text value} subitems{id name}');
+    res.json({ items });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1066,13 +1059,11 @@ app.get('/api/rep/dashboard', async (req, res) => {
     const { salesPerson, isAdmin } = req.query;
     // Always pulled live from Monday on every request -- no server-side caching here,
     // so the numbers reflect whatever is on the boards at this exact moment.
-    const quoteQuery = `{boards(ids:[${QUOTES_BOARD_ID}]){items_page(limit:200){items{id name group{id title} column_values{id text}}}}}`;
-    const orderQuery = `{boards(ids:[${ORDERS_BOARD_ID}]){items_page(limit:500){items{id name column_values{id text}}}}}`;
-    const notesQuery = `{boards(ids:[${CLIENT_NOTES_BOARD_ID}]){items_page(limit:500){items{id name column_values{id text}}}}}`;
-    const [quoteData, orderData, notesData] = await Promise.all([mondayQuery(quoteQuery), mondayQuery(orderQuery), mondayQuery(notesQuery)]);
-    const allQuotes = quoteData.data?.boards?.[0]?.items_page?.items || [];
-    const allOrders = orderData.data?.boards?.[0]?.items_page?.items || [];
-    const allNotes = notesData.data?.boards?.[0]?.items_page?.items || [];
+    const [allQuotes, allOrders, allNotes] = await Promise.all([
+      fetchAllItems(QUOTES_BOARD_ID, 'id name group{id title} column_values{id text}'),
+      fetchAllItems(ORDERS_BOARD_ID, 'id name column_values{id text}'),
+      fetchAllItems(CLIENT_NOTES_BOARD_ID, 'id name column_values{id text}'),
+    ]);
 
     const matchesRep = (cvArr, colId) => {
       const val = cvArr.find(c => c.id === colId)?.text || '';
@@ -1253,9 +1244,7 @@ app.get('/api/rep/payout-report', async (req, res) => {
     const { start, end } = req.query;
     if (!start || !end) return res.status(400).json({ error: 'start and end dates required' });
 
-    const query = `{boards(ids:[${ORDERS_BOARD_ID}]){items_page(limit:500){items{id name column_values{id text}}}}}`;
-    const data = await mondayQuery(query);
-    const items = data.data?.boards?.[0]?.items_page?.items || [];
+    const items = await fetchAllItems(ORDERS_BOARD_ID, 'id name column_values{id text}');
 
     const startMs = new Date(start).getTime();
     const endMs = new Date(end).getTime();
