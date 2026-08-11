@@ -1195,6 +1195,30 @@ app.get('/api/rep/payout-report', async (req, res) => {
   }
 });
 
+// ============================================================
+// Clear a file column entirely -- used by the "Replace mockup"
+// quick action so a wrong image doesn't just get piled on top of.
+// Monday's file columns have no selective single-file removal via
+// API, so a full clear + fresh upload is the reliable way to swap.
+// ============================================================
+app.post('/api/clear-file-column', async (req, res) => {
+  try {
+    const { itemId, columnId } = req.body;
+    if (!itemId || !columnId) return res.status(400).json({ error: 'itemId and columnId required' });
+    const mutation = `mutation { change_column_value(item_id: ${itemId}, column_id: "${columnId}", value: "{}") { id } }`;
+    const r = await fetch('https://api.monday.com/v2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': MONDAY_API_KEY, 'API-Version': '2024-01' },
+      body: JSON.stringify({ query: mutation })
+    });
+    const data = await r.json();
+    if (data.errors) return res.status(400).json({ error: data.errors[0].message });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`CCB Tools server running on port ${PORT}`);
 });
