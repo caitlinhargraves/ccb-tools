@@ -1203,9 +1203,23 @@ app.get('/api/rep/payout-report', async (req, res) => {
 // ============================================================
 app.post('/api/clear-file-column', async (req, res) => {
   try {
-    const { itemId, columnId } = req.body;
+    const { itemId, columnId, boardId } = req.body;
     if (!itemId || !columnId) return res.status(400).json({ error: 'itemId and columnId required' });
-    const mutation = `mutation { change_column_value(item_id: ${itemId}, column_id: "${columnId}", value: "{}") { id } }`;
+
+    // change_column_value requires board_id -- look it up if the caller didn't pass one
+    let resolvedBoardId = boardId;
+    if (!resolvedBoardId) {
+      const lookup = await fetch('https://api.monday.com/v2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': MONDAY_API_KEY, 'API-Version': '2024-01' },
+        body: JSON.stringify({ query: `{items(ids:[${itemId}]){board{id}}}` })
+      });
+      const lookupData = await lookup.json();
+      resolvedBoardId = lookupData.data?.items?.[0]?.board?.id;
+      if (!resolvedBoardId) return res.status(400).json({ error: 'Could not resolve board_id for this item' });
+    }
+
+    const mutation = `mutation { change_column_value(item_id: ${itemId}, board_id: ${resolvedBoardId}, column_id: "${columnId}", value: "{}") { id } }`;
     const r = await fetch('https://api.monday.com/v2', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': MONDAY_API_KEY, 'API-Version': '2024-01' },

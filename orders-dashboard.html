@@ -891,7 +891,7 @@ async function replaceFile(subId,columnId,accept){
     const file=inp.files[0];
     ordToast('Replacing...');
     try{
-      const clearRes=await fetch('/api/clear-file-column',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemId:subId,columnId})});
+      const clearRes=await fetch('/api/clear-file-column',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemId:subId,columnId,boardId:SUBITEMS_BOARD})});
       if(!clearRes.ok)throw new Error('Could not clear old file ('+clearRes.status+')');
       const fd=new FormData();
       fd.append('file',file,file.name);
