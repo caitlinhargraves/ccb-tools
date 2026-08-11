@@ -1105,6 +1105,7 @@ app.get('/api/rep/dashboard', async (req, res) => {
     }).sort((a, b) => (b.quoteDate || '').localeCompare(a.quoteDate || ''));
 
     let totalRevenue = 0, totalCommission = 0, commissionPaid = 0, commissionPending = 0;
+    let commissionInvoicedAwaitingPayment = 0, commissionNotYetInvoiced = 0;
     const byClient = {};
     const byMonthCommission = {};
     const byMonthRevenue = {};
@@ -1123,7 +1124,12 @@ app.get('/api/rep/dashboard', async (req, res) => {
       const orderDate = cv['date4'] || '';
       totalRevenue += rev;
       totalCommission += comm;
-      if (invStatus === 'Paid') commissionPaid += comm; else commissionPending += comm;
+      if (invStatus === 'Paid') commissionPaid += comm;
+      else {
+        commissionPending += comm;
+        if (invStatus === 'Invoice Created' || invStatus === 'Invoice Sent' || invStatus === 'Overdue') commissionInvoicedAwaitingPayment += comm;
+        else commissionNotYetInvoiced += comm;
+      }
 
       const trendDateStr = datePaid || orderDate;
       if (trendDateStr) {
@@ -1194,6 +1200,8 @@ app.get('/api/rep/dashboard', async (req, res) => {
       totalCommission: Math.round(totalCommission * 100) / 100,
       commissionPaid: Math.round(commissionPaid * 100) / 100,
       commissionPending: Math.round(commissionPending * 100) / 100,
+      commissionInvoicedAwaitingPayment: Math.round(commissionInvoicedAwaitingPayment * 100) / 100,
+      commissionNotYetInvoiced: Math.round(commissionNotYetInvoiced * 100) / 100,
       thisMonthRevenue: Math.round((byMonthRevenue[thisMonthKey] || 0) * 100) / 100,
       lastMonthRevenue: Math.round((byMonthRevenue[lastMonthKey] || 0) * 100) / 100,
       thisMonthCommission: Math.round((byMonthCommission[thisMonthKey] || 0) * 100) / 100,

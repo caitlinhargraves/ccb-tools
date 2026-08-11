@@ -86,6 +86,11 @@
   .status-chip{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;}
   .status-chip.paid{background:#E6FBF3;color:#00805A;}
   .status-chip.pending{background:#FFF6E0;color:#946200;}
+  .status-chip.sent{background:#F5EEFC;color:#6B2FB3;}
+  .status-chip.created{background:#E8F4FB;color:#007EB5;}
+  .status-chip.overdue{background:#FCE9EC;color:#B3122A;}
+  .status-chip.notinvoiced{background:var(--bg);color:var(--muted);}
+  .commission-note{font-size:10.5px;color:var(--subtle);margin-top:6px;line-height:1.4;}
 
   .note-item{padding:10px 0;border-bottom:1px solid var(--border2);}
   .note-item:last-child{border-bottom:none;}
@@ -361,7 +366,8 @@ function renderDashboard(d){
       '<div class="metric-card"><div class="metric-val">$'+d.totalRevenue.toLocaleString()+'</div><div class="metric-lbl">Total Revenue (All Time)</div></div>' +
       '<div class="metric-card"><div class="metric-val">$'+d.totalCommission.toLocaleString()+'</div><div class="metric-lbl">Total Commission (All Time)</div></div>' +
       '<div class="metric-card"><div class="metric-val">$'+d.commissionPaid.toLocaleString()+'</div><div class="metric-lbl">Commission Paid Out</div></div>' +
-      '<div class="metric-card"><div class="metric-val">$'+d.commissionPending.toLocaleString()+'</div><div class="metric-lbl">Commission Pending</div></div>' +
+      '<div class="metric-card"><div class="metric-val">$'+d.commissionInvoicedAwaitingPayment.toLocaleString()+'</div><div class="metric-lbl">Invoiced, Awaiting Payment</div></div>' +
+      '<div class="metric-card"><div class="metric-val">$'+d.commissionNotYetInvoiced.toLocaleString()+'</div><div class="metric-lbl">Not Yet Invoiced</div></div>' +
       '<div class="metric-card"><div class="metric-val">$'+d.thisMonthRevenue.toLocaleString()+'</div><div class="metric-lbl">This Month Revenue</div>'+deltaHtml(revDelta)+'</div>' +
       '<div class="metric-card"><div class="metric-val">$'+d.thisMonthCommission.toLocaleString()+'</div><div class="metric-lbl">This Month Commission</div>'+deltaHtml(commDelta)+'</div>' +
     '</div>' +
@@ -391,12 +397,21 @@ function clientCardHtml(c){
   '</div>';
 }
 
+function statusChipClass(status){
+  if(status==='Paid') return 'paid';
+  if(status==='Invoice Sent') return 'sent';
+  if(status==='Invoice Created') return 'created';
+  if(status==='Overdue') return 'overdue';
+  return 'notinvoiced';
+}
+
 function orderHistoryHtml(c){
   if(!c.orders.length) return '<div class="empty-state">No orders on file for this client yet.</div>';
   return '<div class="order-row" style="font-weight:700;color:var(--subtle);font-size:10.5px;text-transform:uppercase;"><span>Date</span><span>Revenue</span><span>Gross Profit</span><span>Commission</span><span>Status</span></div>' +
     c.orders.map(function(o){
-      return '<div class="order-row"><span>'+(o.date||'-')+'</span><span>$'+o.revenue.toLocaleString()+'</span><span>$'+o.grossProfit.toLocaleString()+'</span><span>$'+o.commission.toLocaleString()+'</span><span class="status-chip '+(o.invoiceStatus==='Paid'?'paid':'pending')+'">'+o.invoiceStatus+'</span></div>';
-    }).join('');
+      return '<div class="order-row"><span>'+(o.date||'-')+'</span><span>$'+o.revenue.toLocaleString()+'</span><span>$'+o.grossProfit.toLocaleString()+'</span><span>$'+o.commission.toLocaleString()+'</span><span class="status-chip '+statusChipClass(o.invoiceStatus)+'">'+o.invoiceStatus+'</span></div>';
+    }).join('') +
+    '<div class="commission-note">Commission moves from Pending to Paid the moment an order\'s invoice is marked Paid in Invoicing -- this updates here live, no waiting.</div>';
 }
 
 function notesHtml(c){
