@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCB Production Performance</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--navy:#1B2A4A;--cyan:#00AEEF;--bg:#E8EBF4;--white:#FFFFFF;--muted:#6B7280;--subtle:#9CA3AF;--border2:#E5E7EB;--green:#00A86B;--red:#D14343;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--navy);font-family:'Inter',sans-serif;min-height:100vh;font-size:15px;line-height:1.6;}
+
+  #loginGate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
+  .login-card{background:var(--white);border-radius:18px;padding:32px 28px;width:100%;max-width:340px;box-shadow:0 12px 40px rgba(27,42,74,.14);}
+  .login-title{font-size:20px;font-weight:800;margin-bottom:4px;}
+  .login-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+  .login-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+  .login-field input{width:100%;padding:11px 13px;border:1.5px solid var(--border2);border-radius:9px;font-size:15px;font-family:'Inter',sans-serif;background:var(--bg);margin-bottom:12px;}
+  .login-btn{width:100%;padding:12px;border:none;border-radius:9px;background:var(--navy);color:#fff;font-weight:700;font-size:14px;cursor:pointer;}
+  .login-error{font-size:12.5px;color:var(--red);margin-top:8px;min-height:16px;}
+
+  #app{display:none;}
+  .header{background:var(--white);border-bottom:1px solid #D1D5DB;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  .back-btn,.refresh-btn{background:none;border:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;}
+
+  .page-wrap{max-width:900px;margin:0 auto;padding:24px 18px 80px;}
+  .page-title{font-size:24px;font-weight:800;margin-bottom:4px;}
+  .page-sub{font-size:13.5px;color:var(--muted);margin-bottom:20px;}
+
+  .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
+  .stat-card{background:var(--white);border:1px solid var(--border2);border-radius:14px;padding:16px 18px;}
+  .stat-val{font-size:24px;font-weight:800;color:var(--navy);}
+  .stat-lbl{font-size:11.5px;color:var(--muted);margin-top:2px;}
+
+  .worker-card{background:var(--white);border:1px solid var(--border2);border-radius:14px;margin-bottom:12px;overflow:hidden;}
+  .worker-hdr{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;cursor:pointer;background:var(--bg);}
+  .worker-name{font-weight:800;font-size:16px;}
+  .worker-summary{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .worker-summary b{color:var(--navy);}
+  .worker-chevron{font-size:12px;color:var(--subtle);transition:transform .15s;}
+  .worker-card.open .worker-chevron{transform:rotate(180deg);}
+  .worker-body{display:none;padding:16px 18px;}
+  .worker-card.open .worker-body{display:block;}
+
+  .dept-chip-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .dept-chip{background:var(--bg);border-radius:10px;padding:8px 12px;font-size:12px;}
+  .dept-chip b{display:block;font-size:14px;color:var(--navy);}
+
+  .subtab-row{display:flex;gap:6px;margin-bottom:12px;}
+  .subtab-btn{padding:6px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--white);font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;}
+  .subtab-btn.active{border-color:var(--navy);background:var(--navy);color:#fff;}
+
+  .job-row{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:8px;padding:8px 0;border-bottom:1px solid var(--border2);font-size:12.5px;}
+  .job-row:last-child{border-bottom:none;}
+  .damage-row{padding:10px 0;border-bottom:1px solid var(--border2);font-size:12.5px;}
+  .damage-row:last-child{border-bottom:none;}
+  .damage-top{display:flex;justify-content:space-between;font-weight:600;}
+  .damage-reason{color:var(--muted);margin-top:3px;}
+  .damage-cost{color:var(--red);font-weight:700;}
+
+  .empty-state{text-align:center;color:var(--subtle);padding:40px 20px;}
+  .loading{text-align:center;color:var(--muted);padding:60px 0;}
+</style>
+</head>
+<body>
+
+<div id="loginGate">
+  <div class="login-card">
+    <div class="login-title">Production Performance</div>
+    <div class="login-sub">Admin access only.</div>
+    <div class="login-field"><label>Password</label><input type="password" id="loginPassword" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="login-btn" onclick="doLogin()">Log In</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="header">
+    <button class="back-btn" onclick="location.href='index.html'">← Back Home</button>
+    <button class="refresh-btn" onclick="loadReport()">🔄 Refresh</button>
+  </div>
+  <div class="page-wrap">
+    <div class="page-title">Production Performance</div>
+    <div class="page-sub">How long each job actually took, broken down by worker and department, plus every damaged-goods report on file.</div>
+    <div class="stats-row" id="statsRow"></div>
+    <div id="content"><div class="loading">Loading...</div></div>
+  </div>
+</div>
+
+<script>
+let report = null;
+let expandedWorkers = new Set();
+let activeTab = {};
+
+async function doLogin(){
+  const password = document.getElementById('loginPassword').value;
+  const err = document.getElementById('loginError');
+  err.textContent = '';
+  try{
+    const r = await fetch('/api/rep/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:password,selectedRep:'Admin'})});
+    const d = await r.json();
+    if(!d.ok || d.role!=='Admin'){ err.textContent = 'Admin password required.'; return; }
+    document.getElementById('loginGate').style.display='none';
+    document.getElementById('app').style.display='block';
+    loadReport();
+  }catch(e){ err.textContent = 'Login failed.'; }
+}
+
+function fmtDuration(secs){
+  const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60);
+  if(h>0) return h+'h '+m+'m';
+  if(m>0) return m+'m '+Math.round(secs%60)+'s';
+  return Math.round(secs)+'s';
+}
+function fmtDate(iso){
+  if(!iso) return '-';
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+}
+
+async function loadReport(){
+  document.getElementById('content').innerHTML = '<div class="loading">Loading...</div>';
+  try{
+    const r = await fetch('/api/production/performance-report');
+    report = await r.json();
+    render();
+  }catch(e){
+    document.getElementById('content').innerHTML = '<div class="empty-state">Could not load the report.</div>';
+  }
+}
+
+function render(){
+  document.getElementById('statsRow').innerHTML =
+    '<div class="stat-card"><div class="stat-val">'+report.totalJobsCompleted+'</div><div class="stat-lbl">Jobs completed &amp; timed</div></div>' +
+    '<div class="stat-card"><div class="stat-val">'+report.totalDamageIncidents+'</div><div class="stat-lbl">Damage reports on file</div></div>' +
+    '<div class="stat-card"><div class="stat-val">$'+report.totalDamageCost.toLocaleString()+'</div><div class="stat-lbl">Total damage cost</div></div>';
+
+  if(!report.workers.length){
+    document.getElementById('content').innerHTML = '<div class="empty-state">No completed jobs or damage reports yet. Data will show up here as production uses the timers on the shop floor.</div>';
+    return;
+  }
+
+  document.getElementById('content').innerHTML = report.workers.map(workerCardHtml).join('');
+}
+
+function workerCardHtml(w){
+  const isOpen = expandedWorkers.has(w.worker);
+  const tab = activeTab[w.worker] || 'jobs';
+  return '<div class="worker-card'+(isOpen?' open':'')+'">' +
+    '<div class="worker-hdr" onclick="toggleWorker(\''+w.worker+'\')">' +
+      '<div><div class="worker-name">'+w.worker+'</div><div class="worker-summary">'+w.jobsCompleted+' jobs completed · avg <b>'+fmtDuration(w.avgSecondsPerJob)+'</b>/job'+(w.damageCount?' · <span style="color:var(--red)">'+w.damageCount+' damage report'+(w.damageCount!==1?'s':'')+'</span>':'')+'</div></div>' +
+      '<span class="worker-chevron">▾</span>' +
+    '</div>' +
+    '<div class="worker-body">' +
+      '<div class="dept-chip-row">' + w.byDept.map(function(d){return '<div class="dept-chip">'+d.department+'<b>'+d.count+' jobs · '+fmtDuration(d.avgSeconds)+' avg</b></div>';}).join('') + '</div>' +
+      '<div class="subtab-row">' +
+        '<button class="subtab-btn'+(tab==='jobs'?' active':'')+'" onclick="event.stopPropagation();setTab(\''+w.worker+'\',\'jobs\')">Recent Jobs ('+w.recentJobs.length+')</button>' +
+        '<button class="subtab-btn'+(tab==='damage'?' active':'')+'" onclick="event.stopPropagation();setTab(\''+w.worker+'\',\'damage\')">Damage Reports ('+w.recentDamage.length+')</button>' +
+      '</div>' +
+      (tab==='jobs' ? jobsHtml(w) : damageHtml(w)) +
+    '</div>' +
+  '</div>';
+}
+
+function jobsHtml(w){
+  if(!w.recentJobs.length) return '<div class="empty-state">No completed jobs yet.</div>';
+  return '<div class="job-row" style="font-weight:700;color:var(--subtle);font-size:10.5px;text-transform:uppercase;"><span>Job</span><span>Department</span><span>Order</span><span>Time Taken</span></div>' +
+    w.recentJobs.map(function(j){
+      return '<div class="job-row"><span>'+j.job+'</span><span>'+j.department+'</span><span>'+j.orderName+'</span><span>'+fmtDuration(j.seconds)+'</span></div>';
+    }).join('');
+}
+
+function damageHtml(w){
+  if(!w.recentDamage.length) return '<div class="empty-state">No damage reports for this worker. 🎉</div>';
+  return w.recentDamage.map(function(d){
+    return '<div class="damage-row">' +
+      '<div class="damage-top"><span>'+d.job+' — '+d.orderName+'</span><span class="damage-cost">$'+d.cost.toLocaleString()+'</span></div>' +
+      '<div class="damage-reason">Qty '+d.quantity+' · '+d.department+' · '+fmtDate(d.reportedAt)+(d.reason?' — '+d.reason:'')+'</div>' +
+    '</div>';
+  }).join('');
+}
+
+function toggleWorker(worker){
+  if(expandedWorkers.has(worker)) expandedWorkers.delete(worker); else expandedWorkers.add(worker);
+  render();
+}
+function setTab(worker, tab){
+  activeTab[worker] = tab;
+  render();
+}
+</script>
+</body>
+</html>

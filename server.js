@@ -1557,6 +1557,78 @@ app.post('/api/production/damage-report', async (req, res) => {
 // it here, which flips it to Decorated and re-runs the same
 // "whole order ready" check that used to fire immediately.
 // ============================================================
+// ============================================================
+// PRODUCTION PERFORMANCE REPORT -- admin view of everything
+// captured by the timer + damage system: per-worker speed,
+// department breakdown, and damage history, so this data is
+// actually visible somewhere instead of just sitting on boards.
+// ============================================================
+app.get('/api/production/performance-report', async (req, res) => {
+  try {
+    const [timeItems, damageItems] = await Promise.all([
+      fetchAllItems(TIME_LOG_BOARD_ID, 'id name column_values{id text}'),
+      fetchAllItems(DAMAGE_BOARD_ID, 'id name column_values{id text}'),
+    ]);
+
+    const byWorker = {};
+    const ensureWorker = (w) => {
+      if (!byWorker[w]) byWorker[w] = { worker: w, jobsCompleted: 0, totalActiveSeconds: 0, byDept: {}, damageCount: 0, damageQty: 0, damageCost: 0, recentJobs: [], recentDamage: [] };
+      return byWorker[w];
+    };
+
+    for (const it of timeItems) {
+      const cv = {}; it.column_values.forEach(c => cv[c.id] = c.text);
+      const status = cv['color_mm64srw8'];
+      if (status !== 'Completed') continue;
+      const worker = cv['dropdown_mm64pyar'] || 'Unassigned';
+      const dept = cv['dropdown_mm64wccd'] || 'Other';
+      const seconds = parseFloat(cv['numeric_mm64rs82']) || 0;
+      const w = ensureWorker(worker);
+      w.jobsCompleted++;
+      w.totalActiveSeconds += seconds;
+      w.byDept[dept] = w.byDept[dept] || { count: 0, seconds: 0 };
+      w.byDept[dept].count++;
+      w.byDept[dept].seconds += seconds;
+      w.recentJobs.push({ job: it.name, department: dept, orderName: cv['text_mm643fsg'] || '', seconds, endTime: cv['text_mm64fj60'] || '' });
+    }
+
+    for (const it of damageItems) {
+      const cv = {}; it.column_values.forEach(c => cv[c.id] = c.text);
+      const worker = cv['dropdown_mm64eknx'] || 'Unassigned';
+      const w = ensureWorker(worker);
+      const qty = parseFloat(cv['numeric_mm64whf6']) || 0;
+      const cost = parseFloat(cv['numeric_mm648zpa']) || 0;
+      w.damageCount++;
+      w.damageQty += qty;
+      w.damageCost += cost;
+      w.recentDamage.push({ job: it.name, department: cv['dropdown_mm64p7xf'] || '', orderName: cv['text_mm644dat'] || '', quantity: qty, cost, reason: cv['long_text_mm64de88'] || '', reportedAt: cv['text_mm64zgx0'] || '', id: it.id });
+    }
+
+    const workers = Object.values(byWorker).map(w => ({
+      worker: w.worker,
+      jobsCompleted: w.jobsCompleted,
+      totalActiveSeconds: Math.round(w.totalActiveSeconds),
+      avgSecondsPerJob: w.jobsCompleted ? Math.round(w.totalActiveSeconds / w.jobsCompleted) : 0,
+      byDept: Object.entries(w.byDept).map(([dept, v]) => ({ department: dept, count: v.count, avgSeconds: Math.round(v.seconds / v.count) })),
+      damageCount: w.damageCount,
+      damageQty: Math.round(w.damageQty * 100) / 100,
+      damageCost: Math.round(w.damageCost * 100) / 100,
+      recentJobs: w.recentJobs.sort((a, b) => (b.endTime || '').localeCompare(a.endTime || '')).slice(0, 20),
+      recentDamage: w.recentDamage.sort((a, b) => (b.reportedAt || '').localeCompare(a.reportedAt || '')).slice(0, 20),
+    })).sort((a, b) => b.jobsCompleted - a.jobsCompleted);
+
+    res.json({
+      generatedAt: new Date().toISOString(),
+      workers,
+      totalJobsCompleted: timeItems.filter(it => it.column_values.find(c => c.id === 'color_mm64srw8')?.text === 'Completed').length,
+      totalDamageIncidents: damageItems.length,
+      totalDamageCost: Math.round(damageItems.reduce((s, it) => { const cv = {}; it.column_values.forEach(c => cv[c.id] = c.text); return s + (parseFloat(cv['numeric_mm648zpa']) || 0); }, 0) * 100) / 100,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/production/approval-queue', async (req, res) => {
   try {
     const items = await fetchAllItems(PRODUCTS_BOARD_ID, 'id name column_values(ids:["color_mm25v786","text_mm22fv7y","numeric_mm22crjt"]){id text} parent_item{id name}');
