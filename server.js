@@ -982,6 +982,8 @@ app.post('/api/quote/promote', async (req, res) => {
       'numeric_mm4wv7sc': parseFloat(cv['numeric_mm63wrys']) || 0,
       'numeric_mm4wyq9k': parseFloat(cv['numeric_mm63wxbd']) || 0,
       'numeric_mm4w38cv': parseFloat(cv['numeric_mm6381qx']) || 0,
+      'numeric_mm64z51s': parseFloat(cv['numeric_mm63k849']) || 0,
+      'boolean_mm6446x5': { checked: 'false' }, // NOT legacy -- costs were computed properly at quote time, never editable after the fact
       'long_text_mm225vbf': cv['long_text_mm63bzx4'] || '',
     };
     if (cv['email_mm63ex5f']) orderCV['email_mm22ap28'] = { email: cv['email_mm63ex5f'], text: cv['email_mm63ex5f'] };
@@ -1319,6 +1321,86 @@ app.post('/api/clear-file-column', async (req, res) => {
     const data = await r.json();
     if (data.errors) return res.status(400).json({ error: data.errors[0].message });
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// LEGACY ORDER COST REVIEW -- one-time cost entry on pre-Quotes-
+// tool orders that never had real cost data (showed 100% margin).
+// Only works on orders flagged Legacy Order=true, and only once
+// per order (Legacy Cost Edited flips true after the first save
+// and blocks any further edits). Orders created going forward
+// through the Quotes tool are never eligible -- Legacy Order is
+// explicitly false on those.
+// ============================================================
+app.get('/api/legacy-orders/needs-review', async (req, res) => {
+  try {
+    const items = await fetchAllItems(ORDERS_BOARD_ID, 'id name column_values(ids:["date4","dropdown_mm22w5rr","numeric_mm4wv7sc","numeric_mm4wyq9k","numeric_mm4w38cv","numeric_mm64z51s","numeric_mm64ce5z","boolean_mm6446x5","boolean_mm64wetc"]){id text}');
+    const rows = items.map(item => {
+      const cv = {}; item.column_values.forEach(c => cv[c.id] = c.text);
+      return {
+        id: item.id, name: item.name, date: cv['date4'] || '',
+        salesPerson: cv['dropdown_mm22w5rr'] || '',
+        revenue: parseFloat(cv['numeric_mm4wv7sc']) || 0,
+        grossProfit: parseFloat(cv['numeric_mm4wyq9k']) || 0,
+        commission: parseFloat(cv['numeric_mm4w38cv']) || 0,
+        commissionRate: parseFloat(cv['numeric_mm64z51s']) || 0,
+        legacyCost: cv['numeric_mm64ce5z'] ? parseFloat(cv['numeric_mm64ce5z']) : null,
+        isLegacy: cv['boolean_mm6446x5'] === 'v',
+        costEdited: cv['boolean_mm64wetc'] === 'v',
+      };
+    }).filter(o => o.isLegacy && o.revenue > 0 && o.grossProfit === o.revenue && !o.costEdited);
+    res.json({ orders: rows.sort((a, b) => (b.date || '').localeCompare(a.date || '')) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/legacy-orders/edit-cost', async (req, res) => {
+  try {
+    const { orderId, cost } = req.body;
+    if (!orderId || cost == null) return res.status(400).json({ error: 'orderId and cost required' });
+
+    const query = `{items(ids:[${orderId}]){column_values(ids:["numeric_mm4wv7sc","numeric_mm64z51s","boolean_mm6446x5","boolean_mm64wetc"]){id text}}}`;
+    const data = await mondayQuery(query);
+    const cv = {}; (data.data?.items?.[0]?.column_values || []).forEach(c => cv[c.id] = c.text);
+
+    if (cv['boolean_mm6446x5'] !== 'v') return res.status(403).json({ error: 'This is not a legacy order -- costs on current orders are set at quote time and cannot be edited.' });
+    if (cv['boolean_mm64wetc'] === 'v') return res.status(403).json({ error: 'The cost on this order has already been edited once and is now locked.' });
+
+    const revenue = parseFloat(cv['numeric_mm4wv7sc']) || 0;
+    const rate = parseFloat(cv['numeric_mm64z51s']) || 0;
+    const newCost = Math.max(0, Number(cost));
+    const newGP = revenue - newCost;
+    const newCommission = newGP * rate;
+
+    const updateCV = JSON.stringify(JSON.stringify({
+      'numeric_mm64ce5z': newCost,
+      'numeric_mm4wyq9k': Math.round(newGP * 100) / 100,
+      'numeric_mm4w38cv': Math.round(newCommission * 100) / 100,
+      'boolean_mm64wetc': { checked: 'true' },
+    }));
+    const mutation = `mutation { change_multiple_column_values(board_id: ${ORDERS_BOARD_ID}, item_id: ${orderId}, column_values: ${updateCV}) { id } }`;
+    const result = await mondayQuery(mutation);
+    if (result.errors) return res.status(400).json({ error: result.errors[0].message });
+
+    res.json({ ok: true, grossProfit: Math.round(newGP * 100) / 100, commission: Math.round(newCommission * 100) / 100 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/legacy-orders/reassign-rep', async (req, res) => {
+  try {
+    const { orderId, salesPerson } = req.body;
+    if (!orderId || !salesPerson) return res.status(400).json({ error: 'orderId and salesPerson required' });
+    const cv = JSON.stringify(JSON.stringify({ 'dropdown_mm22w5rr': { labels: [salesPerson] } }));
+    const mutation = `mutation { change_multiple_column_values(board_id: ${ORDERS_BOARD_ID}, item_id: ${orderId}, column_values: ${cv}, create_labels_if_missing: true) { id } }`;
+    const result = await mondayQuery(mutation);
+    if (result.errors) return res.status(400).json({ error: result.errors[0].message });
+    res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

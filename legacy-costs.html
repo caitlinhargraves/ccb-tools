@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCB Legacy Cost Review</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--navy:#1B2A4A;--cyan:#00AEEF;--bg:#E8EBF4;--white:#FFFFFF;--muted:#6B7280;--subtle:#9CA3AF;--border2:#E5E7EB;--green:#00A86B;--red:#D14343;--yellow:#946200;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--navy);font-family:'Inter',sans-serif;min-height:100vh;font-size:15px;line-height:1.6;}
+  #loginGate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
+  .login-card{background:var(--white);border-radius:18px;padding:32px 28px;width:100%;max-width:340px;box-shadow:0 12px 40px rgba(27,42,74,.14);}
+  .login-title{font-size:20px;font-weight:800;margin-bottom:4px;}
+  .login-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+  .login-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+  .login-field input{width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:9px;font-size:14px;font-family:'Inter',sans-serif;background:var(--bg);margin-bottom:12px;}
+  .login-btn{width:100%;padding:11px;border:none;border-radius:9px;background:var(--navy);color:#fff;font-weight:700;font-size:14px;cursor:pointer;}
+  .login-error{font-size:12.5px;color:var(--red);margin-top:8px;min-height:16px;}
+  #app{display:none;}
+  .header{background:var(--white);border-bottom:1px solid #D1D5DB;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;}
+  .back-btn{background:none;border:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;}
+  .page-wrap{max-width:1000px;margin:0 auto;padding:24px 18px 80px;}
+  .page-title{font-size:24px;font-weight:800;margin-bottom:4px;}
+  .page-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+  .banner{background:#FFF6E0;border:1px solid #FBE5A8;border-radius:12px;padding:14px 16px;font-size:13px;color:var(--yellow);margin-bottom:18px;}
+  .order-card{background:var(--white);border:1px solid var(--border2);border-radius:14px;padding:16px 18px;margin-bottom:12px;}
+  .order-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+  .order-name{font-weight:700;font-size:15px;}
+  .order-sub{font-size:11.5px;color:var(--muted);}
+  .field-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;}
+  .field label{display:block;font-size:11.5px;font-weight:600;color:var(--muted);margin-bottom:4px;}
+  .field input,.field select{width:100%;padding:8px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:13.5px;font-family:'Inter',sans-serif;}
+  .save-btn{padding:9px 16px;border:none;border-radius:8px;background:var(--cyan);color:#fff;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;}
+  .save-btn:disabled{opacity:.5;cursor:not-allowed;}
+  .locked-note{font-size:11.5px;color:var(--green);font-weight:700;margin-top:8px;}
+  .empty-state{text-align:center;color:var(--subtle);padding:60px 0;}
+  .stat-row{display:flex;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
+  .stat{background:var(--white);border:1px solid var(--border2);border-radius:12px;padding:12px 16px;}
+  .stat-val{font-size:20px;font-weight:800;}
+  .stat-lbl{font-size:11px;color:var(--muted);}
+</style>
+</head>
+<body>
+
+<div id="loginGate">
+  <div class="login-card">
+    <div class="login-title">Legacy Cost Review</div>
+    <div class="login-sub">Admin access only.</div>
+    <div class="login-field"><label>Password</label><input type="password" id="loginPassword" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="login-btn" onclick="doLogin()">Log In</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="header">
+    <button class="back-btn" onclick="location.href='index.html'">Back Home</button>
+    <button class="back-btn" onclick="location.reload()">Log out</button>
+  </div>
+  <div class="page-wrap">
+    <div class="page-title">Legacy Cost Review</div>
+    <div class="page-sub">Orders from before the Quotes tool never had real cost data on file, so their margin showed as 100%. Enter the real total cost once per order to correct their Gross Profit and Commission -- once saved, it locks.</div>
+    <div class="banner">This only applies to legacy orders. New orders created through the Quotes tool already have accurate costs baked in at quote time and are never editable here.</div>
+    <div class="stat-row" id="statsRow"></div>
+    <div id="content"><div class="empty-state">Loading...</div></div>
+  </div>
+</div>
+
+<script>
+const ALL_REPS = ['Chaz Lucius','Bailey McGraw','Jess Miller','Nick Miller','George Miller','Caitlin Hargraves','Bryce','Tucker'];
+let orders = [];
+
+async function doLogin(){
+  const password = document.getElementById('loginPassword').value;
+  const err = document.getElementById('loginError');
+  err.textContent = '';
+  try{
+    const r = await fetch('/api/rep/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:password,selectedRep:'Admin'})});
+    const d = await r.json();
+    if(!d.ok || d.role!=='Admin'){ err.textContent = 'Admin password required.'; return; }
+    document.getElementById('loginGate').style.display='none';
+    document.getElementById('app').style.display='block';
+    loadOrders();
+  }catch(e){ err.textContent = 'Login failed.'; }
+}
+
+async function loadOrders(){
+  try{
+    const r = await fetch('/api/legacy-orders/needs-review');
+    const d = await r.json();
+    orders = d.orders || [];
+    render();
+  }catch(e){
+    document.getElementById('content').innerHTML = '<div class="empty-state">Could not load orders.</div>';
+  }
+}
+
+function render(){
+  document.getElementById('statsRow').innerHTML =
+    '<div class="stat"><div class="stat-val">'+orders.length+'</div><div class="stat-lbl">Orders needing cost review</div></div>' +
+    '<div class="stat"><div class="stat-val">$'+orders.reduce(function(s,o){return s+o.revenue;},0).toLocaleString()+'</div><div class="stat-lbl">Combined revenue</div></div>';
+
+  if(!orders.length){
+    document.getElementById('content').innerHTML = '<div class="empty-state">All caught up -- no legacy orders need a cost entered.</div>';
+    return;
+  }
+
+  document.getElementById('content').innerHTML = orders.map(function(o){
+    return '<div class="order-card" id="card-'+o.id+'">' +
+      '<div class="order-top">' +
+        '<div><div class="order-name">'+o.name+'</div><div class="order-sub">'+(o.date||'no date')+' - Revenue $'+o.revenue.toLocaleString()+' - Commission rate '+(o.commissionRate*100).toFixed(0)+'%</div></div>' +
+      '</div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label>Sales Rep</label><select id="rep-'+o.id+'">'+ALL_REPS.map(function(r){return '<option'+(r===o.salesPerson?' selected':'')+'>'+r+'</option>';}).join('')+'</select></div>' +
+        '<div class="field"><label>Real Total Cost ($)</label><input type="number" step="0.01" id="cost-'+o.id+'" placeholder="0.00"></div>' +
+        '<div class="field"><label>New Commission Preview</label><input type="text" id="preview-'+o.id+'" disabled placeholder="enter cost above"></div>' +
+        '<button class="save-btn" onclick="saveCost(\''+o.id+'\')">Save (one-time)</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  orders.forEach(function(o){
+    const costInput = document.getElementById('cost-'+o.id);
+    costInput.addEventListener('input', function(){
+      const cost = parseFloat(this.value)||0;
+      const gp = o.revenue - cost;
+      const comm = gp * o.commissionRate;
+      document.getElementById('preview-'+o.id).value = 'GP $'+gp.toFixed(2)+' / Commission $'+comm.toFixed(2);
+    });
+  });
+}
+
+async function saveCost(orderId){
+  const costInput = document.getElementById('cost-'+orderId);
+  const repSelect = document.getElementById('rep-'+orderId);
+  const cost = parseFloat(costInput.value);
+  if(isNaN(cost) || cost < 0){ alert('Enter a valid cost amount.'); return; }
+  const order = orders.find(function(o){return o.id===orderId;});
+
+  if(repSelect.value !== order.salesPerson){
+    await fetch('/api/legacy-orders/reassign-rep',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId:orderId,salesPerson:repSelect.value})});
+  }
+
+  try{
+    const r = await fetch('/api/legacy-orders/edit-cost',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId:orderId,cost:cost})});
+    const d = await r.json();
+    if(!d.ok){ alert(d.error||'Save failed'); return; }
+    const card = document.getElementById('card-'+orderId);
+    card.innerHTML = card.innerHTML.replace(/<div class="field-row">[\s\S]*?<\/div>\s*<\/div>$/, '');
+    const note = document.createElement('div');
+    note.className = 'locked-note';
+    note.textContent = 'Saved and locked -- GP $'+d.grossProfit.toFixed(2)+' / Commission $'+d.commission.toFixed(2);
+    card.appendChild(note);
+    orders = orders.filter(function(o){return o.id!==orderId;});
+    setTimeout(function(){ render(); }, 1200);
+  }catch(e){ alert('Save failed. Try again.'); }
+}
+</script>
+</body>
+</html>
