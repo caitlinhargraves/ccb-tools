@@ -1,0 +1,35 @@
+# ============================================================
+# Render Blueprint for the Postgres migration -- fully isolated
+# from the live "ccb-tools" service. Applying this creates:
+#   1. A new Postgres database (ccb-tools-staging-db)
+#   2. A new web service (ccb-tools-staging) running from the
+#      `postgres-migration` branch, at its own onrender.com URL
+#
+# The live app and its Monday.com connection are completely
+# untouched by anything here.
+#
+# To use: Render Dashboard -> New -> Blueprint -> select this
+# repo -> branch: postgres-migration -> Apply.
+# ============================================================
+
+databases:
+  - name: ccb-tools-staging-db
+    plan: basic-256mb
+    postgresMajorVersion: 16
+
+services:
+  - type: web
+    name: ccb-tools-staging
+    runtime: node
+    plan: starter
+    branch: postgres-migration
+    rootDir: postgres-migration
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ccb-tools-staging-db
+          property: connectionString
+      - key: MONDAY_API_KEY
+        sync: false   # set manually in the dashboard -- only needed to run the one-time migration script

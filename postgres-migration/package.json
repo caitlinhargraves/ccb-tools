@@ -1,0 +1,14 @@
+{
+  "name": "ccb-tools-staging",
+  "version": "0.1.0",
+  "description": "CCB Tools -- Postgres migration staging service. Isolated from the live app.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "migrate": "node migrate-from-monday.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.23.0"
+  }
+}
